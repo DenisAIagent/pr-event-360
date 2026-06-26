@@ -1,0 +1,49 @@
+/* ============================================================
+   PR Event 360 — Base / reset helpers
+   Light element defaults so specimen cards and kits inherit the
+   brand voice without per-file boilerplate.
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-body);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: var(--lh-heading);
+  text-wrap: balance;
+}
+h1 { font-size: var(--fs-h1); font-weight: var(--fw-light); letter-spacing: var(--ls-tight); }
+h2 { font-size: var(--fs-h2); font-weight: var(--fw-regular); }
+h3 { font-size: var(--fs-h3); font-weight: var(--fw-semibold); }
+
+p { margin: 0; }
+a { color: var(--text-link); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+/* utility: brand overline */
+.pr-overline {
+  font-size: var(--fs-overline);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-accent);
+}
+
+/* utility: digital-blue "360"-style emphasis on numerals */
+.pr-figure {
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+}

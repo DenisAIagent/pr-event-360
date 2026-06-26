@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Neutrals & borders" subtitle="Gris ardoise, fonds clairs, filets" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); font-family: var(--font-sans); }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .sw { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-default); }
+  .chip { height: 76px; }
+  .meta { padding: 9px 10px; }
+  .name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .hex { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:#4A5568"></div><div class="meta"><div class="name">Ardoise</div><div class="hex">#4A5568</div></div></div>
+  <div class="sw"><div class="chip" style="background:#F5F7FA"></div><div class="meta"><div class="name">Gris clair</div><div class="hex">#F5F7FA</div></div></div>
+  <div class="sw"><div class="chip" style="background:#EAF7FC"></div><div class="meta"><div class="name">Bleu clair</div><div class="hex">#EAF7FC</div></div></div>
+  <div class="sw"><div class="chip" style="background:#E6ECF2"></div><div class="meta"><div class="name">Filet</div><div class="hex">#E6ECF2</div></div></div>
+  <div class="sw"><div class="chip" style="background:#D8E0EA"></div><div class="meta"><div class="name">Filet fort</div><div class="hex">#D8E0EA</div></div></div>
+</div>
+</body>
+</html>

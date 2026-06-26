@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Primary palette" subtitle="Bleu nuit · Bleu digital · Blanc" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); font-family: var(--font-sans); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .sw { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-default); }
+  .chip { height: 92px; }
+  .meta { padding: 10px 12px; }
+  .name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .hex { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .use { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:#07142F"></div><div class="meta"><div class="name">Bleu nuit</div><div class="hex">#07142F</div><div class="use">Texte, titres, nav, premium</div></div></div>
+  <div class="sw"><div class="chip" style="background:#1598D3"></div><div class="meta"><div class="name">Bleu digital</div><div class="hex">#1598D3</div><div class="use">Accent, boutons, liens, « 360 »</div></div></div>
+  <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid var(--border-default)"></div><div class="meta"><div class="name">Blanc pur</div><div class="hex">#FFFFFF</div><div class="use">Fonds, respiration, UI</div></div></div>
+</div>
+</body>
+</html>

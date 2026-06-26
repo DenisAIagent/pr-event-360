@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="Functional & badges" subtitle="Succès · Alerte · Attention · VIP" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface-card); font-family: var(--font-sans); }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .sw { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-default); }
+  .chip { height: 56px; display:flex; align-items:flex-end; padding: 8px; }
+  .hex { font-size: 11px; font-weight:600; color: #fff; font-variant-numeric: tabular-nums; }
+  .meta { padding: 9px 11px; }
+  .name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+  .badge { display:inline-block; margin-top:6px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:#2FBF71"><span class="hex">#2FBF71</span></div><div class="meta"><div class="name">Succès</div><span class="badge" style="background:#EAFBF2;color:#2FBF71">Accrédité</span></div></div>
+  <div class="sw"><div class="chip" style="background:#F5A623"><span class="hex">#F5A623</span></div><div class="meta"><div class="name">Alerte soft</div><span class="badge" style="background:#FFF6E5;color:#F5A623">À relancer</span></div></div>
+  <div class="sw"><div class="chip" style="background:#E24D4D"><span class="hex">#E24D4D</span></div><div class="meta"><div class="name">Attention</div><span class="badge" style="background:#FDECEC;color:#E24D4D">Annulé</span></div></div>
+  <div class="sw"><div class="chip" style="background:#1598D3"><span class="hex">#1598D3</span></div><div class="meta"><div class="name">Info / VIP</div><span class="badge" style="background:#EAF7FC;color:#1598D3">Média clé</span></div></div>
+</div>
+</body>
+</html>

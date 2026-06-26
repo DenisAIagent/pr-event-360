@@ -31,10 +31,10 @@ export function LoginPage() {
     <main className="login-wrap">
       <div className="card login-card stack">
         <div>
-          <span className="eyebrow">Back-office</span>
-          <h1 style={{ fontSize: 'var(--text-xl)', marginTop: 'var(--space-1)' }}>
-            PR Event <span style={{ color: 'var(--color-accent)' }}>360</span>
-          </h1>
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 40, display: 'block' }} />
+          <span className="eyebrow" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
+            Back-office
+          </span>
         </div>
         <form onSubmit={submit} className="stack" noValidate>
           {justReset && (

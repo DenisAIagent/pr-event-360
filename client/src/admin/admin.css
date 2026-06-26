@@ -23,13 +23,13 @@
   gap: var(--space-3);
 }
 .admin-brand {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--text-lg);
-  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
 }
-.admin-brand span {
-  color: var(--color-accent);
+.brand-mark {
+  height: 26px;
+  width: auto;
+  display: block;
 }
 .admin-user {
   display: flex;

@@ -1,52 +1,62 @@
-/* Design tokens — direction « éditorial / presse » : ivoire chaud, encre profonde,
-   accent indigo. Hiérarchie par contraste d'échelle, profondeur par surfaces. */
+/* Design tokens — identité PR Event 360 (design system officiel) :
+   bleu nuit dominant, bleu digital en accent, blanc généreux. Inter + Manrope.
+   Les NOMS de variables de l'app sont conservés → tout le produit hérite de l'identité.
+   Référence : « PR Event 360 Design System » (navy #07142F · digital blue #1598D3). */
 :root {
-  /* Couleurs (oklch pour des dégradés perceptuellement réguliers) */
-  --color-bg: oklch(97.5% 0.012 85);
-  --color-bg-elevated: oklch(99% 0.008 85);
-  --color-surface: oklch(100% 0 0);
-  --color-ink: oklch(22% 0.02 270);
-  --color-ink-soft: oklch(45% 0.02 270);
-  --color-ink-faint: oklch(62% 0.015 270);
-  --color-line: oklch(90% 0.01 270);
-  --color-accent: oklch(52% 0.19 274);
-  --color-accent-strong: oklch(44% 0.2 274);
-  --color-accent-tint: oklch(95% 0.04 274);
+  /* ── Couleurs ─────────────────────────────────────────────────── */
+  /* Surfaces : blanc généreux, page très légèrement teintée pour faire ressortir les cartes. */
+  --color-bg: #f6f8fb;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
 
-  /* Statuts sémantiques */
-  --color-pending: oklch(62% 0.13 60);
-  --color-progress: oklch(58% 0.13 250);
-  --color-success: oklch(58% 0.14 150);
-  --color-danger: oklch(58% 0.18 25);
-  --color-waitlist: oklch(60% 0.12 300);
+  /* Encre : bleu nuit pour les titres/nav, ardoise pour le corps. */
+  --color-ink: #07142f; /* navy */
+  --color-ink-soft: #4a5568; /* slate */
+  --color-ink-faint: #6b7686; /* slate light */
+  --color-line: #e6ecf2; /* filets / bordures */
 
-  /* Typographie */
-  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --text-xs: 0.78rem;
-  --text-sm: 0.88rem;
-  --text-base: 1rem;
-  --text-lg: 1.2rem;
-  --text-xl: clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem);
-  --text-display: clamp(2.2rem, 1.4rem + 3.4vw, 3.6rem);
+  /* Accent : bleu digital — boutons, liens, chiffres clés, le « 360 ». Jamais en aplat dominant. */
+  --color-accent: #1598d3;
+  --color-accent-strong: #0f7cb0;
+  --color-accent-tint: #eaf7fc;
 
-  /* Espacement & rythme */
-  --space-1: 0.35rem;
-  --space-2: 0.6rem;
-  --space-3: 1rem;
-  --space-4: 1.5rem;
-  --space-5: 2.5rem;
-  --space-6: 4rem;
+  /* Statuts sémantiques (réservés aux états / badges). */
+  --color-pending: #f5a623; /* attention / orange */
+  --color-progress: #1598d3; /* en cours / bleu */
+  --color-success: #2fbf71; /* succès / vert */
+  --color-danger: #e24d4d; /* alerte / rouge */
+  --color-waitlist: #15315e; /* liste d'attente / navy 600 */
 
-  --radius-sm: 7px;
+  /* ── Typographie ──────────────────────────────────────────────── */
+  --font-display: 'Manrope', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --text-xs: 0.8125rem; /* 13 */
+  --text-sm: 0.9375rem; /* 15 */
+  --text-base: 1.0625rem; /* 17 */
+  --text-lg: 1.25rem; /* 20 */
+  --text-xl: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  --text-display: clamp(2.2rem, 1.4rem + 3.4vw, 3.5rem);
+
+  /* ── Espacement & rythme (grille 8px) ─────────────────────────── */
+  --space-1: 0.25rem; /* 4 */
+  --space-2: 0.5rem; /* 8 */
+  --space-3: 0.75rem; /* 12 */
+  --space-4: 1rem; /* 16 */
+  --space-5: 1.5rem; /* 24 */
+  --space-6: 2.5rem; /* 40 */
+
+  /* ── Rayons (arrondis doux) ───────────────────────────────────── */
+  --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 20px;
+  --radius-lg: 16px;
 
-  --shadow-sm: 0 1px 2px oklch(22% 0.02 270 / 0.06);
-  --shadow-md: 0 8px 24px -8px oklch(22% 0.02 270 / 0.18);
-  --shadow-lg: 0 24px 60px -20px oklch(22% 0.05 274 / 0.28);
+  /* ── Élévation (ombres très légères, teintées navy) ───────────── */
+  --shadow-sm: 0 1px 3px rgba(7, 20, 47, 0.06), 0 1px 2px rgba(7, 20, 47, 0.04);
+  --shadow-md: 0 4px 16px rgba(7, 20, 47, 0.06);
+  --shadow-lg: 0 12px 32px rgba(7, 20, 47, 0.1);
 
-  --duration-fast: 140ms;
-  --duration-normal: 280ms;
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── Mouvement ────────────────────────────────────────────────── */
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --ease-out-expo: cubic-bezier(0.4, 0, 0.2, 1);
 }

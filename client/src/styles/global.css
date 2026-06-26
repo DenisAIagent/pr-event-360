@@ -75,10 +75,10 @@ a {
   box-shadow: var(--shadow-md);
   padding: var(--space-5) var(--space-4);
   /* Les cartes sont toujours des surfaces claires : on rétablit l'encre par
-     défaut pour rester lisible même quand la page utilise un thème foncé. */
-  --color-ink: oklch(22% 0.02 270);
-  --color-ink-soft: oklch(45% 0.02 270);
-  --color-ink-faint: oklch(62% 0.015 270);
+     défaut (bleu nuit) pour rester lisible même quand la page utilise un thème foncé. */
+  --color-ink: #07142f;
+  --color-ink-soft: #4a5568;
+  --color-ink-faint: #6b7686;
   color: var(--color-ink);
 }
 

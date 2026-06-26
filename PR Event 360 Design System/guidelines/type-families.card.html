@@ -1,0 +1,35 @@
+<!-- @dsCard group="Type" viewport="700x200" name="Font families & brand tracking" subtitle="Inter · Manrope · logo lockup tracking" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-card); }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .tag { font-family: var(--font-sans); font-size: 11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .glyphs { font-size: 30px; color: var(--text-primary); }
+  .weights { font-family: var(--font-sans); font-size: 14px; color: var(--text-body); margin-top:8px; }
+  .brand { font-family: var(--font-brand); letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-primary); font-size: 20px; font-weight: 400; }
+  .blue { color: var(--text-accent); }
+</style>
+</head>
+<body>
+<div class="grid">
+  <div>
+    <div class="tag">Inter — produit & web</div>
+    <div class="glyphs" style="font-family:var(--font-sans)">Aa Bb Cc 0123</div>
+    <div class="weights">Light 300 · Regular 400 · Medium 500 · SemiBold 600</div>
+  </div>
+  <div>
+    <div class="tag">Manrope — premium corporate</div>
+    <div class="glyphs" style="font-family:var(--font-display)">Aa Bb Cc 0123</div>
+    <div class="weights" style="font-family:var(--font-display)">Light 300 · Regular 400 · Medium 500 · SemiBold 600</div>
+  </div>
+</div>
+<div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border-default)">
+  <div class="tag">Logo lockup — fin, géométrique, espacé (tracking 0.18em)</div>
+  <div class="brand">PR Event <span class="blue">360</span></div>
+</div>
+</body>
+</html>

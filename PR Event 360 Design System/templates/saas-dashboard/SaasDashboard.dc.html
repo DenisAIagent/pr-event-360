@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="SaaS dashboard" description="PR Event 360 app dashboard scaffold — KPI row, content card, brand topbar." -->
+<helmet>
+<script src="./ds-base.js"></script>
+<style>
+  body { margin:0; font-family:'Inter',system-ui,sans-serif; color:#4A5568; background:#F5F7FA; }
+</style>
+</helmet>
+<div style="min-height:100vh;background:#F5F7FA;">
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:#fff;border-bottom:1px solid #E6ECF2;">
+    <div>
+      <h2 style="font-family:'Manrope','Inter',sans-serif;font-size:22px;font-weight:600;color:#07142F;margin:0;">Tableau de bord</h2>
+      <p style="font-size:13px;color:#6B7686;margin:3px 0 0;">Vue d'ensemble de vos relations presse événementielles</p>
+    </div>
+    <x-import component-from-global-scope="PREvent360DesignSystem_82909b.Button" variant="primary" hint-size="190px,42px">Créer un événement</x-import>
+  </header>
+  <div style="padding:32px;display:flex;flex-direction:column;gap:20px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+      <x-import component-from-global-scope="PREvent360DesignSystem_82909b.KpiCard" label="Journalistes invités" value="247" delta="+12%" caption="ce mois" hint-size="100%,150px"></x-import>
+      <x-import component-from-global-scope="PREvent360DesignSystem_82909b.KpiCard" label="Taux de réponse" value="68" unit="%" delta="+4 pts" caption="vs. N-1" hint-size="100%,150px"></x-import>
+      <x-import component-from-global-scope="PREvent360DesignSystem_82909b.KpiCard" label="Accréditations" value="42" caption="validées sur 68" hint-size="100%,150px"></x-import>
+      <x-import component-from-global-scope="PREvent360DesignSystem_82909b.KpiCard" label="Retombées média" value="18" delta="+6" caption="suivies" hint-size="100%,150px"></x-import>
+    </div>
+    <x-import component-from-global-scope="PREvent360DesignSystem_82909b.Card" hint-size="100%,200px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-family:'Manrope','Inter',sans-serif;font-size:16px;font-weight:600;color:#07142F;margin:0;">Relances à faire</h3>
+        <x-import component-from-global-scope="PREvent360DesignSystem_82909b.Badge" tone="warning" dot="true" hint-size="120px,26px">3 en attente</x-import>
+      </div>
+      <p style="font-size:14px;color:#4A5568;margin:0;">Trois journalistes n'ont pas répondu à leur invitation. Planifiez une relance ciblée pour maintenir le taux de réponse au-dessus de 65 %.</p>
+    </x-import>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

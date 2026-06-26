@@ -1,0 +1,41 @@
+/* ============================================================
+   PR Event 360 — Typography tokens
+   Primary: Inter. Premium alt: Manrope.
+   Weights: 300 Light (premium titles) · 400 Regular (body) ·
+            500 Medium (buttons/menus) · 600 SemiBold (key titles).
+   ============================================================ */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Manrope', 'Inter', system-ui, sans-serif; /* premium / corporate headings */
+  --font-brand: 'Inter', system-ui, sans-serif;             /* logo-adjacent: use with wide tracking */
+
+  /* weights */
+  --fw-light: 300;     /* @kind font */
+  --fw-regular: 400;   /* @kind font */
+  --fw-medium: 500;    /* @kind font */
+  --fw-semibold: 600;  /* @kind font */
+  --fw-bold: 700;      /* @kind font */
+
+  /* type scale (px) — matches charter hierarchy */
+  --fs-display: 64px;   /* hero */
+  --fs-h1: 48px;        /* H1 — Light/Regular, navy */
+  --fs-h2: 36px;        /* H2 — Regular/Medium, navy */
+  --fs-h3: 24px;        /* H3 — Medium, navy */
+  --fs-lead: 20px;      /* lead paragraph */
+  --fs-body: 17px;      /* body 16–18 */
+  --fs-body-sm: 15px;
+  --fs-micro: 13px;     /* microcopy / interface 12–14 */
+  --fs-overline: 12px;
+
+  /* line-heights */
+  --lh-tight: 1.1;      /* @kind other */
+  --lh-heading: 1.2;    /* @kind other */
+  --lh-snug: 1.35;      /* @kind other */
+  --lh-body: 1.5;       /* @kind other */ /* 150% body interline */
+
+  /* letter-spacing */
+  --ls-tight: -0.02em;  /* @kind other */
+  --ls-normal: 0;       /* @kind other */
+  --ls-wide: 0.08em;    /* @kind other */
+  --ls-brand: 0.18em;   /* @kind other */
+}

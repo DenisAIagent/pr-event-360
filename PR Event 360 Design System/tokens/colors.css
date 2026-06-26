@@ -1,0 +1,63 @@
+/* ============================================================
+   PR Event 360 — Color tokens
+   Identity: navy-dominant, digital-blue accent, generous white.
+   Recommended balance: 60% white/light · 25% navy · 10% blue · 5% functional.
+   The digital blue is an ACCENT — never a dominant surface color.
+   ============================================================ */
+:root {
+  /* ---- Brand primary ---- */
+  --color-navy: #07142F;        /* Bleu nuit corporate — text, logo, titles, nav, premium */
+  --color-blue: #1598D3;        /* Bleu digital — accent, buttons, links, key figures, "360" */
+  --color-white: #FFFFFF;
+
+  /* navy ramp (derived, for hovers / depth) */
+  --color-navy-700: #0E2348;
+  --color-navy-600: #15315E;
+  --color-blue-600: #0F7CB0;    /* digital blue, pressed/hover */
+  --color-blue-400: #46B0DD;
+
+  /* ---- Neutrals ---- */
+  --color-slate: #4A5568;       /* Gris ardoise — body copy, secondary text, captions */
+  --color-slate-light: #6B7686;
+  --color-gray-50: #F5F7FA;     /* Gris clair interface — section bg, cards, dashboards */
+  --color-gray-100: #EDF1F6;
+  --color-blue-50: #EAF7FC;     /* Bleu très clair — subtle highlights, badges, hover states */
+
+  /* ---- Borders ---- */
+  --color-border: #E6ECF2;      /* card border */
+  --color-border-strong: #D8E0EA; /* secondary button border, dividers */
+
+  /* ---- Functional ---- */
+  --color-success: #2FBF71;     /* validated statuses, confirmations, accreditations */
+  --color-success-bg: #EAFBF2;
+  --color-warning: #F5A623;     /* follow-ups due, deadlines, pending actions */
+  --color-warning-bg: #FFF6E5;
+  --color-danger: #E24D4D;      /* errors, cancellations, important alerts */
+  --color-danger-bg: #FDECEC;
+  --color-info: var(--color-blue); /* VIP / key media */
+  --color-info-bg: var(--color-blue-50);
+
+  /* ============================================================
+     Semantic aliases — prefer these in components
+     ============================================================ */
+  --text-primary: var(--color-navy);
+  --text-body: var(--color-slate);
+  --text-muted: var(--color-slate-light);
+  --text-inverse: var(--color-white);
+  --text-accent: var(--color-blue);
+  --text-link: var(--color-blue);
+
+  --surface-page: var(--color-white);
+  --surface-subtle: var(--color-gray-50);
+  --surface-card: var(--color-white);
+  --surface-accent-soft: var(--color-blue-50);
+  --surface-inverse: var(--color-navy);
+
+  --border-default: var(--color-border);
+  --border-strong: var(--color-border-strong);
+  --border-focus: var(--color-blue);
+
+  --accent: var(--color-blue);
+  --accent-hover: var(--color-blue-600);
+  --accent-contrast: var(--color-white);
+}

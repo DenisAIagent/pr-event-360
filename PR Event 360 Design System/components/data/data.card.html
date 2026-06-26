@@ -1,0 +1,39 @@
+<!-- @dsCard group="Components" viewport="700x250" name="Data — KPI Cards" subtitle="Big-figure dashboard metrics" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 24px; background: var(--surface-subtle); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { KpiCard } = window.PREvent360DesignSystem_82909b;
+  const Icon = ({ name, size = 18 }) => {
+    const ref = React.useRef(null);
+    React.useEffect(() => { if (ref.current) { ref.current.innerHTML = ''; const el = document.createElement('i'); el.setAttribute('data-lucide', name); ref.current.appendChild(el); window.lucide.createIcons({ attrs: { width: size, height: size, 'stroke-width': 1.75 } }); } });
+    return <span ref={ref} style={{ display: 'inline-flex' }} />;
+  };
+  function Demo() {
+    return (
+      <div className="grid">
+        <KpiCard label="Journalistes invités" value="247" icon={<Icon name="users" />} delta="+12%" caption="ce mois" />
+        <KpiCard label="Taux de réponse" value="68" unit="%" icon={<Icon name="trending-up" />} delta="+4 pts" caption="vs. édition N-1" />
+        <KpiCard label="Accréditations" value="42" icon={<Icon name="badge-check" />} caption="validées sur 68" />
+        <KpiCard label="Retombées média" value="18" icon={<Icon name="newspaper" />} delta="-3" deltaTone="danger" caption="à suivre" />
+      </div>
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

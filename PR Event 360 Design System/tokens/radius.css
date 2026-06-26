@@ -1,0 +1,30 @@
+/* ============================================================
+   PR Event 360 — Radius & shadow tokens
+   Soft rounding, very light shadows. Tech-premium, never heavy.
+   ============================================================ */
+:root {
+  /* radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;    /* buttons (8–12) */
+  --radius-md: 12px;
+  --radius-lg: 16px;   /* cards */
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* shadows — kept subtle; identity favors borders + whitespace over depth */
+  --shadow-xs: 0 1px 2px rgba(7, 20, 47, 0.04);
+  --shadow-sm: 0 1px 3px rgba(7, 20, 47, 0.06), 0 1px 2px rgba(7, 20, 47, 0.04);
+  --shadow-md: 0 4px 16px rgba(7, 20, 47, 0.06);
+  --shadow-lg: 0 12px 32px rgba(7, 20, 47, 0.08);
+  --shadow-accent: 0 6px 18px rgba(21, 152, 211, 0.22); /* digital-blue glow for primary CTA */
+
+  /* focus ring */
+  --ring-accent: 0 0 0 3px rgba(21, 152, 211, 0.28);
+
+  /* motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --dur-fast: 120ms;   /* @kind other */
+  --dur-base: 200ms;   /* @kind other */
+  --dur-slow: 320ms;   /* @kind other */
+}

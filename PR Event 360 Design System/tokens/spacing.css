@@ -1,0 +1,25 @@
+/* ============================================================
+   PR Event 360 — Spacing & layout tokens
+   8px base grid. Structured, aligned, generous whitespace.
+   ============================================================ */
+:root {
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;   /* card padding */
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;  /* section rhythm */
+
+  /* layout */
+  --container-max: 1200px;
+  --container-narrow: 760px;
+  --gutter: 24px;
+  --sidebar-width: 248px;
+}

@@ -34,8 +34,8 @@ export function EventLayout() {
       <div className="admin-bar">
         <div className="admin-bar-inner">
           <div className="admin-brand">
-            <Link to="/admin" style={{ color: 'inherit', textDecoration: 'none' }}>
-              PR Event <span>360</span>
+            <Link to="/admin" style={{ display: 'inline-flex' }}>
+              <img src="/brand/logo-pr-event-360-reversed.png" alt="PR Event 360" className="brand-mark" />
             </Link>
           </div>
           <div className="admin-user">
