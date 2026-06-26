@@ -4,6 +4,7 @@ import { AccreditationPage } from './public-forms/accreditation/AccreditationPag
 import { SpacePage } from './public-forms/requests/SpacePage';
 import { SpacePreviewPage } from './public-forms/requests/SpacePreviewPage';
 import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
+import { LandingPage } from './public-forms/landing/LandingPage';
 import { AdminApp } from './admin/AdminApp';
 
 /**
@@ -16,6 +17,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/admin/*" element={<AdminApp />} />
         <Route
           path="/accreditation/:eventId"

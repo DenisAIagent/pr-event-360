@@ -1,0 +1,165 @@
+/* Landing marketing — PR Event 360. S'appuie sur les tokens globaux (Inter/Manrope,
+   navy/bleu). Ce fichier ne porte que la mise en page responsive (grilles, sections). */
+.lp {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: #fff;
+}
+.lp-wrap {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+/* Header */
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-line);
+}
+.lp-header-inner {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.lp-nav {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+.lp-nav a {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  text-decoration: none;
+}
+.lp-nav a:hover {
+  color: var(--color-accent-strong);
+}
+@media (max-width: 860px) {
+  .lp-nav {
+    display: none;
+  }
+}
+
+/* Hero */
+.lp-hero {
+  background: linear-gradient(180deg, var(--color-bg) 0%, #fff 100%);
+}
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  padding: 72px 0 60px;
+}
+@media (max-width: 880px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 48px 0 40px;
+  }
+}
+
+/* KPI band */
+.lp-kpi-band {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-5);
+  padding: 36px 0;
+}
+@media (max-width: 760px) {
+  .lp-kpi-band {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+/* Features */
+.lp-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+@media (max-width: 880px) {
+  .lp-features-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .lp-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* CTA buttons row + hero buttons wrap on mobile */
+.lp-btn-row {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.lp-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* ── Animations (sobres : fondu + montée, lift, remplissage — conformes au DS) ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 600ms var(--ease-out-expo),
+    transform 600ms var(--ease-out-expo);
+  will-change: opacity, transform;
+}
+.reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+.lp-feature {
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 26px;
+  box-shadow: var(--shadow-sm);
+  height: 100%;
+  transition:
+    transform var(--duration-normal) var(--ease-out-expo),
+    box-shadow var(--duration-normal) var(--ease-out-expo);
+}
+.lp-feature:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.lp-progress-fill {
+  width: 62%;
+  animation: lp-fill 1.4s var(--ease-out-expo) 0.3s both;
+}
+@keyframes lp-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 62%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .lp-progress-fill {
+    animation: none;
+    width: 62%;
+  }
+}
