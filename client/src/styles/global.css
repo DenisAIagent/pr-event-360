@@ -28,7 +28,9 @@ h2,
 h3 {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.08;
+  /* Manrope a des métriques plus hautes que l'ancienne serif : un interligne trop
+     serré (1.08) faisait déborder/chevaucher les titres. 1.2 = lisible et sûr. */
+  line-height: 1.2;
   letter-spacing: -0.015em;
   margin: 0;
 }

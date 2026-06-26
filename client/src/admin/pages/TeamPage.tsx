@@ -26,7 +26,7 @@ export function TeamPage() {
       <AdminBar />
       <div className="admin-shell stack">
         <h1 style={{ fontSize: 'var(--text-xl)' }}>Équipe</h1>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'calc(-1 * var(--space-2))' }}>
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>
           Invitez des collaborateurs, définissez leur niveau d’accès et les événements qu’ils gèrent.
         </p>
 

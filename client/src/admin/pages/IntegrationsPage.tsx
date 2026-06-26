@@ -82,7 +82,7 @@ export function IntegrationsPage() {
       <AdminBar />
       <div className="admin-shell stack">
         <h1 style={{ fontSize: 'var(--text-xl)' }}>Intégrations</h1>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'calc(-1 * var(--space-2))' }}>
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>
           Clés API des outils externes. Les valeurs sont chiffrées avant stockage et remplacent
           la configuration du serveur.
         </p>
