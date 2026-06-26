@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Icon } from '../../components/Icon';
 
 type Surface = 'accreditation' | 'space' | 'newsroom';
 type Device = 'desktop' | 'mobile';
@@ -42,11 +43,21 @@ export function PreviewTab() {
         </div>
         <div className="inline-actions">
           <div className="inline-actions" role="group" aria-label="Appareil">
-            <button className="chip" aria-pressed={device === 'desktop'} onClick={() => setDevice('desktop')}>
-              🖥️ Desktop
+            <button
+              className="chip"
+              aria-pressed={device === 'desktop'}
+              onClick={() => setDevice('desktop')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="monitor" /> Desktop
             </button>
-            <button className="chip" aria-pressed={device === 'mobile'} onClick={() => setDevice('mobile')}>
-              📱 Mobile
+            <button
+              className="chip"
+              aria-pressed={device === 'mobile'}
+              onClick={() => setDevice('mobile')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="smartphone" /> Mobile
             </button>
           </div>
           {current.openable && (

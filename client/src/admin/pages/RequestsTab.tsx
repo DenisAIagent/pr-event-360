@@ -20,6 +20,7 @@ import {
   formatSlotDate,
 } from '../lib/labels';
 import { printTable, type PrintTableGroup } from '../lib/printRequests';
+import { Icon } from '../../components/Icon';
 
 const QUEUE_COLUMNS = ['Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut'];
 
@@ -218,7 +219,7 @@ function QueueView({
           onClick={exportPdf}
           disabled={(queue.data?.length ?? 0) === 0}
         >
-          ⤓ Exporter en PDF
+          <Icon name="download" /> Exporter en PDF
         </button>
       </div>
 
@@ -372,7 +373,7 @@ function GroupedView({
           onClick={exportAll}
           disabled={ordered.every((e) => (grouped.get(e.id)?.length ?? 0) === 0)}
         >
-          ⤓ Exporter en PDF
+          <Icon name="download" /> Exporter en PDF
         </button>
       </div>
 
@@ -505,7 +506,7 @@ function PlanningView({
           onClick={exportPlanning}
           disabled={empty}
         >
-          ⤓ Exporter le planning en PDF
+          <Icon name="download" /> Exporter le planning en PDF
         </button>
       </div>
 
@@ -627,7 +628,8 @@ function SubjectGroup({
                     onAcceptTopN();
                   }}
                 >
-                  ✓ Accepter {toAccept > 1 ? `les ${toAccept} meilleurs` : 'le meilleur'} (quota restant)
+                  <Icon name="check" /> Accepter {toAccept > 1 ? `les ${toAccept} meilleurs` : 'le meilleur'} (quota
+                  restant)
                 </button>
               )}
               {onExport && (
@@ -638,7 +640,7 @@ function SubjectGroup({
                     onExport();
                   }}
                 >
-                  ⤓ PDF de ce groupe
+                  <Icon name="download" /> PDF de ce groupe
                 </button>
               )}
             </div>

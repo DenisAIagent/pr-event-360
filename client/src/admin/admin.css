@@ -143,8 +143,9 @@
 .kpi .num {
   font-family: var(--font-display);
   font-size: 1.8rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1;
+  color: var(--color-accent);
 }
 .kpi .lbl {
   font-size: var(--text-xs);

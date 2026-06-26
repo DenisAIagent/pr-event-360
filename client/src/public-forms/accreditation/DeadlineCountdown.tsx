@@ -1,5 +1,6 @@
 import { useI18n, type Lang } from '../../i18n';
 import { Countdown } from '../../components/Countdown';
+import { Icon } from '../../components/Icon';
 
 const LOCALE: Record<Lang, string> = { fr: 'fr-FR', en: 'en-GB', pt: 'pt-PT', es: 'es-ES' };
 
@@ -24,7 +25,7 @@ export function DeadlineCountdown({
     <div className="deadline-card">
       <div className="deadline-head">
         <span className="deadline-icon" aria-hidden="true">
-          ⏳
+          <Icon name="clock" />
         </span>
         <div>
           <span className="deadline-label">{t('acc.deadline.label')}</span>

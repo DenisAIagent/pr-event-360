@@ -4,6 +4,7 @@ import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
 import { CopyLink } from '../components/CopyLink';
 import { Countdown } from '../../components/Countdown';
+import { Icon } from '../../components/Icon';
 
 const TABS = [
   { to: 'requests', label: 'Demandes' },
@@ -64,7 +65,7 @@ export function EventLayout() {
           {event?.accreditationDeadline && (
             <div className="deadline-card" style={{ marginTop: 'var(--space-3)' }}>
               <div className="deadline-head">
-                <span className="deadline-icon" aria-hidden="true">⏳</span>
+                <span className="deadline-icon" aria-hidden="true"><Icon name="clock" /></span>
                 <div>
                   <span className="deadline-label">Clôture des inscriptions</span>
                   <strong className="deadline-date">

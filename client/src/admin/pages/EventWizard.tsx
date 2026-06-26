@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { AdminBar } from '../components/AdminBar';
 import { CopyLink } from '../components/CopyLink';
+import { Icon } from '../../components/Icon';
 import type { EventSummary, Lang, Stage } from '../lib/types';
 
 const ALL_LANGS: Lang[] = ['fr', 'en', 'pt', 'es'];
@@ -54,7 +55,7 @@ export function EventWizard() {
         <ol className="wizard-steps">
           {STEPS.map((label, i) => (
             <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>
-              <span className="wizard-step-num">{i < step ? '✓' : i + 1}</span>
+              <span className="wizard-step-num">{i < step ? <Icon name="check" size={14} /> : i + 1}</span>
               <span className="wizard-step-label">{label}</span>
             </li>
           ))}
@@ -462,7 +463,7 @@ function DeadlineStep({
 
 function DoneStep({ eventId, onOpen }: { eventId: string; onOpen: () => void }) {
   return (
-    <StepCard title="🎉 Votre événement est prêt">
+    <StepCard title="Votre événement est prêt">
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Partagez ce lien aux journalistes pour qu'ils demandent leur accréditation :
       </p>

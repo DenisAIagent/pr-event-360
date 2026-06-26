@@ -4,6 +4,7 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventConfig, EventSettings, EmailTemplate, EventRecap, RecapFrequency } from '../lib/types';
 import { TRIGGER_LABEL, TYPE_LABEL } from '../lib/labels';
+import { Icon } from '../../components/Icon';
 
 export function SettingsTab() {
   const { eventId = '' } = useParams();
@@ -172,7 +173,7 @@ function RecapCard({
                   style={{ marginLeft: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'inherit' }}
                   aria-label={`Retirer ${r}`}
                 >
-                  ✕
+                  <Icon name="close" size={12} />
                 </button>
               </span>
             ))}
@@ -385,7 +386,8 @@ function TemplateEditor({ eventId, template, onSaved }: { eventId: string; templ
   return (
     <details style={{ border: '1px solid var(--color-line)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
       <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-        {TRIGGER_LABEL[template.triggerKey] ?? template.triggerKey} · {template.lang.toUpperCase()} {saved && '✓'}
+        {TRIGGER_LABEL[template.triggerKey] ?? template.triggerKey} · {template.lang.toUpperCase()}{' '}
+        {saved && <Icon name="check" />}
       </summary>
       <div className="field" style={{ marginTop: 'var(--space-2)' }}>
         <label>Sujet</label>

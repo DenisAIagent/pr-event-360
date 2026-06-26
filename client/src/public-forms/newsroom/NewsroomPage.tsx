@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
 import { Countdown } from '../../components/Countdown';
+import { Icon } from '../../components/Icon';
 import type { NewsroomAsset, NewsroomAssetKind, NewsroomData } from '../../lib/types';
 
 const GROUPS: { kind: NewsroomAssetKind; label: string }[] = [
@@ -53,7 +54,7 @@ export function NewsroomPage() {
         {data.event.deadline && !data.event.registrationClosed && (
           <div className="deadline-card" style={{ marginBottom: 'var(--space-5)' }}>
             <div className="deadline-head">
-              <span className="deadline-icon" aria-hidden="true">⏳</span>
+              <span className="deadline-icon" aria-hidden="true"><Icon name="clock" /></span>
               <div>
                 <span className="deadline-label">Clôture des accréditations presse</span>
                 <strong className="deadline-date">

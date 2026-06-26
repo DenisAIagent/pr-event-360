@@ -6,6 +6,7 @@ import type { RequestType, SpaceResponse } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StatusBadge } from '../../components/StatusBadge';
 import { brandingStyle } from '../../lib/branding';
+import { Icon } from '../../components/Icon';
 
 /**
  * Espace journaliste. En mode normal, charge les données via le token de l'URL.
@@ -131,8 +132,14 @@ export function SpacePage({
         {t('space.lede', { event: data.event.name })}
       </p>
       <p style={{ marginBottom: 'var(--space-5)' }}>
-        <a href={`/newsroom/${data.event.id}`} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
-          📰 Espace presse & médias à télécharger
+        <a
+          href={`/newsroom/${data.event.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-ghost btn-sm"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
+        >
+          <Icon name="newspaper" /> Espace presse & médias à télécharger
         </a>
       </p>
 
