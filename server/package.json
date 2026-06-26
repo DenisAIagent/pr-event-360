@@ -1,0 +1,47 @@
+{
+  "name": "@pr-event-360/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "dotenv -e ../.env -- tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "dotenv -e ../.env -- vitest run",
+    "migrate": "dotenv -e ../.env -- node-pg-migrate -j ts --tsconfig ./tsconfig.json -m migrations",
+    "migrate:up": "npm run migrate -- up",
+    "migrate:down": "npm run migrate -- down 1",
+    "migrate:redo": "npm run migrate -- down 1 && npm run migrate -- up",
+    "seed": "dotenv -e ../.env -- tsx src/db/seed.ts"
+  },
+  "dependencies": {
+    "@pr-event-360/core": "*",
+    "argon2": "^0.41.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.13.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.10",
+    "@types/supertest": "^6.0.2",
+    "dotenv-cli": "^7.4.4",
+    "node-pg-migrate": "^7.9.0",
+    "supertest": "^7.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

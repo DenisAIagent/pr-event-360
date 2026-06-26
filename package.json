@@ -1,0 +1,22 @@
+{
+  "name": "pr-event-360",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Plateforme de gestion des accréditations presse en festival",
+  "workspaces": [
+    "packages/*",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "migrate": "npm --workspace server run migrate",
+    "migrate:up": "npm --workspace server run migrate -- up",
+    "migrate:down": "npm --workspace server run migrate -- down",
+    "test": "npm --workspace packages/core run test"
+  }
+}
