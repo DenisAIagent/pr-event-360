@@ -3,6 +3,7 @@ import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
 import { CopyLink } from '../components/CopyLink';
+import { PageHero } from '../components/PageHero';
 import { Countdown } from '../../components/Countdown';
 import { Icon } from '../../components/Icon';
 
@@ -49,12 +50,19 @@ export function EventLayout() {
       </div>
 
       <div className="admin-shell">
-        <Link to="/admin" className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-          ← Tous les événements
-        </Link>
-        <h1 style={{ fontSize: 'var(--text-xl)', margin: 'var(--space-1) 0 var(--space-3)' }}>
-          {event?.name ?? '…'}
-        </h1>
+        <PageHero
+          eyebrow={
+            <Link to="/admin" style={{ color: 'inherit', textDecoration: 'none' }}>
+              ← Tous les événements
+            </Link>
+          }
+          title={event?.name ?? '…'}
+          subtitle={
+            event
+              ? `${event.location ?? 'Lieu non précisé'} · ${event.languages.map((l) => l.toUpperCase()).join(' / ')}`
+              : undefined
+          }
+        />
 
         <section className="share-card">
           <div className="share-head">

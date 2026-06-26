@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { AdminBar } from '../components/AdminBar';
+import { PageHero } from '../components/PageHero';
 import type { EventSummary, Team, TeamMember, UserRole } from '../lib/types';
 
 const ROLES: { value: UserRole; label: string }[] = [
@@ -25,10 +26,11 @@ export function TeamPage() {
     <div className="admin">
       <AdminBar />
       <div className="admin-shell stack">
-        <h1 style={{ fontSize: 'var(--text-xl)' }}>Équipe</h1>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>
-          Invitez des collaborateurs, définissez leur niveau d’accès et les événements qu’ils gèrent.
-        </p>
+        <PageHero
+          eyebrow="Configuration"
+          title="Équipe"
+          subtitle="Invitez des collaborateurs, définissez leur niveau d’accès et les événements qu’ils gèrent."
+        />
 
         {team.error && <div className="banner banner-error">{team.error}</div>}
 

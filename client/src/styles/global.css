@@ -122,7 +122,15 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-tint);
+  box-shadow: var(--ring-accent);
+}
+/* Anneau bleu cohérent au clavier sur tous les éléments interactifs. */
+button:focus-visible,
+a:focus-visible,
+.chip:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-accent);
 }
 textarea {
   resize: vertical;
@@ -163,6 +171,11 @@ textarea {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 0.7rem 1.3rem;
@@ -177,11 +190,13 @@ textarea {
 .btn-primary {
   background: var(--color-accent);
   color: white;
-  box-shadow: var(--shadow-sm);
+  /* Glow bleu : signature du CTA principal (réservé à lui). */
+  box-shadow: var(--shadow-accent);
 }
 .btn-primary:hover {
   background: var(--color-accent-strong);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 26px rgba(21, 152, 211, 0.36);
+  transform: translateY(-1px);
 }
 .btn-primary:disabled {
   background: var(--color-ink-faint);

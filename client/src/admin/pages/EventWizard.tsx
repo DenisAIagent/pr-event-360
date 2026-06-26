@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { AdminBar } from '../components/AdminBar';
 import { CopyLink } from '../components/CopyLink';
+import { PageHero } from '../components/PageHero';
 import { Icon } from '../../components/Icon';
 import type { EventSummary, Lang, Stage } from '../lib/types';
 
@@ -51,7 +52,11 @@ export function EventWizard() {
     <div className="admin">
       <AdminBar />
       <div className="admin-shell">
-        <h1 style={{ fontSize: 'var(--text-xl)' }}>Nouvel événement</h1>
+        <PageHero
+          eyebrow="Nouvel événement"
+          title="Créons votre événement"
+          subtitle="Quelques étapes pour tout configurer — vous pourrez ajuster ensuite."
+        />
         <ol className="wizard-steps">
           {STEPS.map((label, i) => (
             <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>

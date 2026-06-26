@@ -54,6 +54,9 @@
   --shadow-sm: 0 1px 3px rgba(7, 20, 47, 0.06), 0 1px 2px rgba(7, 20, 47, 0.04);
   --shadow-md: 0 4px 16px rgba(7, 20, 47, 0.06);
   --shadow-lg: 0 12px 32px rgba(7, 20, 47, 0.1);
+  /* Glow bleu réservé au CTA principal · anneau de focus accessible. */
+  --shadow-accent: 0 6px 18px rgba(21, 152, 211, 0.28);
+  --ring-accent: 0 0 0 3px rgba(21, 152, 211, 0.28);
 
   /* ── Mouvement ────────────────────────────────────────────────── */
   --duration-fast: 120ms;

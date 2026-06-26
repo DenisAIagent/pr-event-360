@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { AdminBar } from '../components/AdminBar';
+import { PageHero } from '../components/PageHero';
 import type { SettingsStatus } from '../lib/types';
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -81,11 +82,11 @@ export function IntegrationsPage() {
     <div className="admin">
       <AdminBar />
       <div className="admin-shell stack">
-        <h1 style={{ fontSize: 'var(--text-xl)' }}>Intégrations</h1>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>
-          Clés API des outils externes. Les valeurs sont chiffrées avant stockage et remplacent
-          la configuration du serveur.
-        </p>
+        <PageHero
+          eyebrow="Configuration"
+          title="Intégrations"
+          subtitle="Clés API des outils externes. Les valeurs sont chiffrées avant stockage et remplacent la configuration du serveur."
+        />
 
         {error && <div className="banner banner-error">{error}</div>}
         {done && <div className="banner banner-success">{done}</div>}
