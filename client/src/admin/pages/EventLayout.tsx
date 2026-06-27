@@ -15,7 +15,7 @@ type Tab = { to: string; label: string; editorOnly?: boolean };
 const PRIMARY: Tab[] = [
   { to: 'requests', label: 'Demandes' },
   { to: 'accreditations', label: 'Accréditations' },
-  { to: 'lineup', label: 'Lineup & créneaux', editorOnly: true },
+  { to: 'lineup', label: 'Configuration', editorOnly: true },
 ];
 const CONTENU: Tab[] = [
   { to: 'media', label: 'Médiathèque' },

@@ -4,7 +4,18 @@ import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
-import type { ArtistWithSlots, Lineup, Stage } from '../lib/types';
+import type { ArtistWithSlots, EventSettings, Lineup, Stage } from '../lib/types';
+import {
+  ConfigForm,
+  TypeWeights,
+  MediaTypes,
+  DeadlineCard,
+  RecapCard,
+  Templates,
+} from '../components/settings/SettingsCards';
+import { BrandingEditor } from '../components/settings/BrandingEditor';
+
+const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Clôture', 'Récap & emails'];
 
 interface WindowDraft {
   day: string;
@@ -20,16 +31,26 @@ export function LineupTab() {
     [eventId],
   );
 
-  // Wizard guidé : on crée d'abord les scènes, puis on passe aux artistes.
-  // Un événement qui a déjà des scènes démarre directement à l'étape « artistes ».
-  const [step, setStep] = useState<'stages' | 'artists'>('stages');
+  // Wizard de configuration en 6 étapes : Scènes → Artistes → Règles → Apparence
+  // → Clôture → Récap. Un événement qui a déjà des scènes démarre à « Artistes ».
+  const [step, setStep] = useState(0);
   const initRef = useRef(false);
   useEffect(() => {
     if (!initRef.current && data) {
       initRef.current = true;
-      if (data.stages.length > 0) setStep('artists');
+      if (data.stages.length > 0) setStep(1);
     }
   }, [data]);
+
+  // Réglages réutilisés aux étapes 3-6 (mêmes cartes que l'onglet Réglages).
+  const settings = useFetch<EventSettings>(
+    () => apiAuthed.get<EventSettings>(`/admin/events/${eventId}/settings`),
+    [eventId],
+  );
+  const ev = useFetch<{ name: string }>(
+    () => apiAuthed.get<{ name: string }>(`/admin/events/${eventId}`),
+    [eventId],
+  );
 
   const [stageName, setStageName] = useState('');
   const [artistName, setArtistName] = useState('');
@@ -88,26 +109,25 @@ export function LineupTab() {
   const artists = data?.artists ?? [];
   const unassigned = artists.filter((a) => !a.stageId);
   const noStage = stages.length === 0;
-  const stepIndex = step === 'stages' ? 0 : 1;
 
   return (
     <div className="stack" style={{ maxWidth: 820 }}>
-      {/* Stepper : étapes cliquables pour guider l'utilisateur */}
+      {/* Stepper de configuration : 6 étapes cliquables */}
       <ol className="wizard-steps">
-        {['Scènes', 'Artistes & lineup'].map((label, i) => (
+        {STEPS.map((label, i) => (
           <li
             key={label}
-            className={i === stepIndex ? 'current' : i < stepIndex ? 'done' : ''}
-            onClick={() => setStep(i === 0 ? 'stages' : 'artists')}
+            className={i === step ? 'current' : i < step ? 'done' : ''}
+            onClick={() => setStep(i)}
             style={{ cursor: 'pointer' }}
           >
-            <span className="wizard-step-num">{i < stepIndex ? <Check size={14} /> : i + 1}</span>
+            <span className="wizard-step-num">{i < step ? <Check size={14} /> : i + 1}</span>
             <span className="wizard-step-label">{label}</span>
           </li>
         ))}
       </ol>
 
-      {step === 'stages' ? (
+      {step === 0 && (
         <>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 1 — créez vos scènes, une à une. Vous pourrez toujours en ajouter ou les corriger plus tard.
@@ -133,34 +153,17 @@ export function LineupTab() {
               {noStage && <span className="muted">Aucune scène pour l’instant.</span>}
             </div>
           </section>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 'var(--space-3)',
-            }}
-          >
-            <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-              {noStage
-                ? 'Ajoutez vos scènes, ou passez directement si vous n’en avez pas.'
-                : `${stages.length} scène${stages.length > 1 ? 's' : ''} créée${stages.length > 1 ? 's' : ''}. Avez-vous terminé ?`}
-            </span>
-            <button className="btn btn-primary" onClick={() => setStep('artists')}>
-              Terminé — passer aux artistes <ArrowRight size={18} />
-            </button>
-          </div>
+          {!noStage && (
+            <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+              {`${stages.length} scène${stages.length > 1 ? 's' : ''} créée${stages.length > 1 ? 's' : ''}.`} Cliquez
+              « Suivant » pour passer aux artistes.
+            </p>
+          )}
         </>
-      ) : (
+      )}
+
+      {step === 1 && (
         <>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => setStep('stages')}
-            style={{ alignSelf: 'flex-start' }}
-          >
-            <ArrowLeft size={16} /> Revenir aux scènes
-          </button>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 2 — ajoutez vos artistes et rattachez chacun à une scène.
           </p>
@@ -281,6 +284,101 @@ export function LineupTab() {
           </section>
         </>
       )}
+
+      {step === 2 && (
+        <>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Étape 3 — réglez les règles de priorité : durée des interviews, quota interviews par défaut,
+            multiplicateurs par type et poids des médias (servent au score des demandes).
+          </p>
+          {settings.data ? (
+            <>
+              <ConfigForm eventId={eventId} config={settings.data.config} />
+              <TypeWeights eventId={eventId} weights={settings.data.typeWeights} onSaved={settings.reload} />
+              <MediaTypes eventId={eventId} mediaTypes={settings.data.mediaTypes} onSaved={settings.reload} />
+            </>
+          ) : (
+            <p className="muted">Chargement…</p>
+          )}
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Étape 4 — habillez vos pages publiques (logo, image de fond, couleurs) avec un aperçu en direct.
+          </p>
+          {settings.data ? (
+            <BrandingEditor
+              eventId={eventId}
+              initial={settings.data.branding}
+              eventName={ev.data?.name ?? 'Événement'}
+            />
+          ) : (
+            <p className="muted">Chargement…</p>
+          )}
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Étape 5 — fixez la date limite d'inscription (optionnel) ; un compte à rebours s'affiche côté public.
+          </p>
+          <DeadlineCard eventId={eventId} />
+        </>
+      )}
+
+      {step === 5 && (
+        <>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Étape 6 — récapitulatifs envoyés à l'équipe et personnalisation des modèles d'emails (optionnel).
+          </p>
+          {settings.data ? (
+            <>
+              <RecapCard eventId={eventId} initial={settings.data.recap} onSaved={settings.reload} />
+              <Templates eventId={eventId} templates={settings.data.templates} onSaved={settings.reload} />
+            </>
+          ) : (
+            <p className="muted">Chargement…</p>
+          )}
+          <div className="card" style={{ borderColor: 'var(--color-accent)', background: 'var(--color-accent-tint)' }}>
+            <strong>Votre événement est prêt.</strong>{' '}
+            <span className="muted">
+              Partagez le lien d'inscription (en haut de cette page) avec les journalistes.
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Navigation entre étapes */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3)',
+          marginTop: 'var(--space-2)',
+        }}
+      >
+        {step > 0 ? (
+          <button className="btn btn-ghost" onClick={() => setStep(step - 1)}>
+            <ArrowLeft size={18} /> {STEPS[step - 1]}
+          </button>
+        ) : (
+          <span />
+        )}
+        {step < STEPS.length - 1 ? (
+          <button className="btn btn-primary" onClick={() => setStep(step + 1)}>
+            Suivant : {STEPS[step + 1]} <ArrowRight size={18} />
+          </button>
+        ) : (
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Configuration terminée.
+          </span>
+        )}
+      </div>
     </div>
   );
 }
