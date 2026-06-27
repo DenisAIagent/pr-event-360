@@ -211,6 +211,8 @@ export interface Slot {
 export interface Stage {
   id: string;
   name: string;
+  photoQuota: number | null;
+  videoQuota: number | null;
 }
 export interface ArtistWithSlots {
   id: string;

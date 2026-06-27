@@ -235,7 +235,11 @@ eventsRouter.post(
 );
 
 // ── Lineup ──────────────────────────────────────────────────────────
-const StageSchema = z.object({ name: z.string().min(1) });
+const StageSchema = z.object({
+  name: z.string().min(1),
+  photoQuota: z.number().int().nonnegative().nullish(),
+  videoQuota: z.number().int().nonnegative().nullish(),
+});
 eventsRouter.post(
   '/:eventId/stages',
   requireEventEditor,
@@ -243,7 +247,7 @@ eventsRouter.post(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof StageSchema>;
-    sendData(res, await addStage(req.params.eventId!, body.name), 201);
+    sendData(res, await addStage(req.params.eventId!, body), 201);
   }),
 );
 
@@ -312,7 +316,7 @@ eventsRouter.put(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof StageSchema>;
-    const stage = await updateStage(req.params.stageId!, req.params.eventId!, body.name);
+    const stage = await updateStage(req.params.stageId!, req.params.eventId!, body);
     if (!stage) throw AppError.notFound('Scène introuvable.');
     sendData(res, stage);
   }),

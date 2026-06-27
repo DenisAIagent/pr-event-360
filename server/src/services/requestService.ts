@@ -1,6 +1,7 @@
 import {
   checkQuota,
   resolveInterviewQuota,
+  resolvePhotoQuota,
   selectNextForPromotion,
   type RequestStatus,
   type RequestType,
@@ -14,6 +15,7 @@ import { findJournalistByToken } from '../db/repositories/journalistRepo';
 import {
   addHistory,
   countAcceptedPhotos,
+  countAcceptedVideos,
   countGrantedInterviews,
   findRequestById,
   insertRequest,
@@ -82,9 +84,13 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
     if (!stage) throw AppError.badRequest('Scène inconnue pour cet événement');
     if (input.type === 'photo_report') {
       const used = await countAcceptedPhotos(stage.id);
-      if (!checkQuota(used, config.photoQuotaPerStage).hasRoom) initialStatus = 'liste_attente';
+      const limit = resolvePhotoQuota(stage.photoQuota, config.photoQuotaPerStage);
+      if (!checkQuota(used, limit).hasRoom) initialStatus = 'liste_attente';
+    } else if (input.type === 'video_report' && stage.videoQuota != null) {
+      // Vidéo : quota uniquement si la scène en définit un (sinon illimité).
+      const used = await countAcceptedVideos(stage.id);
+      if (!checkQuota(used, stage.videoQuota).hasRoom) initialStatus = 'liste_attente';
     }
-    // video_report : pas de quota dédié dans le PRD → toujours pas_encore_traite.
   }
 
   const request = await withTransaction(async (db) => {
@@ -190,12 +196,26 @@ async function tryPromote(eventId: string, changed: RequestRecord): Promise<void
     if (!checkQuota(used, limit).hasRoom) return;
     await promoteBest(eventId, config, (row) => row.type === 'interview' && row.artistId === artist.id);
   } else if (changed.type === 'photo_report' && changed.stageId) {
+    const stage = await findStage(changed.stageId, eventId);
+    if (!stage) return;
     const used = await countAcceptedPhotos(changed.stageId);
-    if (!checkQuota(used, config.photoQuotaPerStage).hasRoom) return;
+    const limit = resolvePhotoQuota(stage.photoQuota, config.photoQuotaPerStage);
+    if (!checkQuota(used, limit).hasRoom) return;
     await promoteBest(
       eventId,
       config,
       (row) => row.type === 'photo_report' && row.stageId === changed.stageId,
+    );
+  } else if (changed.type === 'video_report' && changed.stageId) {
+    const stage = await findStage(changed.stageId, eventId);
+    // Pas de quota vidéo défini ⇒ illimité ⇒ aucune promotion à déclencher.
+    if (!stage || stage.videoQuota == null) return;
+    const used = await countAcceptedVideos(changed.stageId);
+    if (!checkQuota(used, stage.videoQuota).hasRoom) return;
+    await promoteBest(
+      eventId,
+      config,
+      (row) => row.type === 'video_report' && row.stageId === changed.stageId,
     );
   }
 }

@@ -1,10 +1,16 @@
-import { resolveInterviewQuota, type RequestStatus, type RequestType } from '@pr-event-360/core';
+import {
+  resolveInterviewQuota,
+  resolvePhotoQuota,
+  type RequestStatus,
+  type RequestType,
+} from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
 import { nowMs } from '../lib/clock';
 import { getConfig } from '../db/repositories/eventRepo';
-import { listArtists } from '../db/repositories/lineupRepo';
+import { listArtists, listStages } from '../db/repositories/lineupRepo';
 import {
   acceptedPhotoCountsByEvent,
+  acceptedVideoCountsByEvent,
   getEventKpis,
   grantedInterviewCountsByEvent,
   listEnrichedByEvent,
@@ -58,14 +64,18 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
   const config = await getConfig(eventId);
   if (!config) throw AppError.notFound('Configuration introuvable');
 
-  const [enriched, artists, grantedByArtist, acceptedByStage] = await Promise.all([
-    listEnrichedByEvent(eventId),
-    listArtists(eventId),
-    grantedInterviewCountsByEvent(eventId),
-    acceptedPhotoCountsByEvent(eventId),
-  ]);
+  const [enriched, artists, stages, grantedByArtist, acceptedPhotoByStage, acceptedVideoByStage] =
+    await Promise.all([
+      listEnrichedByEvent(eventId),
+      listArtists(eventId),
+      listStages(eventId),
+      grantedInterviewCountsByEvent(eventId),
+      acceptedPhotoCountsByEvent(eventId),
+      acceptedVideoCountsByEvent(eventId),
+    ]);
 
   const artistQuota = new Map(artists.map((a) => [a.id, a.itwQuota]));
+  const stageById = new Map(stages.map((s) => [s.id, s]));
   const now = nowMs();
 
   const items: QueueItem[] = enriched
@@ -79,7 +89,16 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
           limit: resolveInterviewQuota(artistQuota.get(r.artistId) ?? null, config.defaultItwQuota),
         };
       } else if (r.type === 'photo_report' && r.stageId) {
-        quota = { used: acceptedByStage.get(r.stageId) ?? 0, limit: config.photoQuotaPerStage };
+        quota = {
+          used: acceptedPhotoByStage.get(r.stageId) ?? 0,
+          limit: resolvePhotoQuota(stageById.get(r.stageId)?.photoQuota, config.photoQuotaPerStage),
+        };
+      } else if (r.type === 'video_report' && r.stageId) {
+        // Vidéo : quota uniquement si la scène en définit un (sinon illimité).
+        const videoLimit = stageById.get(r.stageId)?.videoQuota;
+        if (videoLimit != null) {
+          quota = { used: acceptedVideoByStage.get(r.stageId) ?? 0, limit: videoLimit };
+        }
       }
       const slot =
         r.slotDay && r.slotStart ? `${r.slotDay} ${r.slotStart}–${r.slotEnd ?? ''}` : null;

@@ -155,6 +155,15 @@ export async function countAcceptedPhotos(stageId: string, db: Queryable = pool)
   return Number(rows[0]!.count);
 }
 
+export async function countAcceptedVideos(stageId: string, db: Queryable = pool): Promise<number> {
+  const { rows } = await db.query<{ count: string }>(
+    `SELECT count(*)::int AS count FROM requests
+     WHERE type = 'video_report' AND stage_id = $1 AND status = 'acceptee'`,
+    [stageId],
+  );
+  return Number(rows[0]!.count);
+}
+
 // ── File enrichie (back-office) + scoring inputs ────────────────────
 export interface EnrichedRequestRow {
   id: string;
@@ -280,6 +289,20 @@ export async function acceptedPhotoCountsByEvent(
   const { rows } = await db.query<{ stage_id: string; count: string }>(
     `SELECT stage_id, count(*)::int AS count FROM requests
      WHERE event_id = $1 AND type = 'photo_report' AND stage_id IS NOT NULL AND status = 'acceptee'
+     GROUP BY stage_id`,
+    [eventId],
+  );
+  return new Map(rows.map((r) => [r.stage_id, Number(r.count)]));
+}
+
+/** Comptages de reportages vidéo acceptés, groupés par scène (pour la file). */
+export async function acceptedVideoCountsByEvent(
+  eventId: string,
+  db: Queryable = pool,
+): Promise<Map<string, number>> {
+  const { rows } = await db.query<{ stage_id: string; count: string }>(
+    `SELECT stage_id, count(*)::int AS count FROM requests
+     WHERE event_id = $1 AND type = 'video_report' AND stage_id IS NOT NULL AND status = 'acceptee'
      GROUP BY stage_id`,
     [eventId],
   );

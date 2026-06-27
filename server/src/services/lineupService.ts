@@ -14,9 +14,12 @@ import {
 } from '../db/repositories/lineupRepo';
 import type { Artist, InterviewSlot, Stage } from '../domain';
 
-export async function addStage(eventId: string, name: string): Promise<Stage> {
+export async function addStage(
+  eventId: string,
+  input: { name: string; photoQuota?: number | null; videoQuota?: number | null },
+): Promise<Stage> {
   try {
-    return await insertStage({ eventId, name });
+    return await insertStage({ eventId, ...input });
   } catch (err) {
     if (isUnique(err)) throw AppError.conflict('Une scène porte déjà ce nom dans cet événement');
     throw err;

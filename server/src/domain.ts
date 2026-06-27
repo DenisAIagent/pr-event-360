@@ -81,6 +81,8 @@ export interface Stage {
   id: string;
   eventId: string;
   name: string;
+  photoQuota: number | null;
+  videoQuota: number | null;
 }
 
 export interface Artist {

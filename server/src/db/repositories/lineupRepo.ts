@@ -7,23 +7,33 @@ interface StageRow {
   id: string;
   event_id: string;
   name: string;
+  photo_quota: number | null;
+  video_quota: number | null;
 }
-const mapStage = (r: StageRow): Stage => ({ id: r.id, eventId: r.event_id, name: r.name });
+const STAGE_COLS = 'id, event_id, name, photo_quota, video_quota';
+const mapStage = (r: StageRow): Stage => ({
+  id: r.id,
+  eventId: r.event_id,
+  name: r.name,
+  photoQuota: r.photo_quota,
+  videoQuota: r.video_quota,
+});
 
 export async function insertStage(
-  input: { eventId: string; name: string },
+  input: { eventId: string; name: string; photoQuota?: number | null; videoQuota?: number | null },
   db: Queryable = pool,
 ): Promise<Stage> {
   const { rows } = await db.query<StageRow>(
-    `INSERT INTO stages (event_id, name) VALUES ($1, $2) RETURNING id, event_id, name`,
-    [input.eventId, input.name],
+    `INSERT INTO stages (event_id, name, photo_quota, video_quota)
+     VALUES ($1, $2, $3, $4) RETURNING ${STAGE_COLS}`,
+    [input.eventId, input.name, input.photoQuota ?? null, input.videoQuota ?? null],
   );
   return mapStage(rows[0]!);
 }
 
 export async function listStages(eventId: string, db: Queryable = pool): Promise<Stage[]> {
   const { rows } = await db.query<StageRow>(
-    `SELECT id, event_id, name FROM stages WHERE event_id = $1 ORDER BY name`,
+    `SELECT ${STAGE_COLS} FROM stages WHERE event_id = $1 ORDER BY name`,
     [eventId],
   );
   return rows.map(mapStage);
@@ -35,22 +45,23 @@ export async function findStage(
   db: Queryable = pool,
 ): Promise<Stage | null> {
   const { rows } = await db.query<StageRow>(
-    `SELECT id, event_id, name FROM stages WHERE id = $1 AND event_id = $2`,
+    `SELECT ${STAGE_COLS} FROM stages WHERE id = $1 AND event_id = $2`,
     [id, eventId],
   );
   return rows[0] ? mapStage(rows[0]) : null;
 }
 
-/** Renomme une scène. Scopé à l'événement. */
+/** Corrige une scène : nom + quotas photo/vidéo. Scopé à l'événement. */
 export async function updateStage(
   id: string,
   eventId: string,
-  name: string,
+  input: { name: string; photoQuota?: number | null; videoQuota?: number | null },
   db: Queryable = pool,
 ): Promise<Stage | null> {
   const { rows } = await db.query<StageRow>(
-    `UPDATE stages SET name = $3 WHERE id = $1 AND event_id = $2 RETURNING id, event_id, name`,
-    [id, eventId, name],
+    `UPDATE stages SET name = $3, photo_quota = $4, video_quota = $5
+     WHERE id = $1 AND event_id = $2 RETURNING ${STAGE_COLS}`,
+    [id, eventId, input.name, input.photoQuota ?? null, input.videoQuota ?? null],
   );
   return rows[0] ? mapStage(rows[0]) : null;
 }
