@@ -2,8 +2,8 @@
 
 > Modèle pré-rempli pour la plateforme **PR Event 360**. À compléter par chaque
 > organisateur d'événement (responsable de traitement). PR Event 360 est éditée par
-> **MDMC OÜ**, société de droit estonien (UE) — _registre du commerce estonien (registrikood) :
-> [à compléter] · siège : [à compléter], Estonie_ — qui agit comme **sous-traitant** (art. 28) ;
+> **MDMC OÜ**, société de droit estonien (UE) — registre du commerce estonien (registrikood)
+> n° 16466485, siège : Sepapaja tn 6, 15551 Tallinn, Estonie — qui agit comme **sous-traitant** (art. 28) ;
 > il tient le présent registre côté éditeur et fournit ce modèle à ses clients.
 >
 > **Responsable de traitement** : _[organisation, adresse, représentant légal]_

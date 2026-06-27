@@ -25,8 +25,10 @@ export function PrivacyPage() {
           <p>
             Le responsable du traitement est <strong>l'organisateur de l'événement</strong> auquel vous
             demandez votre accréditation. La plateforme PR&nbsp;Event&nbsp;360 est éditée par{' '}
-            <strong>MDMC&nbsp;OÜ</strong>, société de droit estonien (Union européenne), qui agit en tant que{' '}
-            <strong>sous-traitant technique</strong> (art. 28 RGPD) pour le compte de cet organisateur.
+            <strong>MDMC&nbsp;OÜ</strong>, société de droit estonien (Union européenne), immatriculée au
+            registre du commerce estonien sous le n°&nbsp;16466485, siège : Sepapaja tn 6, 15551 Tallinn,
+            Estonie, qui agit en tant que <strong>sous-traitant technique</strong> (art. 28 RGPD) pour le
+            compte de cet organisateur.
             Pour toute question relative à vos données : <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.
           </p>
         </div>
