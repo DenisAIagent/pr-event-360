@@ -469,6 +469,97 @@ select.status-select {
   transform: translateX(0);
 }
 
+/* ── Visite guidée d'accueil (IntroTour) ── */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(7, 20, 47, 0.55);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+.tour-card {
+  position: relative;
+  width: min(520px, 100%);
+  background: var(--color-surface);
+  /* La modale est rendue dans la barre admin (texte blanc) : on rétablit l'encre. */
+  color: var(--color-ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  text-align: center;
+  animation: tour-in 240ms var(--ease-out-expo);
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tour-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-ink-faint);
+  display: inline-flex;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+.tour-close:hover {
+  color: var(--color-ink);
+  background: var(--color-bg);
+}
+.tour-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto var(--space-3);
+}
+.tour-card h2 {
+  font-size: var(--text-xl);
+  color: var(--color-ink);
+  margin-bottom: var(--space-2);
+}
+.tour-card p {
+  color: var(--color-ink-soft);
+  line-height: 1.6;
+  max-width: 42ch;
+  margin: 0 auto;
+}
+.tour-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: var(--space-4) 0;
+}
+.tour-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-line);
+  transition:
+    width var(--duration-normal) var(--ease-out-expo),
+    background var(--duration-normal);
+}
+.tour-dots span.on {
+  width: 22px;
+  background: var(--color-accent);
+}
+.tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 /* Wizard de création d'événement */
 .wizard-steps {
   list-style: none;
