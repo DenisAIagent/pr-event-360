@@ -5,7 +5,8 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth } from '../../middleware/auth';
-import { login, registerUser } from '../../services/authService';
+import { login, completeMfaLogin, registerUser } from '../../services/authService';
+import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
 
@@ -27,6 +28,61 @@ authRouter.post(
     const { email, password } = req.body as z.infer<typeof LoginSchema>;
     const result = await login(email, password);
     sendData(res, result);
+  }),
+);
+
+// ── Double authentification (TOTP) ──────────────────────────────────
+const MfaCodeSchema = z.object({ code: z.string().min(6).max(8) });
+const mfaLoginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+
+// 2e étape du login : challenge (issu de /login) + code TOTP → jeton de session.
+authRouter.post(
+  '/login/mfa',
+  mfaLoginLimiter,
+  validateBody(z.object({ challenge: z.string().min(1), code: z.string().min(6).max(8) })),
+  asyncHandler(async (req, res) => {
+    const { challenge, code } = req.body as { challenge: string; code: string };
+    sendData(res, await completeMfaLogin(challenge, code));
+  }),
+);
+
+// État MFA du compte connecté.
+authRouter.get(
+  '/mfa/status',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    sendData(res, await getMfaStatus(req.user!.sub));
+  }),
+);
+
+// Démarre l'enrôlement : renvoie le QR code à scanner.
+authRouter.post(
+  '/mfa/setup',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    sendData(res, await startMfaSetup(req.user!.sub, req.user!.email));
+  }),
+);
+
+// Active la MFA après vérification d'un premier code.
+authRouter.post(
+  '/mfa/enable',
+  requireAuth,
+  validateBody(MfaCodeSchema),
+  asyncHandler(async (req, res) => {
+    await confirmMfa(req.user!.sub, (req.body as { code: string }).code);
+    sendData(res, { enabled: true });
+  }),
+);
+
+// Désactive la MFA (exige un code valide).
+authRouter.post(
+  '/mfa/disable',
+  requireAuth,
+  validateBody(MfaCodeSchema),
+  asyncHandler(async (req, res) => {
+    await disableMfa(req.user!.sub, (req.body as { code: string }).code);
+    sendData(res, { enabled: false });
   }),
 );
 

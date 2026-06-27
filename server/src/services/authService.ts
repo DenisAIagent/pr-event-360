@@ -1,9 +1,20 @@
 import argon2 from 'argon2';
 import type { UserRole } from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
-import { signToken } from '../lib/jwt';
-import { createUser, findUserByEmailWithHash } from '../db/repositories/userRepo';
+import { signToken, signMfaChallenge, verifyMfaChallenge } from '../lib/jwt';
+import {
+  createUser,
+  findUserByEmailWithHash,
+  findUserById,
+  getUserMfa,
+} from '../db/repositories/userRepo';
+import { verifyMfaCode } from './mfaService';
 import type { User } from '../domain';
+
+/** Résultat d'un login : soit un jeton de session, soit un challenge MFA à compléter. */
+export type LoginResult =
+  | { token: string; user: User }
+  | { mfaRequired: true; challenge: string };
 
 export async function registerUser(input: {
   email: string;
@@ -25,10 +36,7 @@ export async function registerUser(input: {
   }
 }
 
-export async function login(
-  email: string,
-  password: string,
-): Promise<{ token: string; user: User }> {
+export async function login(email: string, password: string): Promise<LoginResult> {
   const found = await findUserByEmailWithHash(email.toLowerCase());
   // Message générique : on ne révèle pas si l'email existe.
   const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
@@ -45,8 +53,35 @@ export async function login(
     throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
   }
 
+  // Si la double authentification est active : on n'émet PAS encore de jeton de session,
+  // mais un challenge court à échanger contre un code TOTP valide.
+  const mfa = await getUserMfa(found.user.id);
+  if (mfa?.enabled) {
+    return { mfaRequired: true, challenge: signMfaChallenge(found.user.id) };
+  }
+
   const token = signToken({ sub: found.user.id, email: found.user.email, role: found.user.role });
   return { token, user: found.user };
+}
+
+/** Deuxième étape du login MFA : échange le challenge + code TOTP contre un jeton de session. */
+export async function completeMfaLogin(
+  challenge: string,
+  code: string,
+): Promise<{ token: string; user: User }> {
+  let userId: string;
+  try {
+    userId = verifyMfaChallenge(challenge);
+  } catch {
+    throw AppError.unauthorized('Session de connexion expirée, recommencez.');
+  }
+  if (!(await verifyMfaCode(userId, code))) {
+    throw AppError.unauthorized('Code de double authentification incorrect.');
+  }
+  const user = await findUserById(userId);
+  if (!user || !user.active) throw AppError.unauthorized('Compte indisponible.');
+  const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  return { token, user };
 }
 
 function isUniqueViolation(err: unknown): boolean {

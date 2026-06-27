@@ -112,3 +112,32 @@ export async function countActiveAdmins(db: Queryable = pool): Promise<number> {
   );
   return Number(rows[0]!.count);
 }
+
+// ── Double authentification (TOTP) ──────────────────────────────────
+/** État MFA d'un utilisateur : activé + secret chiffré (ou null). */
+export async function getUserMfa(
+  userId: string,
+  db: Queryable = pool,
+): Promise<{ enabled: boolean; secret: string | null } | null> {
+  const { rows } = await db.query<{ mfa_enabled: boolean; mfa_secret: string | null }>(
+    'SELECT mfa_enabled, mfa_secret FROM users WHERE id = $1',
+    [userId],
+  );
+  const r = rows[0];
+  return r ? { enabled: r.mfa_enabled, secret: r.mfa_secret } : null;
+}
+
+/** Enregistre un secret TOTP (chiffré) en attente d'activation (mfa_enabled reste false). */
+export async function setUserMfaSecret(userId: string, secretEnc: string, db: Queryable = pool): Promise<void> {
+  await db.query('UPDATE users SET mfa_secret = $2, mfa_enabled = false WHERE id = $1', [userId, secretEnc]);
+}
+
+/** Active la double authentification (après vérification d'un premier code). */
+export async function enableUserMfa(userId: string, db: Queryable = pool): Promise<void> {
+  await db.query('UPDATE users SET mfa_enabled = true WHERE id = $1', [userId]);
+}
+
+/** Désactive la double authentification et efface le secret. */
+export async function clearUserMfa(userId: string, db: Queryable = pool): Promise<void> {
+  await db.query('UPDATE users SET mfa_secret = NULL, mfa_enabled = false WHERE id = $1', [userId]);
+}

@@ -20,6 +20,7 @@ import { CommunicationsTab } from './pages/CommunicationsTab';
 import { PreviewTab } from './pages/PreviewTab';
 import { TeamPage } from './pages/TeamPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
+import { SecurityPage } from './pages/SecurityPage';
 import { EventWizard } from './pages/EventWizard';
 import './admin.css';
 
@@ -42,6 +43,7 @@ export function AdminApp() {
         <Route path="accept-invite" element={<AcceptInvitePage />} />
         <Route element={<ProtectedRoute />}>
           <Route index element={<EventsListPage />} />
+          <Route path="security" element={<SecurityPage />} />
           <Route path="events/new" element={<EventWizard />} />
           <Route element={<AdminRoute />}>
             <Route path="team" element={<TeamPage />} />

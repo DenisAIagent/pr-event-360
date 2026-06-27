@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Compass } from 'lucide-react';
+import { Compass, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { IntroTour } from './IntroTour';
 
@@ -58,7 +58,13 @@ export function AdminBar() {
           >
             <Compass size={16} /> Découvrir
           </button>
-          <span>{user?.fullName}</span>
+          <Link
+            to="/admin/security"
+            title="Sécurité du compte (double authentification)"
+            style={{ color: 'var(--color-bg)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
+            <ShieldCheck size={15} /> {user?.fullName}
+          </Link>
           <button
             className="btn btn-ghost btn-sm"
             onClick={logout}

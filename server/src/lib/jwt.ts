@@ -18,3 +18,18 @@ export function signToken(claims: AuthClaims): string {
 export function verifyToken(token: string): AuthClaims {
   return jwt.verify(token, env.JWT_SECRET) as AuthClaims;
 }
+
+// ── Challenge MFA : jeton court (5 min) émis après le mot de passe, échangé contre
+// un vrai jeton de session une fois le code TOTP validé. Marqué typ:'mfa' pour ne
+// jamais pouvoir servir de jeton de session.
+const MFA_CHALLENGE_EXPIRES_IN = '5m';
+
+export function signMfaChallenge(userId: string): string {
+  return jwt.sign({ sub: userId, typ: 'mfa' }, env.JWT_SECRET, { expiresIn: MFA_CHALLENGE_EXPIRES_IN });
+}
+
+export function verifyMfaChallenge(token: string): string {
+  const payload = jwt.verify(token, env.JWT_SECRET) as { sub: string; typ?: string };
+  if (payload.typ !== 'mfa') throw new Error('Jeton de challenge MFA invalide');
+  return payload.sub;
+}

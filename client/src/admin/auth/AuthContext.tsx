@@ -10,10 +10,14 @@ interface AuthUser {
   role: UserRole;
 }
 
+/** Le login renvoie un challenge MFA si la double authentification est active. */
+type LoginOutcome = { mfaRequired: true; challenge: string } | undefined;
+
 interface AuthValue {
   token: string | null;
   user: AuthUser | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginOutcome>;
+  completeMfa: (challenge: string, code: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -32,10 +36,22 @@ function readStored(): { token: string; user: AuthUser } | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(() => readStored());
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/login', {
-      email,
-      password,
+  const login = useCallback(async (email: string, password: string): Promise<LoginOutcome> => {
+    const result = await api.post<
+      { token: string; user: AuthUser } | { mfaRequired: true; challenge: string }
+    >('/admin/auth/login', { email, password });
+    if ('mfaRequired' in result) {
+      return { mfaRequired: true, challenge: result.challenge };
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+    setState(result);
+    return undefined;
+  }, []);
+
+  const completeMfa = useCallback(async (challenge: string, code: string) => {
+    const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/login/mfa', {
+      challenge,
+      code,
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     setState(result);
@@ -47,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ token: state?.token ?? null, user: state?.user ?? null, login, logout }),
-    [state, login, logout],
+    () => ({ token: state?.token ?? null, user: state?.user ?? null, login, completeMfa, logout }),
+    [state, login, completeMfa, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
