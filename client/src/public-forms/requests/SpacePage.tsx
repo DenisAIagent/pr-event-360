@@ -27,7 +27,6 @@ export function SpacePage({
   const [type, setType] = useState<RequestType>('interview');
   const [artistId, setArtistId] = useState('');
   const [slotId, setSlotId] = useState('');
-  const [stageId, setStageId] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,15 +67,14 @@ export function SpacePage({
     try {
       await api.post(`/public/space/${token}/requests`, {
         type,
-        artistId: type === 'interview' ? artistId || null : null,
+        artistId: artistId || null,
         slotId: type === 'interview' ? slotId || null : null,
-        stageId: type !== 'interview' ? stageId || null : null,
+        stageId: null,
         message: message || null,
       });
       setSent(true);
       setArtistId('');
       setSlotId('');
-      setStageId('');
       setMessage('');
       await load();
     } catch (err) {
@@ -101,8 +99,7 @@ export function SpacePage({
     );
   }
 
-  const canSubmit =
-    !readOnly && !submitting && (type === 'interview' ? !!artistId : !!stageId);
+  const canSubmit = !readOnly && !submitting && !!artistId;
 
   return (
     <div style={brandingStyle(data.event.branding)}>
@@ -209,13 +206,13 @@ export function SpacePage({
           ) : (
             <div className="field">
               <label>
-                {t('space.stage')} <span className="req">*</span>
+                {t('space.artist')} <span className="req">*</span>
               </label>
-              <select value={stageId} onChange={(e) => setStageId(e.target.value)} required>
+              <select value={artistId} onChange={(e) => setArtistId(e.target.value)} required>
                 <option value="">{t('space.select')}</option>
-                {data.lineup.stages.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
+                {data.lineup.artists.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
                   </option>
                 ))}
               </select>

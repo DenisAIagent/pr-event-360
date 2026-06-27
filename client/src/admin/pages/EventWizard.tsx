@@ -405,7 +405,6 @@ function ConfigStep({
     { key: 'itwDurationMin', label: 'Durée interview (min)' },
     { key: 'itwBufferMin', label: 'Battement entre interviews (min)' },
     { key: 'defaultItwQuota', label: 'Quota interviews par artiste (défaut)' },
-    { key: 'photoQuotaPerStage', label: 'Quota photo par scène' },
     { key: 'ageBonusPerHour', label: 'Bonus de score / heure d’ancienneté' },
     { key: 'ageBonusCap', label: 'Plafond du bonus d’ancienneté (h)' },
   ];

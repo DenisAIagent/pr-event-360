@@ -54,13 +54,9 @@ const RequestSchema = z
     stageId: z.string().uuid().nullish(),
     message: z.string().nullish(),
   })
-  .refine((d) => (d.type === 'interview' ? !!d.artistId : true), {
-    message: 'Un artiste est requis pour une interview',
+  .refine((d) => !!d.artistId, {
+    message: 'Un artiste est requis',
     path: ['artistId'],
-  })
-  .refine((d) => (d.type !== 'interview' ? !!d.stageId : true), {
-    message: 'Une scène est requise pour un reportage',
-    path: ['stageId'],
   });
 
 publicSpaceRouter.post(

@@ -1,13 +1,8 @@
-import {
-  resolveInterviewQuota,
-  resolvePhotoQuota,
-  type RequestStatus,
-  type RequestType,
-} from '@pr-event-360/core';
+import { resolveInterviewQuota, type RequestStatus, type RequestType } from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
 import { nowMs } from '../lib/clock';
 import { getConfig } from '../db/repositories/eventRepo';
-import { listArtists, listStages } from '../db/repositories/lineupRepo';
+import { listArtists } from '../db/repositories/lineupRepo';
 import {
   acceptedPhotoCountsByEvent,
   acceptedVideoCountsByEvent,
@@ -64,41 +59,35 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
   const config = await getConfig(eventId);
   if (!config) throw AppError.notFound('Configuration introuvable');
 
-  const [enriched, artists, stages, grantedByArtist, acceptedPhotoByStage, acceptedVideoByStage] =
+  const [enriched, artists, grantedByArtist, acceptedPhotoByArtist, acceptedVideoByArtist] =
     await Promise.all([
       listEnrichedByEvent(eventId),
       listArtists(eventId),
-      listStages(eventId),
       grantedInterviewCountsByEvent(eventId),
       acceptedPhotoCountsByEvent(eventId),
       acceptedVideoCountsByEvent(eventId),
     ]);
 
-  const artistQuota = new Map(artists.map((a) => [a.id, a.itwQuota]));
-  const stageById = new Map(stages.map((s) => [s.id, s]));
+  const artistById = new Map(artists.map((a) => [a.id, a]));
   const now = nowMs();
 
   const items: QueueItem[] = enriched
     .filter((r) => (filters.type ? r.type === filters.type : true))
     .filter((r) => (filters.status ? r.status === filters.status : true))
     .map((r) => {
+      // Tous les quotas sont propres à l'artiste (interviews / photo / vidéo).
+      // NULL ⇒ illimité ⇒ pas de compteur affiché.
       let quota: QueueItem['quota'] = null;
+      const artist = r.artistId ? artistById.get(r.artistId) : undefined;
       if (r.type === 'interview' && r.artistId) {
         quota = {
           used: grantedByArtist.get(r.artistId) ?? 0,
-          limit: resolveInterviewQuota(artistQuota.get(r.artistId) ?? null, config.defaultItwQuota),
+          limit: resolveInterviewQuota(artist?.itwQuota ?? null, config.defaultItwQuota),
         };
-      } else if (r.type === 'photo_report' && r.stageId) {
-        quota = {
-          used: acceptedPhotoByStage.get(r.stageId) ?? 0,
-          limit: resolvePhotoQuota(stageById.get(r.stageId)?.photoQuota, config.photoQuotaPerStage),
-        };
-      } else if (r.type === 'video_report' && r.stageId) {
-        // Vidéo : quota uniquement si la scène en définit un (sinon illimité).
-        const videoLimit = stageById.get(r.stageId)?.videoQuota;
-        if (videoLimit != null) {
-          quota = { used: acceptedVideoByStage.get(r.stageId) ?? 0, limit: videoLimit };
-        }
+      } else if (r.type === 'photo_report' && r.artistId && artist?.photoQuota != null) {
+        quota = { used: acceptedPhotoByArtist.get(r.artistId) ?? 0, limit: artist.photoQuota };
+      } else if (r.type === 'video_report' && r.artistId && artist?.videoQuota != null) {
+        quota = { used: acceptedVideoByArtist.get(r.artistId) ?? 0, limit: artist.videoQuota };
       }
       const slot =
         r.slotDay && r.slotStart ? `${r.slotDay} ${r.slotStart}–${r.slotEnd ?? ''}` : null;

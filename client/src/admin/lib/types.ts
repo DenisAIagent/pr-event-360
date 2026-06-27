@@ -211,14 +211,14 @@ export interface Slot {
 export interface Stage {
   id: string;
   name: string;
-  photoQuota: number | null;
-  videoQuota: number | null;
 }
 export interface ArtistWithSlots {
   id: string;
   name: string;
   stageId: string | null;
   itwQuota: number | null;
+  photoQuota: number | null;
+  videoQuota: number | null;
   slots: Slot[];
 }
 export interface Lineup {

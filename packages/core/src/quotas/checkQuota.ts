@@ -28,18 +28,6 @@ export function resolveInterviewQuota(
   return artistQuota ?? eventDefaultQuota;
 }
 
-/**
- * Quota photo effectif d'une scène : son quota spécifique s'il est défini,
- * sinon le quota par défaut de l'événement (photographes par scène).
- * Le quota vidéo, lui, n'a pas de défaut d'événement : NULL ⇒ illimité.
- */
-export function resolvePhotoQuota(
-  stageQuota: number | null | undefined,
-  eventDefaultQuota: number,
-): number {
-  return stageQuota ?? eventDefaultQuota;
-}
-
 /** Statut de quota à partir d'un nombre de places utilisées et d'un plafond. */
 export function checkQuota(used: number, limit: number): QuotaStatus {
   if (!Number.isFinite(limit) || limit < 0) {

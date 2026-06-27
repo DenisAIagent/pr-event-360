@@ -215,7 +215,6 @@ function ConfigForm({ eventId, config }: { eventId: string; config: EventConfig 
         <Num label="Durée interview (min)" value={c.itwDurationMin} onChange={num('itwDurationMin')} />
         <Num label="Battement entre interviews (min)" value={c.itwBufferMin} onChange={num('itwBufferMin')} />
         <Num label="Quota interviews / artiste (défaut)" value={c.defaultItwQuota} onChange={num('defaultItwQuota')} />
-        <Num label="Quota photographes / scène" value={c.photoQuotaPerStage} onChange={num('photoQuotaPerStage')} />
         <Num label="Bonus d'ancienneté / heure" value={c.ageBonusPerHour} onChange={num('ageBonusPerHour')} step="0.1" />
         <Num label="Plafond du bonus d'ancienneté" value={c.ageBonusCap} onChange={num('ageBonusCap')} />
       </div>

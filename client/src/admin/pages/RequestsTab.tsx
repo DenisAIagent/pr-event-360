@@ -90,7 +90,7 @@ export function RequestsTab() {
   const VIEWS: { value: View; label: string }[] = [
     { value: 'queue', label: 'File globale' },
     { value: 'byArtist', label: 'Interviews par artiste' },
-    { value: 'byStage', label: 'Reportages par scène' },
+    { value: 'byStage', label: 'Reportages par artiste' },
     { value: 'planning', label: 'Planning par créneau' },
   ];
 
@@ -128,10 +128,10 @@ export function RequestsTab() {
         />
       )}
       {view === 'byArtist' && (
-        <GroupedView eventId={eventId} eventName={eventName} branding={branding} groupBy="artist" statusF={statusF} setStatusF={setStatusF} onChanged={() => dash.reload()} />
+        <GroupedView eventId={eventId} eventName={eventName} branding={branding} mode="interviews" statusF={statusF} setStatusF={setStatusF} onChanged={() => dash.reload()} />
       )}
       {view === 'byStage' && (
-        <GroupedView eventId={eventId} eventName={eventName} branding={branding} groupBy="stage" statusF={statusF} setStatusF={setStatusF} onChanged={() => dash.reload()} />
+        <GroupedView eventId={eventId} eventName={eventName} branding={branding} mode="reports" statusF={statusF} setStatusF={setStatusF} onChanged={() => dash.reload()} />
       )}
       {view === 'planning' && (
         <PlanningView eventId={eventId} eventName={eventName} branding={branding} statusF={statusF} setStatusF={setStatusF} onChanged={() => dash.reload()} />
@@ -309,7 +309,7 @@ function GroupedView({
   eventId,
   eventName,
   branding,
-  groupBy,
+  mode,
   statusF,
   setStatusF,
   onChanged,
@@ -317,7 +317,7 @@ function GroupedView({
   eventId: string;
   eventName: string;
   branding: EventBranding | null;
-  groupBy: 'artist' | 'stage';
+  mode: 'interviews' | 'reports';
   statusF: RequestStatus | 'all';
   setStatusF: (s: RequestStatus | 'all') => void;
   onChanged: () => void;
@@ -372,30 +372,30 @@ function GroupedView({
     }
   }
 
-  // Filtre les items pertinents pour ce mode de groupement.
+  // Filtre les items pertinents pour ce mode (tous deux regroupés par artiste).
   const relevant = useMemo(() => {
     const all = queue.data ?? [];
-    if (groupBy === 'artist') return all.filter((i) => i.type === 'interview');
+    if (mode === 'interviews') return all.filter((i) => i.type === 'interview');
     return all.filter(
       (i) =>
         (i.type === 'photo_report' || i.type === 'video_report') &&
         (reportType === 'all' || i.type === reportType),
     );
-  }, [queue.data, groupBy, reportType]);
+  }, [queue.data, mode, reportType]);
 
-  // Regroupe par sujet (artiste ou scène).
+  // Regroupe par artiste.
   const grouped = useMemo(() => {
     const map = new Map<string, QueueItem[]>();
     for (const item of relevant) {
-      const key = (groupBy === 'artist' ? item.subject.artistId : item.subject.stageId) ?? '__none__';
+      const key = item.subject.artistId ?? '__none__';
       const arr = map.get(key) ?? [];
       arr.push(item);
       map.set(key, arr);
     }
     return map;
-  }, [relevant, groupBy]);
+  }, [relevant]);
 
-  const entities = groupBy === 'artist' ? lineup.data?.artists ?? [] : lineup.data?.stages ?? [];
+  const entities = lineup.data?.artists ?? [];
   const ordered = [...entities].sort((a, b) => {
     const ca = grouped.get(a.id)?.length ?? 0;
     const cb = grouped.get(b.id)?.length ?? 0;
@@ -404,11 +404,11 @@ function GroupedView({
   });
 
   const emptyLabel =
-    groupBy === 'artist'
+    mode === 'interviews'
       ? 'Aucun artiste dans le lineup. Ajoutez des artistes pour gérer les interviews.'
-      : 'Aucune scène. Ajoutez des scènes dans le lineup pour gérer les reportages.';
+      : 'Aucun artiste dans le lineup. Ajoutez des artistes pour gérer les reportages.';
 
-  const heading = groupBy === 'artist' ? "Demandes d'interview par artiste" : 'Reportages par scène';
+  const heading = mode === 'interviews' ? "Demandes d'interview par artiste" : 'Reportages par artiste';
 
   function buildGroup(name: string, items: QueueItem[], quota: { used: number; limit: number } | null): PrintTableGroup {
     return {
@@ -432,7 +432,7 @@ function GroupedView({
   return (
     <>
       <div className="filters">
-        {groupBy === 'stage' && (
+        {mode === 'reports' && (
           <>
             {([
               { v: 'all', l: 'Tous reportages' },
@@ -463,8 +463,11 @@ function GroupedView({
 
       {ordered.map((entity) => {
         const items = grouped.get(entity.id) ?? [];
-        const quota = items.find((i) => i.quota)?.quota ?? null;
-        const noun = groupBy === 'artist' ? 'demande' : 'reportage';
+        // Photo et vidéo ont des quotas séparés : on n'affiche un quota de groupe
+        // (et l'action « accepter les N meilleurs ») que pour un type précis.
+        const quota =
+          mode === 'reports' && reportType === 'all' ? null : items.find((i) => i.quota)?.quota ?? null;
+        const noun = mode === 'interviews' ? 'demande' : 'reportage';
         const remaining = quota ? Math.max(0, quota.limit - quota.used) : 0;
         const pending = items.filter((i) => i.status !== 'acceptee' && i.status !== 'refusee').length;
         const toAccept = Math.min(remaining, pending);

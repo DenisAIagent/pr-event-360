@@ -32,11 +32,11 @@ export function LineupTab() {
   }, [data]);
 
   const [stageName, setStageName] = useState('');
-  const [stagePhotoQuota, setStagePhotoQuota] = useState('');
-  const [stageVideoQuota, setStageVideoQuota] = useState('');
   const [artistName, setArtistName] = useState('');
   const [artistStage, setArtistStage] = useState('');
   const [artistQuota, setArtistQuota] = useState('');
+  const [artistPhotoQuota, setArtistPhotoQuota] = useState('');
+  const [artistVideoQuota, setArtistVideoQuota] = useState('');
   const [windows, setWindows] = useState<WindowDraft[]>([{ day: '', startTime: '', endTime: '' }]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -44,14 +44,8 @@ export function LineupTab() {
   async function addStage(e: React.FormEvent) {
     e.preventDefault();
     if (!stageName) return;
-    await apiAuthed.post(`/admin/events/${eventId}/stages`, {
-      name: stageName,
-      photoQuota: stagePhotoQuota ? Number(stagePhotoQuota) : null,
-      videoQuota: stageVideoQuota ? Number(stageVideoQuota) : null,
-    });
+    await apiAuthed.post(`/admin/events/${eventId}/stages`, { name: stageName });
     setStageName('');
-    setStagePhotoQuota('');
-    setStageVideoQuota('');
     reload();
   }
 
@@ -69,11 +63,15 @@ export function LineupTab() {
         name: artistName,
         stageId: artistStage || null,
         itwQuota: artistQuota ? Number(artistQuota) : null,
+        photoQuota: artistPhotoQuota ? Number(artistPhotoQuota) : null,
+        videoQuota: artistVideoQuota ? Number(artistVideoQuota) : null,
         windows: validWindows,
       });
       setArtistName('');
       setArtistStage('');
       setArtistQuota('');
+      setArtistPhotoQuota('');
+      setArtistVideoQuota('');
       setWindows([{ day: '', startTime: '', endTime: '' }]);
       reload();
     } catch (err) {
@@ -116,39 +114,15 @@ export function LineupTab() {
           </p>
           <section className="card">
             <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Scènes</h3>
-            <form className="stack" onSubmit={addStage} style={{ marginBottom: 'var(--space-4)' }}>
-              <div className="field">
-                <label>Nom de la scène</label>
-                <input
-                  value={stageName}
-                  onChange={(e) => setStageName(e.target.value)}
-                  placeholder="ex. Main Stage"
-                  autoFocus
-                />
-              </div>
-              <div className="grid-2">
-                <div className="field">
-                  <label>Quota photographes</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={stagePhotoQuota}
-                    onChange={(e) => setStagePhotoQuota(e.target.value)}
-                    placeholder="défaut événement"
-                  />
-                </div>
-                <div className="field">
-                  <label>Quota vidéastes</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={stageVideoQuota}
-                    onChange={(e) => setStageVideoQuota(e.target.value)}
-                    placeholder="illimité"
-                  />
-                </div>
-              </div>
-              <button className="btn btn-primary btn-sm" type="submit" style={{ alignSelf: 'flex-start' }}>
+            <form className="inline-actions" onSubmit={addStage} style={{ marginBottom: 'var(--space-3)' }}>
+              <input
+                value={stageName}
+                onChange={(e) => setStageName(e.target.value)}
+                placeholder="Nom de la scène"
+                style={{ flex: 1 }}
+                autoFocus
+              />
+              <button className="btn btn-primary btn-sm" type="submit">
                 Ajouter la scène
               </button>
             </form>
@@ -216,10 +190,31 @@ export function LineupTab() {
                   <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
                 </div>
               </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Quota photographes</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={artistPhotoQuota}
+                    onChange={(e) => setArtistPhotoQuota(e.target.value)}
+                    placeholder="illimité"
+                  />
+                </div>
+                <div className="field">
+                  <label>Quota vidéastes</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={artistVideoQuota}
+                    onChange={(e) => setArtistVideoQuota(e.target.value)}
+                    placeholder="illimité"
+                  />
+                </div>
+              </div>
               <p className="hint" style={{ marginTop: 'calc(-1 * var(--space-2))' }}>
-                Le quota interviews est propre à l’artiste. Les quotas <strong>photo</strong> et{' '}
-                <strong>vidéo</strong> se règlent <strong>par scène</strong> (étape Scènes) : un reportage
-                cible une scène, pas un artiste.
+                Quotas propres à l’artiste (interviews, photographes dans le pit, vidéastes).
+                Laisser vide = <strong>illimité</strong>. Au-delà du quota, les demandes passent en liste d’attente.
               </p>
               <div className="field">
                 <label>Tranches de disponibilité → créneaux générés</label>
@@ -290,32 +285,20 @@ export function LineupTab() {
   );
 }
 
-/** Scène : affichage des quotas + correction (nom, quota photo, quota vidéo) / suppression. */
+/** Scène : affichage + renommage / suppression en cas d'erreur de saisie. */
 function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string; onChanged: () => void }) {
   const api = useAuthedApi();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(stage.name);
-  const [photoQuota, setPhotoQuota] = useState(stage.photoQuota != null ? String(stage.photoQuota) : '');
-  const [videoQuota, setVideoQuota] = useState(stage.videoQuota != null ? String(stage.videoQuota) : '');
   const [busy, setBusy] = useState(false);
-
-  function resetDraft() {
-    setName(stage.name);
-    setPhotoQuota(stage.photoQuota != null ? String(stage.photoQuota) : '');
-    setVideoQuota(stage.videoQuota != null ? String(stage.videoQuota) : '');
-  }
 
   async function save() {
     if (!name.trim()) return;
     setBusy(true);
     try {
-      await api.put(`/admin/events/${eventId}/stages/${stage.id}`, {
-        name: name.trim(),
-        photoQuota: photoQuota ? Number(photoQuota) : null,
-        videoQuota: videoQuota ? Number(videoQuota) : null,
-      });
-      toast.success('Scène mise à jour.');
+      await api.put(`/admin/events/${eventId}/stages/${stage.id}`, { name: name.trim() });
+      toast.success('Scène renommée.');
       setEditing(false);
       onChanged();
     } catch (e) {
@@ -341,72 +324,28 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
 
   if (editing) {
     return (
-      <div className="card stack" style={{ padding: 'var(--space-3)' }}>
-        <div className="field">
-          <label>Nom</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </div>
-        <div className="grid-2">
-          <div className="field">
-            <label>Quota photographes</label>
-            <input
-              type="number"
-              min={0}
-              value={photoQuota}
-              onChange={(e) => setPhotoQuota(e.target.value)}
-              placeholder="défaut événement"
-            />
-          </div>
-          <div className="field">
-            <label>Quota vidéastes</label>
-            <input
-              type="number"
-              min={0}
-              value={videoQuota}
-              onChange={(e) => setVideoQuota(e.target.value)}
-              placeholder="illimité"
-            />
-          </div>
-        </div>
-        <div className="inline-actions">
-          <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
-            Enregistrer
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); resetDraft(); }} disabled={busy}>
-            Annuler
-          </button>
-        </div>
-      </div>
+      <span className="inline-actions" style={{ width: '100%' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus style={{ flex: 1 }} />
+        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
+          OK
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); setName(stage.name); }} disabled={busy}>
+          Annuler
+        </button>
+      </span>
     );
   }
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: 'var(--space-2) var(--space-3)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 'var(--space-3)',
-        flexWrap: 'wrap',
-      }}
-    >
-      <div>
-        <strong>{stage.name}</strong>
-        <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>
-          Photo : {stage.photoQuota ?? 'défaut'} · Vidéo : {stage.videoQuota ?? 'illimité'}
-        </span>
-      </div>
-      <span className="inline-actions">
-        <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
-          Modifier
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy} style={{ color: 'var(--color-danger)' }}>
-          Supprimer
-        </button>
-      </span>
-    </div>
+    <span className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      {stage.name}
+      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+        Renommer
+      </button>
+      <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy} style={{ color: 'var(--color-danger)' }}>
+        Supprimer
+      </button>
+    </span>
   );
 }
 
@@ -428,14 +367,19 @@ function ArtistRow({
   const [name, setName] = useState(artist.name);
   const [stageId, setStageId] = useState(artist.stageId ?? '');
   const [quota, setQuota] = useState(artist.itwQuota != null ? String(artist.itwQuota) : '');
+  const [photoQuota, setPhotoQuota] = useState(artist.photoQuota != null ? String(artist.photoQuota) : '');
+  const [videoQuota, setVideoQuota] = useState(artist.videoQuota != null ? String(artist.videoQuota) : '');
   const [busy, setBusy] = useState(false);
 
   const stageName = stages.find((s) => s.id === artist.stageId)?.name ?? '—';
+  const fmt = (n: number | null) => (n != null ? n : '∞');
 
   function resetDraft() {
     setName(artist.name);
     setStageId(artist.stageId ?? '');
     setQuota(artist.itwQuota != null ? String(artist.itwQuota) : '');
+    setPhotoQuota(artist.photoQuota != null ? String(artist.photoQuota) : '');
+    setVideoQuota(artist.videoQuota != null ? String(artist.videoQuota) : '');
   }
 
   async function save() {
@@ -446,6 +390,8 @@ function ArtistRow({
         name: name.trim(),
         stageId: stageId || null,
         itwQuota: quota ? Number(quota) : null,
+        photoQuota: photoQuota ? Number(photoQuota) : null,
+        videoQuota: videoQuota ? Number(videoQuota) : null,
       });
       toast.success('Artiste mis à jour.');
       setEditing(false);
@@ -492,7 +438,17 @@ function ArtistRow({
           </div>
           <div className="field">
             <label>Quota interviews</label>
-            <input type="number" min={0} value={quota} onChange={(e) => setQuota(e.target.value)} />
+            <input type="number" min={0} value={quota} onChange={(e) => setQuota(e.target.value)} placeholder="défaut" />
+          </div>
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label>Quota photographes</label>
+            <input type="number" min={0} value={photoQuota} onChange={(e) => setPhotoQuota(e.target.value)} placeholder="illimité" />
+          </div>
+          <div className="field">
+            <label>Quota vidéastes</label>
+            <input type="number" min={0} value={videoQuota} onChange={(e) => setVideoQuota(e.target.value)} placeholder="illimité" />
           </div>
         </div>
         <div className="inline-actions">
@@ -520,6 +476,9 @@ function ArtistRow({
             Supprimer
           </button>
         </span>
+      </div>
+      <div className="muted" style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}>
+        Quotas — interviews : {artist.itwQuota ?? 'défaut'} · photo : {fmt(artist.photoQuota)} · vidéo : {fmt(artist.videoQuota)}
       </div>
       {artist.slots.length === 0 ? (
         <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>

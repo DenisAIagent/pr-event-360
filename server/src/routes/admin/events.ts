@@ -235,11 +235,7 @@ eventsRouter.post(
 );
 
 // ── Lineup ──────────────────────────────────────────────────────────
-const StageSchema = z.object({
-  name: z.string().min(1),
-  photoQuota: z.number().int().nonnegative().nullish(),
-  videoQuota: z.number().int().nonnegative().nullish(),
-});
+const StageSchema = z.object({ name: z.string().min(1) });
 eventsRouter.post(
   '/:eventId/stages',
   requireEventEditor,
@@ -247,7 +243,7 @@ eventsRouter.post(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof StageSchema>;
-    sendData(res, await addStage(req.params.eventId!, body), 201);
+    sendData(res, await addStage(req.params.eventId!, body.name), 201);
   }),
 );
 
@@ -264,6 +260,8 @@ const ArtistSchema = z.object({
   name: z.string().min(1),
   stageId: z.string().uuid().nullish(),
   itwQuota: z.number().int().nonnegative().nullish(),
+  photoQuota: z.number().int().nonnegative().nullish(),
+  videoQuota: z.number().int().nonnegative().nullish(),
   windows: z
     .array(z.object({ day: z.string().min(1), startTime: TIME, endTime: TIME }))
     .optional(),
@@ -284,6 +282,8 @@ const ArtistUpdateSchema = z.object({
   name: z.string().min(1),
   stageId: z.string().uuid().nullish(),
   itwQuota: z.number().int().nonnegative().nullish(),
+  photoQuota: z.number().int().nonnegative().nullish(),
+  videoQuota: z.number().int().nonnegative().nullish(),
 });
 eventsRouter.put(
   '/:eventId/artists/:artistId',
@@ -316,7 +316,7 @@ eventsRouter.put(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof StageSchema>;
-    const stage = await updateStage(req.params.stageId!, req.params.eventId!, body);
+    const stage = await updateStage(req.params.stageId!, req.params.eventId!, body.name);
     if (!stage) throw AppError.notFound('Scène introuvable.');
     sendData(res, stage);
   }),

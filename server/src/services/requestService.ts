@@ -1,7 +1,6 @@
 import {
   checkQuota,
   resolveInterviewQuota,
-  resolvePhotoQuota,
   selectNextForPromotion,
   type RequestStatus,
   type RequestType,
@@ -10,7 +9,7 @@ import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
 import { nowMs } from '../lib/clock';
 import { getConfig } from '../db/repositories/eventRepo';
-import { findArtist, findSlot, findStage } from '../db/repositories/lineupRepo';
+import { findArtist, findSlot } from '../db/repositories/lineupRepo';
 import { findJournalistByToken } from '../db/repositories/journalistRepo';
 import {
   addHistory,
@@ -78,18 +77,17 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
     const limit = resolveInterviewQuota(artist.itwQuota, config.defaultItwQuota);
     if (!checkQuota(used, limit).hasRoom) initialStatus = 'liste_attente';
   } else {
-    // photo_report / video_report → scène requise.
-    if (!input.stageId) throw AppError.badRequest('Une scène est requise pour un reportage');
-    const stage = await findStage(input.stageId, journalist.eventId);
-    if (!stage) throw AppError.badRequest('Scène inconnue pour cet événement');
-    if (input.type === 'photo_report') {
-      const used = await countAcceptedPhotos(stage.id);
-      const limit = resolvePhotoQuota(stage.photoQuota, config.photoQuotaPerStage);
-      if (!checkQuota(used, limit).hasRoom) initialStatus = 'liste_attente';
-    } else if (input.type === 'video_report' && stage.videoQuota != null) {
-      // Vidéo : quota uniquement si la scène en définit un (sinon illimité).
-      const used = await countAcceptedVideos(stage.id);
-      if (!checkQuota(used, stage.videoQuota).hasRoom) initialStatus = 'liste_attente';
+    // photo_report / video_report → artiste requis. Le quota est propre à
+    // l'artiste (photographes/vidéastes) ; NULL ⇒ illimité.
+    if (!input.artistId) throw AppError.badRequest('Un artiste est requis pour un reportage');
+    const artist = await findArtist(input.artistId, journalist.eventId);
+    if (!artist) throw AppError.badRequest('Artiste inconnu pour cet événement');
+    if (input.type === 'photo_report' && artist.photoQuota != null) {
+      const used = await countAcceptedPhotos(artist.id);
+      if (!checkQuota(used, artist.photoQuota).hasRoom) initialStatus = 'liste_attente';
+    } else if (input.type === 'video_report' && artist.videoQuota != null) {
+      const used = await countAcceptedVideos(artist.id);
+      if (!checkQuota(used, artist.videoQuota).hasRoom) initialStatus = 'liste_attente';
     }
   }
 
@@ -195,27 +193,27 @@ async function tryPromote(eventId: string, changed: RequestRecord): Promise<void
     const limit = resolveInterviewQuota(artist.itwQuota, config.defaultItwQuota);
     if (!checkQuota(used, limit).hasRoom) return;
     await promoteBest(eventId, config, (row) => row.type === 'interview' && row.artistId === artist.id);
-  } else if (changed.type === 'photo_report' && changed.stageId) {
-    const stage = await findStage(changed.stageId, eventId);
-    if (!stage) return;
-    const used = await countAcceptedPhotos(changed.stageId);
-    const limit = resolvePhotoQuota(stage.photoQuota, config.photoQuotaPerStage);
-    if (!checkQuota(used, limit).hasRoom) return;
+  } else if (changed.type === 'photo_report' && changed.artistId) {
+    const artist = await findArtist(changed.artistId, eventId);
+    // Pas de quota photo défini ⇒ illimité ⇒ aucune promotion à déclencher.
+    if (!artist || artist.photoQuota == null) return;
+    const used = await countAcceptedPhotos(changed.artistId);
+    if (!checkQuota(used, artist.photoQuota).hasRoom) return;
     await promoteBest(
       eventId,
       config,
-      (row) => row.type === 'photo_report' && row.stageId === changed.stageId,
+      (row) => row.type === 'photo_report' && row.artistId === changed.artistId,
     );
-  } else if (changed.type === 'video_report' && changed.stageId) {
-    const stage = await findStage(changed.stageId, eventId);
+  } else if (changed.type === 'video_report' && changed.artistId) {
+    const artist = await findArtist(changed.artistId, eventId);
     // Pas de quota vidéo défini ⇒ illimité ⇒ aucune promotion à déclencher.
-    if (!stage || stage.videoQuota == null) return;
-    const used = await countAcceptedVideos(changed.stageId);
-    if (!checkQuota(used, stage.videoQuota).hasRoom) return;
+    if (!artist || artist.videoQuota == null) return;
+    const used = await countAcceptedVideos(changed.artistId);
+    if (!checkQuota(used, artist.videoQuota).hasRoom) return;
     await promoteBest(
       eventId,
       config,
-      (row) => row.type === 'video_report' && row.stageId === changed.stageId,
+      (row) => row.type === 'video_report' && row.artistId === changed.artistId,
     );
   }
 }
