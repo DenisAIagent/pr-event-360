@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Pencil, X } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import type { Lineup } from '../lib/types';
+import { useToast } from '../components/Toast';
+import type { ArtistWithSlots, Lineup, Stage } from '../lib/types';
 
 interface WindowDraft {
   day: string;
@@ -65,8 +67,6 @@ export function LineupTab() {
   if (loading) return <p className="muted">Chargement…</p>;
   if (error) return <div className="banner banner-error">{error}</div>;
 
-  const stageName_ = (id: string | null) => data?.stages.find((s) => s.id === id)?.name ?? '—';
-
   return (
     <div className="grid-2" style={{ alignItems: 'start' }}>
       <div className="stack">
@@ -80,9 +80,7 @@ export function LineupTab() {
           </form>
           <div className="inline-actions">
             {data?.stages.map((s) => (
-              <span key={s.id} className="chip" aria-pressed={false}>
-                {s.name}
-              </span>
+              <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
             ))}
             {data?.stages.length === 0 && (
               <span className="muted">Aucune scène — ajoutez-en une pour organiser les reportages.</span>
@@ -142,32 +140,215 @@ export function LineupTab() {
       <section className="stack">
         <h3 style={{ fontSize: 'var(--text-lg)' }}>Lineup ({data?.artists.length ?? 0})</h3>
         {data?.artists.map((a) => (
-          <div key={a.id} className="card" style={{ padding: 'var(--space-3)' }}>
-            <div className="section-head" style={{ marginBottom: 'var(--space-2)' }}>
-              <strong>{a.name}</strong>
-              <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-                {stageName_(a.stageId)}
-              </span>
-            </div>
-            {a.slots.length === 0 ? (
-              <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-                Aucun créneau (ajoutez des tranches de disponibilité).
-              </span>
-            ) : (
-              <div className="inline-actions">
-                {a.slots.map((s) => (
-                  <span key={s.id} className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
-                    {s.day} · {s.startTime.slice(0, 5)}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+          <ArtistRow key={a.id} artist={a} stages={data.stages} eventId={eventId} onChanged={reload} />
         ))}
         {data?.artists.length === 0 && (
           <p className="muted">Aucun artiste — ajoutez-en un pour gérer les demandes d’interview.</p>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Scène : affichage + renommage / suppression en cas d'erreur de saisie. */
+function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string; onChanged: () => void }) {
+  const api = useAuthedApi();
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(stage.name);
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await api.put(`/admin/events/${eventId}/stages/${stage.id}`, { name: name.trim() });
+      toast.success('Scène renommée.');
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Supprimer la scène « ${stage.name} » ? Les artistes rattachés seront dé-rattachés.`)) return;
+    setBusy(true);
+    try {
+      await api.delete(`/admin/events/${eventId}/stages/${stage.id}`);
+      toast.success('Scène supprimée.');
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <span className="inline-actions" style={{ width: '100%' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus style={{ flex: 1 }} />
+        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
+          OK
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); setName(stage.name); }} disabled={busy}>
+          Annuler
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <span className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {stage.name}
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        title="Renommer"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-ink-faint)', display: 'inline-flex' }}
+      >
+        <Pencil size={13} />
+      </button>
+      <button
+        type="button"
+        onClick={remove}
+        disabled={busy}
+        title="Supprimer"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-danger)', display: 'inline-flex' }}
+      >
+        <X size={14} />
+      </button>
+    </span>
+  );
+}
+
+/** Artiste : affichage + correction (nom, scène, quota) / suppression. */
+function ArtistRow({
+  artist,
+  stages,
+  eventId,
+  onChanged,
+}: {
+  artist: ArtistWithSlots;
+  stages: Stage[];
+  eventId: string;
+  onChanged: () => void;
+}) {
+  const api = useAuthedApi();
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(artist.name);
+  const [stageId, setStageId] = useState(artist.stageId ?? '');
+  const [quota, setQuota] = useState(artist.itwQuota != null ? String(artist.itwQuota) : '');
+  const [busy, setBusy] = useState(false);
+
+  const stageName = stages.find((s) => s.id === artist.stageId)?.name ?? '—';
+
+  function resetDraft() {
+    setName(artist.name);
+    setStageId(artist.stageId ?? '');
+    setQuota(artist.itwQuota != null ? String(artist.itwQuota) : '');
+  }
+
+  async function save() {
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await api.put(`/admin/events/${eventId}/artists/${artist.id}`, {
+        name: name.trim(),
+        stageId: stageId || null,
+        itwQuota: quota ? Number(quota) : null,
+      });
+      toast.success('Artiste mis à jour.');
+      setEditing(false);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Supprimer « ${artist.name} » et ses créneaux ?`)) return;
+    setBusy(true);
+    try {
+      await api.delete(`/admin/events/${eventId}/artists/${artist.id}`);
+      toast.success('Artiste supprimé.');
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="card stack" style={{ padding: 'var(--space-3)' }}>
+        <div className="field">
+          <label>Nom</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label>Scène</label>
+            <select value={stageId} onChange={(e) => setStageId(e.target.value)}>
+              <option value="">—</option>
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Quota interviews</label>
+            <input type="number" min={0} value={quota} onChange={(e) => setQuota(e.target.value)} />
+          </div>
+        </div>
+        <div className="inline-actions">
+          <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
+            Enregistrer
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); resetDraft(); }} disabled={busy}>
+            Annuler
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card" style={{ padding: 'var(--space-3)' }}>
+      <div className="section-head" style={{ marginBottom: 'var(--space-2)' }}>
+        <strong>{artist.name}</strong>
+        <span className="inline-actions">
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{stageName}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+            Modifier
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy} style={{ color: 'var(--color-danger)' }}>
+            Supprimer
+          </button>
+        </span>
+      </div>
+      {artist.slots.length === 0 ? (
+        <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          Aucun créneau (ajoutez des tranches de disponibilité).
+        </span>
+      ) : (
+        <div className="inline-actions">
+          {artist.slots.map((s) => (
+            <span key={s.id} className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
+              {s.day} · {s.startTime.slice(0, 5)}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

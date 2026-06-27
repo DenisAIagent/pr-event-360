@@ -41,6 +41,26 @@ export async function findStage(
   return rows[0] ? mapStage(rows[0]) : null;
 }
 
+/** Renomme une scène. Scopé à l'événement. */
+export async function updateStage(
+  id: string,
+  eventId: string,
+  name: string,
+  db: Queryable = pool,
+): Promise<Stage | null> {
+  const { rows } = await db.query<StageRow>(
+    `UPDATE stages SET name = $3 WHERE id = $1 AND event_id = $2 RETURNING id, event_id, name`,
+    [id, eventId, name],
+  );
+  return rows[0] ? mapStage(rows[0]) : null;
+}
+
+/** Supprime une scène (les artistes rattachés sont dé-rattachés : stage_id → NULL). */
+export async function deleteStage(id: string, eventId: string, db: Queryable = pool): Promise<number> {
+  const { rowCount } = await db.query('DELETE FROM stages WHERE id = $1 AND event_id = $2', [id, eventId]);
+  return rowCount ?? 0;
+}
+
 // ── Artists ─────────────────────────────────────────────────────────
 interface ArtistRow {
   id: string;
@@ -87,6 +107,28 @@ export async function findArtist(
     [id, eventId],
   );
   return rows[0] ? mapArtist(rows[0]) : null;
+}
+
+/** Correction d'un artiste (nom, scène, quota). Scopé à l'événement. */
+export async function updateArtist(
+  id: string,
+  eventId: string,
+  input: { name: string; stageId?: string | null; itwQuota?: number | null },
+  db: Queryable = pool,
+): Promise<Artist | null> {
+  const { rows } = await db.query<ArtistRow>(
+    `UPDATE artists SET name = $3, stage_id = $4, itw_quota = $5
+     WHERE id = $1 AND event_id = $2
+     RETURNING id, event_id, name, stage_id, itw_quota`,
+    [id, eventId, input.name, input.stageId ?? null, input.itwQuota ?? null],
+  );
+  return rows[0] ? mapArtist(rows[0]) : null;
+}
+
+/** Supprime un artiste (tranches/créneaux en cascade ; demandes liées dé-rattachées). */
+export async function deleteArtist(id: string, eventId: string, db: Queryable = pool): Promise<number> {
+  const { rowCount } = await db.query('DELETE FROM artists WHERE id = $1 AND event_id = $2', [id, eventId]);
+  return rowCount ?? 0;
 }
 
 // ── Windows ─────────────────────────────────────────────────────────

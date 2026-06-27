@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
+import { AppError } from '../../http/AppError';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireEventEditor } from '../../middleware/auth';
 import {
@@ -22,6 +23,12 @@ import {
 } from '../../db/repositories/eventRepo';
 import { sendRecap } from '../../services/recapService';
 import { addArtist, addStage, getLineup } from '../../services/lineupService';
+import {
+  updateArtist,
+  deleteArtist,
+  updateStage,
+  deleteStage,
+} from '../../db/repositories/lineupRepo';
 import { listAccreditations, processAccreditation } from '../../services/accreditationService';
 import { deleteJournalist } from '../../db/repositories/journalistRepo';
 import { changeRequestStatus } from '../../services/requestService';
@@ -265,6 +272,59 @@ eventsRouter.post(
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof ArtistSchema>;
     sendData(res, await addArtist({ eventId: req.params.eventId!, ...body }), 201);
+  }),
+);
+
+// Corriger un artiste (nom, scène, quota). Les créneaux ne changent pas ici.
+const ArtistUpdateSchema = z.object({
+  name: z.string().min(1),
+  stageId: z.string().uuid().nullish(),
+  itwQuota: z.number().int().nonnegative().nullish(),
+});
+eventsRouter.put(
+  '/:eventId/artists/:artistId',
+  requireEventEditor,
+  validateBody(ArtistUpdateSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const body = req.body as z.infer<typeof ArtistUpdateSchema>;
+    const artist = await updateArtist(req.params.artistId!, req.params.eventId!, body);
+    if (!artist) throw AppError.notFound('Artiste introuvable.');
+    sendData(res, artist);
+  }),
+);
+
+eventsRouter.delete(
+  '/:eventId/artists/:artistId',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await deleteArtist(req.params.artistId!, req.params.eventId!);
+    sendData(res, { deleted: true });
+  }),
+);
+
+// Renommer / supprimer une scène.
+eventsRouter.put(
+  '/:eventId/stages/:stageId',
+  requireEventEditor,
+  validateBody(StageSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const body = req.body as z.infer<typeof StageSchema>;
+    const stage = await updateStage(req.params.stageId!, req.params.eventId!, body.name);
+    if (!stage) throw AppError.notFound('Scène introuvable.');
+    sendData(res, stage);
+  }),
+);
+
+eventsRouter.delete(
+  '/:eventId/stages/:stageId',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await deleteStage(req.params.stageId!, req.params.eventId!);
+    sendData(res, { deleted: true });
   }),
 );
 
