@@ -15,6 +15,8 @@
     "migrate:down": "npm run migrate -- down 1",
     "migrate:redo": "npm run migrate -- down 1 && npm run migrate -- up",
     "migrate:deploy": "node-pg-migrate -j ts --tsconfig ./tsconfig.json -m migrations up",
+    "bootstrap:admin": "tsx src/db/bootstrapAdmin.ts",
+    "start:prod": "npm run migrate:deploy && npm run bootstrap:admin && npm run start",
     "seed": "dotenv -e ../.env -- tsx src/db/seed.ts"
   },
   "dependencies": {

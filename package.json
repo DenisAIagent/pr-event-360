@@ -22,6 +22,6 @@
     "migrate:down": "npm --workspace server run migrate -- down",
     "test": "npm --workspace packages/core run test",
     "build": "npm --workspace client run build",
-    "start": "npm --workspace server run migrate:deploy && npm --workspace server run start"
+    "start": "npm --workspace server run start:prod"
   }
 }
