@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
@@ -209,6 +209,42 @@ function QueueView({
     }
   }
 
+  // Navigation clavier sur la file : ↑/↓ (ou J/K) pour parcourir, A/R pour
+  // accepter/refuser la demande active — traitement rapide sans souris.
+  const [active, setActive] = useState(0);
+  const items = queue.data ?? [];
+  const activeIdx = items.length ? Math.min(active, items.length - 1) : -1;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      const list = queue.data ?? [];
+      if (!list.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'j') {
+        e.preventDefault();
+        setActive((a) => Math.min(a + 1, list.length - 1));
+      } else if (e.key === 'ArrowUp' || e.key === 'k') {
+        e.preventDefault();
+        setActive((a) => Math.max(a - 1, 0));
+      } else if (e.key === 'a' || e.key === 'A') {
+        const it = list[Math.min(active, list.length - 1)];
+        if (it) changeStatus(it.id, 'acceptee');
+      } else if (e.key === 'r' || e.key === 'R') {
+        const it = list[Math.min(active, list.length - 1)];
+        if (it) changeStatus(it.id, 'refusee');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.data, active]);
+
+  useEffect(() => {
+    if (activeIdx < 0) return;
+    document.querySelector('.req-card.is-active')?.scrollIntoView({ block: 'nearest' });
+  }, [activeIdx]);
+
   function exportPdf() {
     const items = queue.data ?? [];
     printTable({
@@ -251,8 +287,15 @@ function QueueView({
         />
       )}
 
-      {queue.data?.map((r) => (
-        <RequestCard key={r.id} item={r} onChange={changeStatus} />
+      {items.length > 0 && (
+        <p className="kbd-hint">
+          Raccourcis : <kbd>↑</kbd> <kbd>↓</kbd> (ou <kbd>J</kbd> <kbd>K</kbd>) naviguer ·{' '}
+          <kbd>A</kbd> accepter · <kbd>R</kbd> refuser
+        </p>
+      )}
+
+      {items.map((r, i) => (
+        <RequestCard key={r.id} item={r} onChange={changeStatus} active={i === activeIdx} />
       ))}
     </>
   );
@@ -708,17 +751,21 @@ function RequestCard({
   item,
   onChange,
   hideSubject = false,
+  active = false,
 }: {
   item: QueueItem;
   onChange: (id: string, s: RequestStatus) => void;
   hideSubject?: boolean;
+  active?: boolean;
 }) {
   const subject = item.subject.artistName ?? item.subject.stageName ?? '—';
   const full = item.quota ? item.quota.used >= item.quota.limit : false;
   const slot = formatSlot(item.subject);
 
   return (
-    <article className={`req-card${item.status === 'liste_attente' ? ' is-waitlist' : ''}`}>
+    <article
+      className={`req-card${item.status === 'liste_attente' ? ' is-waitlist' : ''}${active ? ' is-active' : ''}`}
+    >
       <div className="score-chip">
         <span className="v">{Math.round(item.score)}</span>
         <span className="k">score</span>
