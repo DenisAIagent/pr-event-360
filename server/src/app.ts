@@ -1,3 +1,5 @@
+import path from 'node:path';
+import fs from 'node:fs';
 import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,7 +20,24 @@ export function createApp(): Express {
   const env = loadEnv();
   const app = express();
 
-  app.use(helmet());
+  // CSP adaptée au front servi en production : styles inline (props React),
+  // polices Google, images data:/https (logos en data URL, médias Cloudinary).
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'", 'https:'],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+        },
+      },
+    }),
+  );
   app.use(cors({ origin: env.CLIENT_URL }));
   // Limite relevée : logo + image de fond encodés en data URL (base64) dépassent
   // largement le défaut de 100 ko.
@@ -42,6 +61,18 @@ export function createApp(): Express {
   app.use('/api/public', publicLimiter, publicAccreditationRouter);
   app.use('/api/public/space', publicLimiter, publicSpaceRouter);
   app.use('/api/public/newsroom', publicLimiter, publicNewsroomRouter);
+
+  // En production, le serveur sert aussi le client compilé (même origine que l'API,
+  // ce qui permet au front d'appeler /api en relatif). Les routes /api non trouvées
+  // tombent en 404 JSON (notFoundHandler) ; tout le reste renvoie l'app SPA.
+  const clientDist = path.resolve(__dirname, '../../client/dist');
+  if (fs.existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) return next();
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

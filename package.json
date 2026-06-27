@@ -11,12 +11,17 @@
   "engines": {
     "node": ">=20"
   },
+  "overrides": {
+    "esbuild": "0.25.12"
+  },
   "scripts": {
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "migrate": "npm --workspace server run migrate",
     "migrate:up": "npm --workspace server run migrate -- up",
     "migrate:down": "npm --workspace server run migrate -- down",
-    "test": "npm --workspace packages/core run test"
+    "test": "npm --workspace packages/core run test",
+    "build": "npm --workspace client run build",
+    "start": "npm --workspace server run migrate:deploy && npm --workspace server run start"
   }
 }
