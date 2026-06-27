@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { CopyLink } from '../components/CopyLink';
+import { FileText } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import type { PressRelease } from '../lib/types';
 
 export function NewsroomTab() {
@@ -70,7 +72,13 @@ export function NewsroomTab() {
             </button>
           </div>
         ))}
-        {data?.length === 0 && !loading && <p className="muted">Aucun communiqué.</p>}
+        {data?.length === 0 && !loading && (
+          <EmptyState
+            icon={FileText}
+            title="Aucun communiqué publié"
+            hint="Rédigez votre premier communiqué ci-dessus — il apparaîtra dans la newsroom publique, accessible aux journalistes."
+          />
+        )}
       </div>
     </div>
   );

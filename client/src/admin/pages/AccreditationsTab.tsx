@@ -1,9 +1,14 @@
 import { useParams } from 'react-router-dom';
+import { BadgeCheck } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { Accreditation } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
 import { CopyLink } from '../components/CopyLink';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonRows } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
+import { fireConfetti } from '../lib/confetti';
 
 const ACC_BADGE: Record<Accreditation['accStatus'], string> = {
   pas_encore_traite: 'badge-pending',
@@ -14,18 +19,50 @@ const ACC_BADGE: Record<Accreditation['accStatus'], string> = {
 export function AccreditationsTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const { data, loading, error, reload } = useFetch<Accreditation[]>(
     () => apiAuthed.get<Accreditation[]>(`/admin/events/${eventId}/accreditations`),
     [eventId],
   );
 
   async function process(journalistId: string, action: 'accept' | 'reject') {
-    await apiAuthed.post(`/admin/events/${eventId}/accreditations/${journalistId}/process`, { action });
-    reload();
+    if (action === 'reject' && !window.confirm('Refuser cette accréditation ? Le journaliste en sera informé.')) {
+      return;
+    }
+    try {
+      await apiAuthed.post(`/admin/events/${eventId}/accreditations/${journalistId}/process`, { action });
+      if (action === 'accept') {
+        toast.success('Accréditation acceptée — lien personnel envoyé par email.');
+        // Micro-victoire : on célèbre la toute première accréditation acceptée.
+        try {
+          if (!localStorage.getItem('pr360.firstAccredited')) {
+            localStorage.setItem('pr360.firstAccredited', '1');
+            fireConfetti();
+          }
+        } catch {
+          /* localStorage indisponible : pas de confettis, sans gravité. */
+        }
+      } else {
+        toast.success('Accréditation refusée.');
+      }
+      reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
   }
 
-  if (loading) return <p className="muted">Chargement…</p>;
+  if (loading) return <SkeletonRows count={4} />;
   if (error) return <div className="banner banner-error">{error}</div>;
+
+  if (data?.length === 0) {
+    return (
+      <EmptyState
+        icon={BadgeCheck}
+        title="Aucune accréditation pour l'instant"
+        hint="Partagez le lien d'inscription (en haut de la page) sur vos réseaux et votre site presse pour recevoir les premières demandes des journalistes."
+      />
+    );
+  }
 
   return (
     <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
@@ -81,13 +118,6 @@ export function AccreditationsTab() {
               </td>
             </tr>
           ))}
-          {data?.length === 0 && (
-            <tr>
-              <td colSpan={6} className="muted">
-                Aucune accréditation pour l'instant.
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
     </div>

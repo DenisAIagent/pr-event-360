@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { LoginPage } from './auth/LoginPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
@@ -33,6 +34,7 @@ function AdminRoute() {
 export function AdminApp() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <Routes>
         <Route path="login" element={<LoginPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
@@ -60,6 +62,7 @@ export function AdminApp() {
           </Route>
         </Route>
       </Routes>
+      </ToastProvider>
     </AuthProvider>
   );
 }

@@ -21,8 +21,20 @@ import {
 } from '../lib/labels';
 import { printTable, type PrintTableGroup } from '../lib/printRequests';
 import { Icon } from '../../components/Icon';
+import { Inbox } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonRows } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
 
 const QUEUE_COLUMNS = ['Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut'];
+
+/** Message de confirmation adapté au changement de statut d'une demande. */
+function statusMessage(status: RequestStatus): string {
+  if (status === 'acceptee') return 'Demande acceptée.';
+  if (status === 'refusee') return 'Demande refusée.';
+  if (status === 'liste_attente') return "Demande placée en liste d'attente.";
+  return `Statut mis à jour : ${STATUS_LABEL[status]}.`;
+}
 
 function requesterName(item: QueueItem): string {
   return `${item.requester.firstName} ${item.requester.lastName ?? ''}`.trim();
@@ -172,6 +184,7 @@ function QueueView({
   onChanged: () => void;
 }) {
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const query = useMemo(() => {
     const p = new URLSearchParams();
     if (typeF !== 'all') p.set('type', typeF);
@@ -186,9 +199,14 @@ function QueueView({
   );
 
   async function changeStatus(requestId: string, status: RequestStatus) {
-    await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
-    queue.reload();
-    onChanged();
+    try {
+      await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
+      toast.success(statusMessage(status));
+      queue.reload();
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
   }
 
   function exportPdf() {
@@ -223,9 +241,15 @@ function QueueView({
         </button>
       </div>
 
-      {queue.loading && <p className="muted">Chargement…</p>}
+      {queue.loading && <SkeletonRows count={4} />}
       {queue.error && <div className="banner banner-error">{queue.error}</div>}
-      {queue.data?.length === 0 && !queue.loading && <p className="muted">Aucune demande pour ces filtres.</p>}
+      {queue.data?.length === 0 && !queue.loading && (
+        <EmptyState
+          icon={Inbox}
+          title="Aucune demande pour ces filtres"
+          hint="Aucun journaliste accrédité n'a encore soumis de demande correspondante. Élargissez les filtres, ou partagez le lien d'inscription pour recevoir des demandes."
+        />
+      )}
 
       {queue.data?.map((r) => (
         <RequestCard key={r.id} item={r} onChange={changeStatus} />
@@ -256,6 +280,7 @@ function GroupedView({
   onChanged: () => void;
 }) {
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const lineup = useFetch<Lineup>(() => apiAuthed.get<Lineup>(`/admin/events/${eventId}/lineup`), [eventId]);
   // Sous-filtre de type pour les reportages (photo / vidéo / les deux).
   const [reportType, setReportType] = useState<'all' | 'photo_report' | 'video_report'>('all');
@@ -268,9 +293,14 @@ function GroupedView({
   );
 
   async function changeStatus(requestId: string, status: RequestStatus) {
-    await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
-    queue.reload();
-    onChanged();
+    try {
+      await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
+      toast.success(statusMessage(status));
+      queue.reload();
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
   }
 
   // Accepte les N meilleures demandes (par score) non encore traitées, dans la
@@ -287,6 +317,13 @@ function GroupedView({
       }
       queue.reload();
       onChanged();
+      toast.success(
+        candidates.length > 0
+          ? `${candidates.length} demande${candidates.length > 1 ? 's' : ''} acceptée${candidates.length > 1 ? 's' : ''}.`
+          : 'Aucune demande à accepter.',
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
     } finally {
       setBusy(false);
     }
@@ -439,6 +476,7 @@ function PlanningView({
   onChanged: () => void;
 }) {
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const query = statusF !== 'all' ? `&status=${statusF}` : '';
   const queue = useFetch<QueueItem[]>(
     () => apiAuthed.get<QueueItem[]>(`/admin/events/${eventId}/requests?type=interview${query}`),
@@ -446,9 +484,14 @@ function PlanningView({
   );
 
   async function changeStatus(requestId: string, status: RequestStatus) {
-    await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
-    queue.reload();
-    onChanged();
+    try {
+      await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
+      toast.success(statusMessage(status));
+      queue.reload();
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
   }
 
   const { days, noSlot } = useMemo(() => {

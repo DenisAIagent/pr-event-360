@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
   BadgeCheck,
@@ -48,6 +49,7 @@ const STEPS: Step[] = [
 /** Visite guidée d'accueil : présente brièvement l'app en quelques étapes. */
 export function IntroTour({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [i, setI] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) setI(0);
@@ -107,8 +109,14 @@ export function IntroTour({ open, onClose }: { open: boolean; onClose: () => voi
               </button>
             )}
             {last ? (
-              <button className="btn btn-primary btn-sm" onClick={onClose}>
-                Commencer
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  onClose();
+                  navigate('/admin/events/new');
+                }}
+              >
+                Créer un événement <ArrowRight size={16} />
               </button>
             ) : (
               <button className="btn btn-primary btn-sm" onClick={() => setI(i + 1)}>

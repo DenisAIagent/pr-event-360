@@ -3,6 +3,7 @@ import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
+import { SkeletonCards } from '../components/Skeleton';
 import type { EventSummary } from '../lib/types';
 
 export function EventsListPage() {
@@ -35,7 +36,7 @@ export function EventsListPage() {
           }
         />
 
-        {loading && <p className="muted">Chargement…</p>}
+        {loading && <SkeletonCards count={6} />}
         {error && <div className="banner banner-error">{error}</div>}
 
         <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>

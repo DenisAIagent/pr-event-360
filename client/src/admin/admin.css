@@ -103,10 +103,11 @@
 /* Tabs */
 .tabs {
   display: flex;
+  align-items: flex-end;
   gap: 2px;
   border-bottom: 1px solid var(--color-line);
   margin-bottom: var(--space-4);
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 .tabs a {
   text-decoration: none;
@@ -558,6 +559,224 @@ select.status-select {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+/* ── Toasts (feedback transitoire) ── */
+.toast-viewport {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
+  font-size: var(--text-sm);
+  animation: toast-in 220ms var(--ease-out-expo);
+}
+.toast span {
+  flex: 1;
+  line-height: 1.45;
+}
+.toast svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.toast-success {
+  border-left-color: var(--color-success);
+}
+.toast-success > svg {
+  color: var(--color-success);
+}
+.toast-error {
+  border-left-color: var(--color-danger);
+}
+.toast-error > svg {
+  color: var(--color-danger);
+}
+.toast-info {
+  border-left-color: var(--color-accent);
+}
+.toast-info > svg {
+  color: var(--color-accent);
+}
+.toast-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-ink-faint);
+  padding: 0;
+  display: inline-flex;
+}
+.toast-x:hover {
+  color: var(--color-ink);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── État vide actionnable ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  background: var(--color-bg);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-lg);
+}
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-tint);
+  color: var(--color-accent-strong);
+  margin-bottom: var(--space-1);
+}
+.empty-state-title {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+.empty-state-hint {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  max-width: 44ch;
+  margin: 0;
+}
+.empty-state-action {
+  margin-top: var(--space-2);
+}
+
+/* ── Skeletons de chargement ── */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--color-line) 25%,
+    var(--color-bg-elevated) 37%,
+    var(--color-line) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+.skeleton-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ── Onglets groupés (menu déroulant) ── */
+.tab-group {
+  position: relative;
+  display: inline-flex;
+}
+.tab-group-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-ink-soft);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast),
+    border-color var(--duration-fast);
+}
+.tab-group-btn:hover {
+  color: var(--color-ink);
+}
+.tab-group-btn.active {
+  color: var(--color-accent-strong);
+  border-bottom-color: var(--color-accent);
+}
+.tab-group-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-1);
+  animation: tab-menu-in 160ms var(--ease-out-expo);
+}
+.tab-group-menu a {
+  text-decoration: none;
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.tab-group-menu a:hover {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}
+.tab-group-menu a.active {
+  background: var(--color-accent-tint);
+  color: var(--color-accent-strong);
+}
+@keyframes tab-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Wizard de création d'événement */

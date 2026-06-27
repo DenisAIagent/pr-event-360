@@ -84,7 +84,9 @@ export function LineupTab() {
                 {s.name}
               </span>
             ))}
-            {data?.stages.length === 0 && <span className="muted">Aucune scène.</span>}
+            {data?.stages.length === 0 && (
+              <span className="muted">Aucune scène — ajoutez-en une pour organiser les reportages.</span>
+            )}
           </div>
         </section>
 
@@ -162,7 +164,9 @@ export function LineupTab() {
             )}
           </div>
         ))}
-        {data?.artists.length === 0 && <p className="muted">Aucun artiste.</p>}
+        {data?.artists.length === 0 && (
+          <p className="muted">Aucun artiste — ajoutez-en un pour gérer les demandes d’interview.</p>
+        )}
       </section>
     </div>
   );

@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { uploadToCloudinary } from '../lib/upload';
+import { Image as ImageIcon } from 'lucide-react';
+import { EmptyState } from '../components/EmptyState';
 import type { AssetKind, EventAsset, UploadSignature } from '../lib/types';
 
 const KINDS: { value: AssetKind; label: string }[] = [
@@ -102,7 +104,13 @@ export function MediaTab() {
           {data?.map((a) => (
             <AssetCard key={a.id} asset={a} kindLabel={KIND_LABEL[a.kind]} eventId={eventId} onDeleted={reload} />
           ))}
-          {data?.length === 0 && !loading && <p className="muted">Aucun média pour l’instant.</p>}
+          {data?.length === 0 && !loading && (
+            <EmptyState
+              icon={ImageIcon}
+              title="Aucun média pour l’instant"
+              hint="Importez vos premières photos, vidéos et logos ci-dessus — les journalistes pourront les télécharger depuis la newsroom."
+            />
+          )}
         </div>
       </section>
     </div>
