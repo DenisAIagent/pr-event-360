@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { Pencil, X } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
@@ -67,86 +67,153 @@ export function LineupTab() {
   if (loading) return <p className="muted">Chargement…</p>;
   if (error) return <div className="banner banner-error">{error}</div>;
 
+  const stages = data?.stages ?? [];
+  const artists = data?.artists ?? [];
+  const unassigned = artists.filter((a) => !a.stageId);
+  const noStage = stages.length === 0;
+
   return (
-    <div className="grid-2" style={{ alignItems: 'start' }}>
-      <div className="stack">
-        <section className="card">
-          <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Scènes</h3>
-          <form className="inline-actions" onSubmit={addStage} style={{ marginBottom: 'var(--space-3)' }}>
-            <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Nom de la scène" style={{ flex: 1 }} />
-            <button className="btn btn-primary btn-sm" type="submit">
-              Ajouter
-            </button>
-          </form>
-          <div className="inline-actions">
-            {data?.stages.map((s) => (
-              <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
-            ))}
-            {data?.stages.length === 0 && (
-              <span className="muted">Aucune scène — ajoutez-en une pour organiser les reportages.</span>
-            )}
+    <div className="stack" style={{ maxWidth: 820 }}>
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+        Organisez votre programmation : créez d’abord vos scènes, puis ajoutez-y vos artistes.
+      </p>
+
+      {/* Étape 1 — Scènes */}
+      <section className="card">
+        <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
+          Scènes <StepBadge>Étape 1</StepBadge>
+        </h3>
+        <form className="inline-actions" onSubmit={addStage} style={{ marginBottom: 'var(--space-3)' }}>
+          <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Nom de la scène" style={{ flex: 1 }} />
+          <button className="btn btn-primary btn-sm" type="submit">
+            Ajouter la scène
+          </button>
+        </form>
+        <div className="inline-actions">
+          {stages.map((s) => (
+            <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
+          ))}
+          {noStage && <span className="muted">Aucune scène — ajoutez-en une pour commencer.</span>}
+        </div>
+      </section>
+
+      {/* Étape 2 — Artistes */}
+      <section className="card">
+        <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'flex', alignItems: 'center' }}>
+          Ajouter un artiste <StepBadge>Étape 2</StepBadge>
+        </h3>
+        {noStage && (
+          <p className="hint" style={{ marginBottom: 'var(--space-3)' }}>
+            Astuce : créez au moins une scène ci-dessus pour pouvoir y rattacher vos artistes.
+          </p>
+        )}
+        <form className="stack" onSubmit={addArtist}>
+          {formError && <div className="banner banner-error">{formError}</div>}
+          <div className="field">
+            <label>Nom *</label>
+            <input value={artistName} onChange={(e) => setArtistName(e.target.value)} required />
           </div>
-        </section>
-
-        <section className="card">
-          <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Ajouter un artiste</h3>
-          <form className="stack" onSubmit={addArtist}>
-            {formError && <div className="banner banner-error">{formError}</div>}
+          <div className="grid-2">
             <div className="field">
-              <label>Nom *</label>
-              <input value={artistName} onChange={(e) => setArtistName(e.target.value)} required />
-            </div>
-            <div className="grid-2">
-              <div className="field">
-                <label>Scène</label>
-                <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
-                  <option value="">—</option>
-                  {data?.stages.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Quota interviews (sinon défaut)</label>
-                <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
-              </div>
+              <label>Scène</label>
+              <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
+                <option value="">— Sans scène</option>
+                {stages.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="field">
-              <label>Tranches de disponibilité → créneaux générés</label>
-              {windows.map((w, i) => (
-                <div key={i} className="inline-actions" style={{ marginBottom: 'var(--space-1)' }}>
-                  <input type="date" value={w.day} onChange={(e) => setWindow(i, { day: e.target.value })} />
-                  <input type="time" value={w.startTime} onChange={(e) => setWindow(i, { startTime: e.target.value })} />
-                  <input type="time" value={w.endTime} onChange={(e) => setWindow(i, { endTime: e.target.value })} />
-                </div>
-              ))}
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => setWindows((ws) => [...ws, { day: '', startTime: '', endTime: '' }])}
-              >
-                + Tranche
-              </button>
+              <label>Quota interviews (sinon défaut)</label>
+              <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
             </div>
-            <button className="btn btn-primary" type="submit" disabled={busy || !artistName}>
-              {busy ? 'Ajout…' : "Ajouter l'artiste"}
+          </div>
+          <div className="field">
+            <label>Tranches de disponibilité → créneaux générés</label>
+            {windows.map((w, i) => (
+              <div key={i} className="inline-actions" style={{ marginBottom: 'var(--space-1)' }}>
+                <input type="date" value={w.day} onChange={(e) => setWindow(i, { day: e.target.value })} />
+                <input type="time" value={w.startTime} onChange={(e) => setWindow(i, { startTime: e.target.value })} />
+                <input type="time" value={w.endTime} onChange={(e) => setWindow(i, { endTime: e.target.value })} />
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setWindows((ws) => [...ws, { day: '', startTime: '', endTime: '' }])}
+            >
+              + Tranche
             </button>
-          </form>
-        </section>
-      </div>
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={busy || !artistName}>
+            {busy ? 'Ajout…' : "Ajouter l'artiste"}
+          </button>
+        </form>
+      </section>
 
+      {/* Lineup, regroupé par scène */}
       <section className="stack">
-        <h3 style={{ fontSize: 'var(--text-lg)' }}>Lineup ({data?.artists.length ?? 0})</h3>
-        {data?.artists.map((a) => (
-          <ArtistRow key={a.id} artist={a} stages={data.stages} eventId={eventId} onChanged={reload} />
-        ))}
-        {data?.artists.length === 0 && (
-          <p className="muted">Aucun artiste — ajoutez-en un pour gérer les demandes d’interview.</p>
+        <h3 style={{ fontSize: 'var(--text-lg)' }}>Lineup ({artists.length})</h3>
+        {artists.length === 0 && (
+          <p className="muted">Aucun artiste — ajoutez-en un ci-dessus pour gérer les demandes d’interview.</p>
+        )}
+        {stages.map((stage) => {
+          const arts = artists.filter((a) => a.stageId === stage.id);
+          return (
+            <div key={stage.id}>
+              <h4 style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
+                {stage.name}{' '}
+                <span className="muted" style={{ fontWeight: 400 }}>
+                  · {arts.length} artiste{arts.length > 1 ? 's' : ''}
+                </span>
+              </h4>
+              {arts.length === 0 ? (
+                <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>Aucun artiste sur cette scène.</span>
+              ) : (
+                <div className="stack">
+                  {arts.map((a) => (
+                    <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {unassigned.length > 0 && (
+          <div>
+            <h4 className="muted" style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
+              Sans scène · {unassigned.length} artiste{unassigned.length > 1 ? 's' : ''}
+            </h4>
+            <div className="stack">
+              {unassigned.map((a) => (
+                <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
+              ))}
+            </div>
+          </div>
         )}
       </section>
     </div>
+  );
+}
+
+/** Petit badge d'étape (Étape 1 / Étape 2). */
+function StepBadge({ children }: { children: ReactNode }) {
+  return (
+    <span
+      style={{
+        fontSize: 'var(--text-xs)',
+        fontWeight: 600,
+        color: 'var(--color-accent-strong)',
+        background: 'var(--color-accent-tint)',
+        borderRadius: 999,
+        padding: '2px 10px',
+        marginLeft: 8,
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
