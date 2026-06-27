@@ -216,6 +216,11 @@ export function LineupTab() {
                   <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
                 </div>
               </div>
+              <p className="hint" style={{ marginTop: 'calc(-1 * var(--space-2))' }}>
+                Le quota interviews est propre à l’artiste. Les quotas <strong>photo</strong> et{' '}
+                <strong>vidéo</strong> se règlent <strong>par scène</strong> (étape Scènes) : un reportage
+                cible une scène, pas un artiste.
+              </p>
               <div className="field">
                 <label>Tranches de disponibilité → créneaux générés</label>
                 {windows.map((w, i) => (
