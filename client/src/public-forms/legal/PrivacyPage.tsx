@@ -25,8 +25,7 @@ export function PrivacyPage() {
           <p>
             Le responsable du traitement est <strong>l'organisateur de l'événement</strong> auquel vous
             demandez votre accréditation. La plateforme PR&nbsp;Event&nbsp;360 est éditée par{' '}
-            <strong>MDMC — MY&nbsp;MUSIC&nbsp;ADS</strong> (SAS au capital de 3&nbsp;000&nbsp;€, RCS Paris
-            901&nbsp;415&nbsp;653, siège : 19 rue Claude Tillier, 75012 Paris), qui agit en tant que{' '}
+            <strong>MDMC&nbsp;OÜ</strong>, société de droit estonien (Union européenne), qui agit en tant que{' '}
             <strong>sous-traitant technique</strong> (art. 28 RGPD) pour le compte de cet organisateur.
             Pour toute question relative à vos données : <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.
           </p>
