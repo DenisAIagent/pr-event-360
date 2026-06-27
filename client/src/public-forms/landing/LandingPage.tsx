@@ -148,7 +148,7 @@ export function LandingPage() {
             <a href="#features">Fonctionnalités</a>
             <a href="#features">Solutions</a>
             <a href={DEMO_MAILTO}>Tarifs</a>
-            <a href={DEMO_MAILTO}>Ressources</a>
+            <Link to="/ressources">Ressources</Link>
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
             <Link
@@ -322,7 +322,14 @@ export function LandingPage() {
       <footer style={{ background: '#fff', borderTop: '1px solid var(--color-line)' }}>
         <div className="lp-wrap lp-footer-inner" style={{ padding: '36px 0' }}>
           <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 26 }} />
-          <span style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)' }}>Connecter · Informer · Rayonner</span>
+          <span style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link to="/ressources" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
+              Ressources
+            </Link>
+            <Link to="/confidentialite" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
+              Confidentialité
+            </Link>
+          </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-faint)' }}>© 2026 PR Event 360</span>
         </div>
       </footer>

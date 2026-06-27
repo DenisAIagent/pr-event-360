@@ -6,6 +6,7 @@ import { SpacePreviewPage } from './public-forms/requests/SpacePreviewPage';
 import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
 import { LandingPage } from './public-forms/landing/LandingPage';
 import { PrivacyPage } from './public-forms/legal/PrivacyPage';
+import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
 import { AdminApp } from './admin/AdminApp';
 
 /**
@@ -20,6 +21,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/confidentialite" element={<PrivacyPage />} />
+        <Route path="/ressources" element={<ResourcesPage />} />
         <Route path="/admin/*" element={<AdminApp />} />
         <Route
           path="/accreditation/:eventId"
