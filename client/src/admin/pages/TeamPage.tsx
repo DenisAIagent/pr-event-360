@@ -3,7 +3,8 @@ import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
-import type { EventSummary, Team, TeamMember, UserRole } from '../lib/types';
+import { useToast } from '../components/Toast';
+import type { EventSummary, Invitation, Team, TeamMember, UserRole } from '../lib/types';
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: 'admin', label: 'Administrateur' },
@@ -63,15 +64,7 @@ export function TeamPage() {
                 <h2 style={{ fontSize: 'var(--text-lg)' }}>Invitations en attente</h2>
                 <div className="stack">
                   {team.data.invitations.map((inv) => (
-                    <div key={inv.id} className="row-between">
-                      <div>
-                        <strong>{inv.email}</strong>
-                        <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>
-                          {ROLE_LABEL[inv.role]} · {inv.eventIds.length} événement(s)
-                        </span>
-                      </div>
-                      <span className="badge">En attente</span>
-                    </div>
+                    <InvitationRow key={inv.id} inv={inv} onChanged={() => team.reload()} />
                   ))}
                 </div>
               </section>
@@ -79,6 +72,64 @@ export function TeamPage() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function InvitationRow({ inv, onChanged }: { inv: Invitation; onChanged: () => void }) {
+  const api = useAuthedApi();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function resend() {
+    setBusy(true);
+    try {
+      await api.post(`/admin/team/invitations/${inv.id}/resend`);
+      toast.success(`Invitation renvoyée à ${inv.email}.`);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Renvoi impossible.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancel() {
+    if (!window.confirm(`Annuler l'invitation de ${inv.email} ?`)) return;
+    setBusy(true);
+    try {
+      await api.delete(`/admin/team/invitations/${inv.id}`);
+      toast.success('Invitation annulée.');
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Annulation impossible.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="row-between">
+      <div>
+        <strong>{inv.email}</strong>
+        <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>
+          {ROLE_LABEL[inv.role]} · {inv.eventIds.length} événement(s)
+        </span>
+      </div>
+      <span className="inline-actions">
+        <span className="badge">En attente</span>
+        <button className="btn btn-ghost btn-sm" onClick={resend} disabled={busy}>
+          Renvoyer
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={cancel}
+          disabled={busy}
+          style={{ color: 'var(--color-danger)' }}
+        >
+          Annuler
+        </button>
+      </span>
     </div>
   );
 }

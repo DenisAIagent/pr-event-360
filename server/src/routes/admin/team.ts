@@ -4,7 +4,8 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
-import { inviteCollaborator } from '../../services/invitationService';
+import { inviteCollaborator, resendInvitation } from '../../services/invitationService';
+import { deleteInvitation } from '../../db/repositories/invitationRepo';
 import { changeUserActive, changeUserRole, getTeam, setUserEvents } from '../../services/teamService';
 
 export const teamRouter = Router();
@@ -34,6 +35,24 @@ teamRouter.post(
     const invitation = await inviteCollaborator({ ...body, invitedBy: req.user!.sub });
     // On ne renvoie pas le jeton : il n'existe que dans l'email envoyé.
     sendData(res, { id: invitation.id, email: invitation.email, role: invitation.role }, 201);
+  }),
+);
+
+// Renvoyer une invitation (nouveau jeton + nouvel email).
+teamRouter.post(
+  '/invitations/:id/resend',
+  asyncHandler(async (req, res) => {
+    const inv = await resendInvitation(req.params.id!, req.user!.sub);
+    sendData(res, { id: inv.id, email: inv.email });
+  }),
+);
+
+// Annuler/révoquer une invitation en attente.
+teamRouter.delete(
+  '/invitations/:id',
+  asyncHandler(async (req, res) => {
+    await deleteInvitation(req.params.id!);
+    sendData(res, { deleted: true });
   }),
 );
 

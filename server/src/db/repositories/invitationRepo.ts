@@ -94,6 +94,16 @@ export async function listPendingInvitations(db: Queryable = pool): Promise<Invi
   return rows.map(map);
 }
 
+/** Invitation par id (toutes, même acceptées) — pour le renvoi. */
+export async function findInvitationById(id: string, db: Queryable = pool): Promise<Invitation | null> {
+  const { rows } = await db.query<Row>(
+    `SELECT id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
+     FROM invitations WHERE id = $1`,
+    [id],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
 export async function deleteInvitation(id: string, db: Queryable = pool): Promise<void> {
   await db.query('DELETE FROM invitations WHERE id = $1', [id]);
 }

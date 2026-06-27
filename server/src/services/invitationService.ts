@@ -7,6 +7,7 @@ import { generateResetToken as generateToken, hashResetToken as hashToken } from
 import {
   createInvitation,
   deletePendingInvitationsForEmail,
+  findInvitationById,
   findValidInvitationByHash,
   markInvitationAccepted,
   type Invitation,
@@ -51,6 +52,18 @@ export async function inviteCollaborator(input: InviteInput): Promise<Invitation
 
   await deliverInvite(email, rawToken);
   return invitation;
+}
+
+/**
+ * Renvoie une invitation : régénère un jeton frais (l'ancien lien devient caduc) et
+ * renvoie l'email. Le jeton brut n'étant jamais stocké, on ne peut pas « ré-envoyer
+ * le même lien » — on en émet un nouveau, ce qui est aussi plus sûr.
+ */
+export async function resendInvitation(invitationId: string, invitedBy: string): Promise<Invitation> {
+  const inv = await findInvitationById(invitationId);
+  if (!inv) throw AppError.notFound('Invitation introuvable.');
+  if (inv.acceptedAt) throw AppError.conflict('Cette invitation a déjà été acceptée.');
+  return inviteCollaborator({ email: inv.email, role: inv.role, eventIds: inv.eventIds, invitedBy });
 }
 
 /** Récupère une invitation valide pour pré-remplir la page d'acceptation. */
