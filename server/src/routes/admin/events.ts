@@ -23,6 +23,7 @@ import {
 import { sendRecap } from '../../services/recapService';
 import { addArtist, addStage, getLineup } from '../../services/lineupService';
 import { listAccreditations, processAccreditation } from '../../services/accreditationService';
+import { deleteJournalist } from '../../db/repositories/journalistRepo';
 import { changeRequestStatus } from '../../services/requestService';
 import { getDashboard, getQueue } from '../../services/queueService';
 import { listNotificationsByEvent } from '../../db/repositories/notificationRepo';
@@ -289,6 +290,16 @@ eventsRouter.post(
       body.action,
     );
     sendData(res, journalist);
+  }),
+);
+
+// Effacement RGPD (art. 17) — suppression définitive d'un journaliste et de ses demandes.
+eventsRouter.delete(
+  '/:eventId/accreditations/:journalistId',
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await deleteJournalist(req.params.eventId!, req.params.journalistId!);
+    sendData(res, { deleted: true });
   }),
 );
 

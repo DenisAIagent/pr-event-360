@@ -51,6 +51,24 @@ export function AccreditationsTab() {
     }
   }
 
+  // Effacement RGPD (art. 17) : suppression définitive du journaliste et de ses demandes.
+  async function erase(journalistId: string, name: string) {
+    if (
+      !window.confirm(
+        `Supprimer définitivement « ${name} » et toutes ses demandes ? Action irréversible (droit à l'effacement, RGPD).`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await apiAuthed.delete(`/admin/events/${eventId}/accreditations/${journalistId}`);
+      toast.success('Données du journaliste effacées (RGPD).');
+      reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible, réessayez.');
+    }
+  }
+
   if (loading) return <SkeletonRows count={4} />;
   if (error) return <div className="banner banner-error">{error}</div>;
 
@@ -115,6 +133,24 @@ export function AccreditationsTab() {
                 ) : (
                   <span className="muted">—</span>
                 )}
+                <div style={{ marginTop: 'var(--space-2)' }}>
+                  <button
+                    type="button"
+                    onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
+                    title="Droit à l'effacement (RGPD, art. 17)"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      color: 'var(--color-danger)',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Supprimer (RGPD)
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

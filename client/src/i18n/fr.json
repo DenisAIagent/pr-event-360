@@ -27,6 +27,7 @@
   "acc.accType.video": "Vidéo",
   "acc.commitPublish": "Je m’engage à créditer l’événement et à transmettre ma publication.",
   "acc.consent": "J’accepte que mes données soient traitées pour la gestion de mon accréditation (RGPD).",
+  "acc.privacy": "Voir la politique de confidentialité",
   "acc.submit": "Envoyer la demande",
   "acc.required": "Champs obligatoires : prénom, email et consentement.",
   "acc.closed.title": "Inscriptions closes",

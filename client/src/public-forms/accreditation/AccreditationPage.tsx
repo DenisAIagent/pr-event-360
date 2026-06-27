@@ -224,7 +224,10 @@ export function AccreditationPage() {
         <label className="checkbox">
           <input type="checkbox" checked={form.consent} onChange={(e) => update('consent', e.target.checked)} required />
           <span>
-            {t('acc.consent')} <span className="req">*</span>
+            {t('acc.consent')} <span className="req">*</span>{' '}
+            <a href="/confidentialite" target="_blank" rel="noreferrer" className="auth-link">
+              {t('acc.privacy')}
+            </a>
           </span>
         </label>
 

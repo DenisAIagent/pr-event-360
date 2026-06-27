@@ -156,3 +156,20 @@ export async function countJournalistsByEvent(eventId: string, db: Queryable = p
   );
   return Number(rows[0]!.count);
 }
+
+/**
+ * Effacement RGPD (art. 17) d'un journaliste et de toutes ses données rattachées.
+ * Les demandes et l'historique sont supprimés en cascade (FK ON DELETE CASCADE).
+ * Scopé à l'événement par sécurité. Retourne le nombre de lignes supprimées (0 ou 1).
+ */
+export async function deleteJournalist(
+  eventId: string,
+  journalistId: string,
+  db: Queryable = pool,
+): Promise<number> {
+  const { rowCount } = await db.query('DELETE FROM journalists WHERE event_id = $1 AND id = $2', [
+    eventId,
+    journalistId,
+  ]);
+  return rowCount ?? 0;
+}

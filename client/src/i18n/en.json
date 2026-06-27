@@ -27,6 +27,7 @@
   "acc.accType.video": "Video",
   "acc.commitPublish": "I commit to crediting the event and sharing my publication.",
   "acc.consent": "I agree that my data may be processed to manage my accreditation (GDPR).",
+  "acc.privacy": "See the privacy policy",
   "acc.submit": "Send request",
   "acc.required": "Required fields: first name, email and consent.",
   "acc.closed.title": "Registrations closed",

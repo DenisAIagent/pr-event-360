@@ -20,22 +20,25 @@ export function createApp(): Express {
   const env = loadEnv();
   const app = express();
 
-  // CSP adaptée au front servi en production : styles inline (props React),
-  // polices Google, images data:/https (logos en data URL, médias Cloudinary).
+  // CSP adaptée au front servi en production : styles inline (props React), polices
+  // AUTO-HÉBERGÉES ('self'), images data:/https (logos en data URL, médias Cloudinary).
+  // Referrer-Policy: no-referrer → ne fuite pas les tokens présents dans les URL
+  // (ex. espace journaliste /espace/:token) vers des tiers.
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          fontSrc: ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'", 'https:'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
         },
       },
+      referrerPolicy: { policy: 'no-referrer' },
     }),
   );
   app.use(cors({ origin: env.CLIENT_URL }));
