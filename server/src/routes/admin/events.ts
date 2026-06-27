@@ -4,7 +4,7 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { AppError } from '../../http/AppError';
 import { validateBody } from '../../middleware/validate';
-import { requireAuth, requireEventEditor } from '../../middleware/auth';
+import { requireAuth, requireEventEditor, requireRole } from '../../middleware/auth';
 import {
   createEvent,
   getEventSettings,
@@ -20,6 +20,7 @@ import {
   setAccreditationDeadline,
   upsertRecap,
   getBranding,
+  deleteEvent,
 } from '../../db/repositories/eventRepo';
 import { sendRecap } from '../../services/recapService';
 import { addArtist, addStage, getLineup } from '../../services/lineupService';
@@ -85,6 +86,17 @@ eventsRouter.get(
     const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const branding = await getBranding(event.id);
     sendData(res, { ...event, branding });
+  }),
+);
+
+// Suppression définitive d'un événement — réservée aux administrateurs.
+eventsRouter.delete(
+  '/:eventId',
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await deleteEvent(event.id);
+    sendData(res, { deleted: true });
   }),
 );
 

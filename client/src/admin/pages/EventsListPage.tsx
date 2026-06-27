@@ -1,20 +1,24 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
 import { SkeletonCards } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
 import type { EventSummary } from '../lib/types';
 
 export function EventsListPage() {
   const { user } = useAuth();
   const apiAuthed = useAuthedApi();
-  const { data, loading, error } = useFetch<EventSummary[]>(
+  const { data, loading, error, reload } = useFetch<EventSummary[]>(
     () => apiAuthed.get<EventSummary[]>('/admin/events'),
     [],
   );
 
   const canCreate = user?.role === 'admin' || user?.role === 'attache';
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="admin">
@@ -41,22 +45,7 @@ export function EventsListPage() {
 
         <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
           {data?.map((ev) => (
-            <Link key={ev.id} to={`/admin/events/${ev.id}`} className="event-card">
-              <h3 style={{ fontSize: 'var(--text-lg)' }}>{ev.name}</h3>
-              <p className="muted" style={{ margin: 'var(--space-1) 0 var(--space-3)', fontSize: 'var(--text-sm)' }}>
-                {ev.location ?? 'Lieu non précisé'}
-              </p>
-              <div className="event-card-foot">
-                <span className="inline-actions" style={{ gap: 4 }}>
-                  {ev.languages.map((l) => (
-                    <span key={l} className="lang-pill">
-                      {l.toUpperCase()}
-                    </span>
-                  ))}
-                </span>
-                <span className="event-card-go">Ouvrir →</span>
-              </div>
-            </Link>
+            <EventCard key={ev.id} ev={ev} isAdmin={isAdmin} onDeleted={reload} />
           ))}
           {data?.length === 0 && !loading && (
             <p className="muted">
@@ -70,6 +59,74 @@ export function EventsListPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function EventCard({ ev, isAdmin, onDeleted }: { ev: EventSummary; isAdmin: boolean; onDeleted: () => void }) {
+  const apiAuthed = useAuthedApi();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  async function remove(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (
+      !window.confirm(
+        `Supprimer définitivement « ${ev.name} » ?\n\nTous les journalistes, demandes, communications, médias et réglages de cet événement seront effacés. Cette action est irréversible.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await apiAuthed.delete(`/admin/events/${ev.id}`);
+      toast.success(`Événement « ${ev.name} » supprimé.`);
+      onDeleted();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <Link to={`/admin/events/${ev.id}`} className="event-card">
+        <h3 style={{ fontSize: 'var(--text-lg)', paddingRight: isAdmin ? 'var(--space-5)' : 0 }}>{ev.name}</h3>
+        <p className="muted" style={{ margin: 'var(--space-1) 0 var(--space-3)', fontSize: 'var(--text-sm)' }}>
+          {ev.location ?? 'Lieu non précisé'}
+        </p>
+        <div className="event-card-foot">
+          <span className="inline-actions" style={{ gap: 4 }}>
+            {ev.languages.map((l) => (
+              <span key={l} className="lang-pill">
+                {l.toUpperCase()}
+              </span>
+            ))}
+          </span>
+          <span className="event-card-go">Ouvrir →</span>
+        </div>
+      </Link>
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={remove}
+          disabled={busy}
+          title="Supprimer l'événement"
+          aria-label={`Supprimer ${ev.name}`}
+          className="btn btn-ghost btn-sm"
+          style={{
+            position: 'absolute',
+            top: 'var(--space-2)',
+            right: 'var(--space-2)',
+            color: 'var(--color-danger)',
+            padding: '4px 6px',
+            display: 'inline-flex',
+          }}
+        >
+          <Trash2 size={15} />
+        </button>
+      )}
     </div>
   );
 }

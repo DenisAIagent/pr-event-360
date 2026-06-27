@@ -101,6 +101,16 @@ export async function findEventById(id: string, db: Queryable = pool): Promise<E
   return rows[0] ? mapEvent(rows[0]) : null;
 }
 
+/**
+ * Suppression définitive d'un événement. Toutes les données liées (journalistes,
+ * demandes, lineup, communications, médias, membres…) tombent en cascade via les
+ * contraintes ON DELETE CASCADE sur event_id.
+ */
+export async function deleteEvent(id: string, db: Queryable = pool): Promise<number> {
+  const { rowCount } = await db.query('DELETE FROM events WHERE id = $1', [id]);
+  return rowCount ?? 0;
+}
+
 export async function listEventsByOwner(ownerUserId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
     `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, created_at
