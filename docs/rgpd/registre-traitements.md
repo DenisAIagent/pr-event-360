@@ -1,12 +1,13 @@
 # Registre des activités de traitement (RGPD art. 30)
 
 > Modèle pré-rempli pour la plateforme **PR Event 360**. À compléter par chaque
-> organisateur d'événement (responsable de traitement). PR Event 360 (l'éditeur)
-> agit comme **sous-traitant** (art. 28) ; il tient le présent registre côté éditeur
+> organisateur d'événement (responsable de traitement). PR Event 360 est éditée par
+> **MDMC — MY MUSIC ADS** (SAS, RCS Paris 901 415 653, 19 rue Claude Tillier, 75012 Paris),
+> qui agit comme **sous-traitant** (art. 28) ; il tient le présent registre côté éditeur
 > et fournit ce modèle à ses clients.
 >
 > **Responsable de traitement** : _[organisation, adresse, représentant légal]_
-> **Contact / DPO** : _[email à compléter — boîte réellement surveillée]_
+> **Contact / DPO** : rgpd@mdmcmusicads.com
 > **Dernière mise à jour** : juin 2026
 
 ---

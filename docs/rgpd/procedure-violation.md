@@ -5,7 +5,7 @@
 > consignée dans le registre interne, même sans notification à la CNIL.
 
 ## Chaîne d'alerte
-1. **Détection** — toute personne (équipe, sous-traitant) signale immédiatement à : _[email cellule RGPD]_.
+1. **Détection** — toute personne (équipe, sous-traitant) signale immédiatement à : rgpd@mdmcmusicads.com.
 2. **Qualification** (< 24 h) — le référent RGPD qualifie : s'agit-il d'une violation ? quelles données, combien de personnes, quel risque ?
 3. **Confinement** — stopper la fuite (révoquer accès/tokens, corriger la faille, changer les secrets).
 4. **Évaluation du risque** pour les droits et libertés des personnes (faible / élevé).
