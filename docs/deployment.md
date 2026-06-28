@@ -96,3 +96,22 @@ npm run migrate:up / :down / :redo
 npm test                         # tests du moteur métier (packages/core)
 npm --workspace server run test  # tests serveur (Vitest)
 ```
+
+## Sauvegardes (base de données)
+
+Un workflow GitHub Actions (`.github/workflows/db-backup.yml`) fait un `pg_dump` **quotidien**
+de la production et stocke l'archive comme **artefact GitHub** (hors Railway — survit à une
+réinitialisation du service Postgres).
+
+**Activation (une fois)** : GitHub → Settings → Secrets → Actions → secret
+`BACKUP_DATABASE_URL` = la **chaîne publique** Railway (`DATABASE_PUBLIC_URL`, host `*.proxy.rlwy.net`).
+Puis l'onglet **Actions** → « Sauvegarde base de données » → **Run workflow** pour tester.
+
+**Restauration** : télécharger l'artefact, puis
+```bash
+pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" backup-AAAAMMJJ-HHMMSS.dump
+```
+
+> ⚠️ Une réinitialisation du Postgres Railway (recréation du service / changement de `DATABASE_URL`)
+> vide la base : les migrations reconstruisent le **schéma** au déploiement, mais **pas les données**.
+> Garder une sauvegarde externe à jour est la seule protection.
