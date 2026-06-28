@@ -2021,3 +2021,113 @@ select.status-select {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Bulle d'aide (InfoBubble) ── */
+.info-bubble {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.info-bubble-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-accent-tint);
+  color: var(--color-accent-strong);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-out-expo);
+}
+.info-bubble-btn:hover {
+  background: var(--color-accent-soft);
+  color: #fff;
+}
+.info-bubble-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  max-width: 80vw;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 14px 16px;
+  z-index: 50;
+  text-align: left;
+  white-space: normal;
+  cursor: default;
+  max-height: min(60vh, 460px);
+  overflow: auto;
+}
+.info-bubble-pop::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 11px;
+  height: 11px;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-line);
+  border-top: 1px solid var(--color-line);
+}
+.info-bubble-title {
+  display: block;
+  font-size: 13.5px;
+  color: var(--color-ink);
+  margin-bottom: 6px;
+}
+.info-bubble-body {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+}
+.info-bubble-body ol,
+.info-bubble-body ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.info-bubble-body li {
+  margin-bottom: 4px;
+}
+.info-bubble-body code {
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: 5px;
+  padding: 0 4px;
+  font-size: 11.5px;
+}
+
+/* Présentation d'un enregistrement DNS (Type / Nom / Valeur). */
+.dns-record {
+  display: grid;
+  gap: 5px;
+}
+.dns-record-row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.dns-record-row > span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+  font-weight: 600;
+}
+.dns-record-row > code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  overflow-wrap: anywhere;
+}
