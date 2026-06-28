@@ -17,6 +17,9 @@ const EnvSchema = z.object({
   // Cible CNAME affichée aux clients pour brancher leur domaine personnalisé
   // (host Railway du service, ou fallback Cloudflare le moment venu). Optionnel.
   CUSTOM_DOMAIN_TARGET: z.string().optional(),
+  // Domaine de base des sous-domaines self-service (ex. `prevent360.app` → rockinrio.prevent360.app).
+  // Nécessite un wildcard DNS+TLS *.<domaine> côté hébergeur. Optionnel (dormant si absent).
+  PLATFORM_BASE_DOMAIN: z.string().optional(),
 
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),

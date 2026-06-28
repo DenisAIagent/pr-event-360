@@ -38,6 +38,7 @@ export interface Event {
   accreditationDeadline: string | null;
   customDomain: string | null;
   customDomainVerified: boolean;
+  subdomainSlug: string | null;
   createdAt: string;
 }
 

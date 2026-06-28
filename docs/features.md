@@ -56,7 +56,7 @@ la 1ʳᵉ étape ; les suivantes le configurent via les endpoints existants et s
 |---|---|---|
 | **Demandes** | accès événement | File de traitement (grille triée par score — voir ci-dessous) |
 | **Accréditations** | accès événement | Accepter/refuser, **exporter** (PDF, filtrable presse/photo/vidéo), supprimer (RGPD) |
-| **Configuration** | éditeur | Assistant guidé : scènes → artistes (quotas itw/photo/vidéo) → règles & quotas → apparence → clôture → récap |
+| **Configuration** | éditeur | Assistant guidé : scènes → artistes (quotas itw/photo/vidéo) → règles & quotas → apparence → **sous-domaine** (slug plateforme et/ou domaine perso) → clôture → récap |
 | **Médiathèque** | éditeur | Upload Cloudinary (photos/vidéos/logos/dossier de presse) |
 | **Newsroom** | éditeur | Communiqués (brouillon/publié) + lien de la newsroom publique |
 | **Communications** | éditeur | Composer une newsletter HTML (aperçu live brandé) + envoi ciblé |

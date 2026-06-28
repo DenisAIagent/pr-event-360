@@ -1,8 +1,16 @@
-# Domaines personnalisés (white-label)
+# Domaines & sous-domaines (white-label)
 
 Chaque événement peut servir ses **surfaces publiques** (accréditation, espace journaliste,
-connexion, newsroom) sous le **domaine du client** (ex. `presse.mon-festival.com/`), en URLs
-propres (sans `:eventId`). Le back-office et l'API restent sur le domaine principal.
+connexion, newsroom) sous une adresse dédiée, en URLs propres (sans `:eventId`). Deux modèles,
+configurables par le client dans le wizard **Configuration** (onglet) ou dans **Paramètres** :
+
+| Modèle | Exemple | Côté client | Côté opérateur |
+|---|---|---|---|
+| **Sous-domaine plateforme** | `rockinrio.<PLATFORM_BASE_DOMAIN>` | choisit un **identifiant** (slug) — rien d'autre | un **wildcard** `*.<base>` (DNS + TLS) **une seule fois** |
+| **Domaine personnalisé** | `presse.mon-festival.com` | crée un **CNAME** | provisionner le **TLS par domaine** |
+
+Le **sous-domaine** est le plus simple (vraiment self-service : aucun DNS/TLS par événement) ;
+le **domaine personnalisé** offre le white-label total. Les deux coexistent.
 
 ## Comment ça marche (2 couches)
 
@@ -29,7 +37,17 @@ propres (sans `:eventId`). Le back-office et l'API restent sur le domaine princi
 4. Revenir sur la carte → **« Vérifier le DNS »** : contrôle que le domaine pointe bien sur la cible
    (badge « Vérifié »). C'est informatif — la vérification DNS ne conditionne pas le service.
 
-## Provisionner le TLS — deux chemins
+## Activer les sous-domaines plateforme (réglage opérateur, une fois)
+
+1. Posséder un domaine de base (ex. `prevent360.app`) et créer un **wildcard DNS** `*.prevent360.app`
+   → le service (ou le fallback Cloudflare).
+2. Provisionner un **certificat wildcard** `*.prevent360.app` (Railway : ajouter le domaine wildcard
+   au service ; ou Cloudflare). Un seul certificat couvre **tous** les sous-domaines.
+3. Définir l'env **`PLATFORM_BASE_DOMAIN=prevent360.app`**. Dès lors, tout slug saisi par un client
+   (`rockinrio` → `rockinrio.prevent360.app`) est servi automatiquement — **aucune action par
+   événement**. Tant que `PLATFORM_BASE_DOMAIN` est absent, les slugs sont mémorisés mais dormants.
+
+## Provisionner le TLS (domaines personnalisés) — deux chemins
 
 | Chemin | Principe | Pour qui |
 |---|---|---|

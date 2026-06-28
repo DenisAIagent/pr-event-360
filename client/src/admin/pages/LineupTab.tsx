@@ -14,8 +14,10 @@ import {
   Templates,
 } from '../components/settings/SettingsCards';
 import { BrandingEditor } from '../components/settings/BrandingEditor';
+import { SubdomainCard } from '../components/settings/SubdomainCard';
+import { DomainCard } from '../components/settings/DomainCard';
 
-const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Clôture', 'Récap & emails'];
+const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Sous-domaine', 'Clôture', 'Récap & emails'];
 
 interface WindowDraft {
   day: string;
@@ -323,16 +325,27 @@ export function LineupTab() {
       {step === 4 && (
         <>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Étape 5 — fixez la date limite d'inscription (optionnel) ; un compte à rebours s'affiche côté public.
+            Étape 5 — l'adresse publique de l'événement : un sous-domaine prêt à l'emploi, et/ou votre
+            propre nom de domaine (optionnel).
           </p>
-          <DeadlineCard eventId={eventId} />
+          <SubdomainCard eventId={eventId} />
+          <DomainCard eventId={eventId} />
         </>
       )}
 
       {step === 5 && (
         <>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Étape 6 — récapitulatifs envoyés à l'équipe et personnalisation des modèles d'emails (optionnel).
+            Étape 6 — fixez la date limite d'inscription (optionnel) ; un compte à rebours s'affiche côté public.
+          </p>
+          <DeadlineCard eventId={eventId} />
+        </>
+      )}
+
+      {step === 6 && (
+        <>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Étape 7 — récapitulatifs envoyés à l'équipe et personnalisation des modèles d'emails (optionnel).
           </p>
           {settings.data ? (
             <>

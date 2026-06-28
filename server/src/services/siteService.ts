@@ -1,11 +1,17 @@
 import type { Event } from '../domain';
 import { loadEnv } from '../config/env';
-import { findEventByCustomDomain } from '../db/repositories/eventRepo';
+import { findEventByCustomDomain, findEventBySubdomain } from '../db/repositories/eventRepo';
 
 /** Cible CNAME à communiquer aux clients (host Railway ou fallback configuré). */
 export function customDomainTarget(): string {
   const env = loadEnv();
   return env.CUSTOM_DOMAIN_TARGET ?? new URL(env.PUBLIC_BASE_URL).host;
+}
+
+/** Domaine de base de la plateforme pour les sous-domaines self-service (ex. `prevent360.app`). */
+export function platformBaseDomain(): string | null {
+  const env = loadEnv();
+  return env.PLATFORM_BASE_DOMAIN ? normalizeDomain(env.PLATFORM_BASE_DOMAIN) : null;
 }
 
 /**
@@ -32,7 +38,16 @@ export async function resolveEventForHost(hostname: string): Promise<Event | nul
   const hit = cache.get(host);
   if (hit && hit.expires > now) return hit.event;
 
-  const event = await findEventByCustomDomain(host);
+  let event: Event | null = null;
+  // 1) Sous-domaine plateforme : <slug>.<PLATFORM_BASE_DOMAIN>
+  const base = platformBaseDomain();
+  if (base && host.endsWith(`.${base}`)) {
+    const slug = host.slice(0, -(base.length + 1));
+    if (slug && !slug.includes('.')) event = await findEventBySubdomain(slug);
+  }
+  // 2) Sinon, domaine personnalisé du client.
+  if (!event) event = await findEventByCustomDomain(host);
+
   cache.set(host, { event, expires: now + TTL_MS });
   return event;
 }

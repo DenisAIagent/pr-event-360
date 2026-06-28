@@ -23,6 +23,7 @@ interface EventRow {
   accreditation_deadline: string | null;
   custom_domain: string | null;
   custom_domain_verified: boolean;
+  subdomain_slug: string | null;
   created_at: string;
 }
 /**
@@ -49,6 +50,7 @@ const mapEvent = (r: EventRow): Event => ({
   accreditationDeadline: r.accreditation_deadline,
   customDomain: r.custom_domain,
   customDomainVerified: r.custom_domain_verified,
+  subdomainSlug: r.subdomain_slug,
   createdAt: r.created_at,
 });
 
@@ -83,7 +85,7 @@ export async function insertEvent(
   const { rows } = await db.query<EventRow>(
     `INSERT INTO events (owner_user_id, name, location, start_date, end_date, languages)
      VALUES ($1, $2, $3, $4, $5, $6::lang_code[])
-     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at`,
+     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [
       input.ownerUserId,
       input.name,
@@ -98,7 +100,7 @@ export async function insertEvent(
 
 export async function findEventById(id: string, db: Queryable = pool): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at
+    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE id = $1`,
     [id],
   );
@@ -111,7 +113,7 @@ export async function findEventByCustomDomain(
   db: Queryable = pool,
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at
+    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE custom_domain = $1`,
     [domain],
   );
@@ -127,7 +129,7 @@ export async function setEventCustomDomain(
   const { rows } = await db.query<EventRow>(
     `UPDATE events SET custom_domain = $2, custom_domain_verified = false
      WHERE id = $1
-     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at`,
+     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [eventId, domain],
   );
   return rows[0] ? mapEvent(rows[0]) : null;
@@ -139,6 +141,33 @@ export async function setCustomDomainVerified(
   db: Queryable = pool,
 ): Promise<void> {
   await db.query('UPDATE events SET custom_domain_verified = $2 WHERE id = $1', [eventId, verified]);
+}
+
+/** Événement servi par un sous-domaine plateforme (slug.<PLATFORM_BASE_DOMAIN>). */
+export async function findEventBySubdomain(
+  slug: string,
+  db: Queryable = pool,
+): Promise<Event | null> {
+  const { rows } = await db.query<EventRow>(
+    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+     FROM events WHERE subdomain_slug = $1`,
+    [slug],
+  );
+  return rows[0] ? mapEvent(rows[0]) : null;
+}
+
+/** Affecte (ou retire avec `null`) le slug de sous-domaine plateforme d'un événement. */
+export async function setEventSubdomain(
+  eventId: string,
+  slug: string | null,
+  db: Queryable = pool,
+): Promise<Event | null> {
+  const { rows } = await db.query<EventRow>(
+    `UPDATE events SET subdomain_slug = $2 WHERE id = $1
+     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
+    [eventId, slug],
+  );
+  return rows[0] ? mapEvent(rows[0]) : null;
 }
 
 /**
@@ -153,7 +182,7 @@ export async function deleteEvent(id: string, db: Queryable = pool): Promise<num
 
 export async function listEventsByOwner(ownerUserId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at
+    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE owner_user_id = $1 ORDER BY created_at DESC`,
     [ownerUserId],
   );
@@ -163,7 +192,7 @@ export async function listEventsByOwner(ownerUserId: string, db: Queryable = poo
 /** Tous les événements (réservé à l'admin). */
 export async function listAllEvents(db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at
+    `SELECT id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events ORDER BY created_at DESC`,
   );
   return rows.map(mapEvent);
@@ -173,7 +202,7 @@ export async function listAllEvents(db: Queryable = pool): Promise<Event[]> {
 export async function listEventsForMember(userId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
     `SELECT e.id, e.owner_user_id, e.name, e.location, e.start_date, e.end_date, e.languages,
-            e.accreditation_deadline, e.custom_domain, e.custom_domain_verified, e.created_at
+            e.accreditation_deadline, e.custom_domain, e.custom_domain_verified, e.subdomain_slug, e.created_at
      FROM events e
      JOIN event_members m ON m.event_id = e.id
      WHERE m.user_id = $1
@@ -244,7 +273,7 @@ export async function setAccreditationDeadline(
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
     `UPDATE events SET accreditation_deadline = $2 WHERE id = $1
-     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, created_at`,
+     RETURNING id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [eventId, deadline],
   );
   return rows[0] ? mapEvent(rows[0]) : null;

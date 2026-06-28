@@ -11,6 +11,7 @@ import {
   Templates,
 } from '../components/settings/SettingsCards';
 import { DomainCard } from '../components/settings/DomainCard';
+import { SubdomainCard } from '../components/settings/SubdomainCard';
 
 export function SettingsTab() {
   const { eventId = '' } = useParams();
@@ -26,6 +27,7 @@ export function SettingsTab() {
   return (
     <div className="stack">
       <DeadlineCard eventId={eventId} />
+      <SubdomainCard eventId={eventId} />
       <DomainCard eventId={eventId} />
       <RecapCard eventId={eventId} initial={data.recap} onSaved={reload} />
       <ConfigForm eventId={eventId} config={data.config} />

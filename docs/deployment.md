@@ -16,6 +16,7 @@ requise manque ou est invalide.
 | `PUBLIC_BASE_URL` | — | `http://localhost:4000` | URL publique du back-end |
 | `CLIENT_URL` | — | `http://localhost:5173` | URL du front (CORS + liens) |
 | `CUSTOM_DOMAIN_TARGET` | — | host de `PUBLIC_BASE_URL` | Cible CNAME affichée aux clients pour les [domaines personnalisés](custom-domains.md) |
+| `PLATFORM_BASE_DOMAIN` | — | — | Domaine de base des [sous-domaines self-service](custom-domains.md) (`slug.<base>`). Nécessite un wildcard DNS+TLS |
 | `NOTIFICATIONS_MODE` | — | `simulation` | `simulation` (rien envoyé) / `live` |
 | `EMAIL_PROVIDER` | — | `brevo` | Fournisseur email |
 | `SMS_PROVIDER` | — | `twilio` | `twilio` / `brevo` |

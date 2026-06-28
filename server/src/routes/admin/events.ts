@@ -24,9 +24,16 @@ import {
   findEventByCustomDomain,
   setEventCustomDomain,
   setCustomDomainVerified,
+  findEventBySubdomain,
+  setEventSubdomain,
 } from '../../db/repositories/eventRepo';
 import { resolve as dnsResolve, resolveCname } from 'node:dns/promises';
-import { customDomainTarget, invalidateDomain, normalizeDomain } from '../../services/siteService';
+import {
+  customDomainTarget,
+  platformBaseDomain,
+  invalidateDomain,
+  normalizeDomain,
+} from '../../services/siteService';
 import { sendRecap } from '../../services/recapService';
 import { addArtist, addStage, getLineup } from '../../services/lineupService';
 import {
@@ -91,9 +98,46 @@ eventsRouter.get(
   asyncHandler(async (req, res) => {
     const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const branding = await getBranding(event.id);
-    sendData(res, { ...event, branding, customDomainTarget: customDomainTarget() });
+    sendData(res, {
+      ...event,
+      branding,
+      customDomainTarget: customDomainTarget(),
+      platformBaseDomain: platformBaseDomain(),
+    });
   }),
 );
+
+// ── Sous-domaine plateforme (self-service) ──────────────────────────
+const RESERVED_SLUGS = new Set(['www', 'admin', 'api', 'app', 'mail', 'static', 'assets', 'cdn']);
+const SubdomainSchema = z.object({ slug: z.string().trim().max(63).nullable() });
+eventsRouter.put(
+  '/:eventId/subdomain',
+  requireEventEditor,
+  validateBody(SubdomainSchema),
+  asyncHandler(async (req, res) => {
+    const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const raw = (req.body as z.infer<typeof SubdomainSchema>).slug;
+    const slug = raw ? raw.trim().toLowerCase() : null;
+    if (slug) {
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) {
+        throw AppError.badRequest('Identifiant invalide (lettres, chiffres, tirets ; ex. rock-in-rio)');
+      }
+      if (RESERVED_SLUGS.has(slug)) throw AppError.badRequest('Cet identifiant est réservé');
+      const other = await findEventBySubdomain(slug);
+      if (other && other.id !== event.id) {
+        throw AppError.conflict('Cet identifiant est déjà pris par un autre événement');
+      }
+    }
+    const updated = await setEventSubdomain(event.id, slug);
+    invalidateDomain(event.subdomainSlug && base() ? `${event.subdomainSlug}.${base()}` : null);
+    invalidateDomain(slug && base() ? `${slug}.${base()}` : null);
+    sendData(res, { ...updated, platformBaseDomain: platformBaseDomain() });
+  }),
+);
+
+function base(): string | null {
+  return platformBaseDomain();
+}
 
 // ── Domaine personnalisé (white-label) ──────────────────────────────
 const DomainSchema = z.object({ domain: z.string().trim().max(253).nullable() });
