@@ -45,6 +45,11 @@ export function createApp(): Express {
         },
       },
       referrerPolicy: { policy: 'no-referrer' },
+      // « Continuer avec Google » ouvre une popup qui doit pouvoir renvoyer le jeton à
+      // notre page : le défaut `same-origin` de helmet coupe ce lien (popup bloquée /
+      // onglet gsi/transform blanc). `same-origin-allow-popups` garde la protection
+      // tout en autorisant la communication avec les popups d'auth.
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     }),
   );
   app.use(cors({ origin: env.CLIENT_URL }));
