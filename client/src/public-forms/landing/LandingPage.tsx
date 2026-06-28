@@ -146,8 +146,7 @@ export function LandingPage() {
           <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 30 }} />
           <nav className="lp-nav">
             <a href="#features">Fonctionnalités</a>
-            <a href="#features">Solutions</a>
-            <a href={DEMO_MAILTO}>Tarifs</a>
+            <a href="#pricing">Tarifs</a>
             <Link to="/ressources">Ressources</Link>
           </nav>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -157,9 +156,9 @@ export function LandingPage() {
             >
               Connexion
             </Link>
-            <a className="btn btn-primary btn-sm" href={DEMO_MAILTO}>
-              Demander une démo
-            </a>
+            <Link className="btn btn-primary btn-sm" to="/admin/abonnement">
+              Créer votre espace
+            </Link>
           </div>
         </div>
       </header>
@@ -195,11 +194,11 @@ export function LandingPage() {
               plateforme pensée pour les événements.
             </p>
             <div className="lp-btn-row" style={{ marginTop: 'var(--space-5)' }}>
-              <a className="btn btn-primary" href={DEMO_MAILTO}>
-                Demander une démo <ArrowRight size={18} />
-              </a>
-              <a className="btn btn-ghost" href="#features">
-                <PlayCircle size={18} /> Voir les fonctionnalités
+              <Link className="btn btn-primary" to="/admin/abonnement">
+                Créer votre espace <ArrowRight size={18} />
+              </Link>
+              <a className="btn btn-ghost" href={DEMO_MAILTO}>
+                <PlayCircle size={18} /> Demander une démo
               </a>
             </div>
             <div
@@ -212,7 +211,7 @@ export function LandingPage() {
                 flexWrap: 'wrap',
               }}
             >
-              {['Sans engagement', 'Conforme RGPD', 'Support FR'].map((t) => (
+              {['Sans installation', 'Conforme RGPD', 'Support FR'].map((t) => (
                 <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Check size={15} color="var(--color-success)" /> {t}
                 </span>
@@ -292,6 +291,70 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section id="pricing" style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-line)' }}>
+        <div className="lp-wrap" style={{ padding: '80px 0' }}>
+          <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto var(--space-6)' }}>
+            <span className="eyebrow">Tarif simple</span>
+            <h2 style={{ fontSize: 'clamp(1.8rem, 1.2rem + 2vw, 2.4rem)', fontWeight: 400, margin: 'var(--space-3) 0 0' }}>
+              Un abonnement, tout inclus
+            </h2>
+            <p style={{ fontSize: '1.05rem', color: 'var(--color-ink-soft)', marginTop: 'var(--space-3)', lineHeight: 1.55 }}>
+              Un seul plan, sans surprise. Tous les modules, événements et membres illimités.
+            </p>
+          </div>
+          <Reveal>
+            <div
+              style={{
+                maxWidth: 440,
+                margin: '0 auto',
+                background: '#fff',
+                border: '1px solid var(--color-line)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)',
+                padding: '36px 32px',
+                textAlign: 'center',
+              }}
+            >
+              <span className="eyebrow">Plan unique</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6, margin: 'var(--space-3) 0 2px' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 56, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-ink)', lineHeight: 1 }}>
+                  800 €
+                </span>
+                <span style={{ fontSize: '1.1rem', color: 'var(--color-ink-faint)' }}>/ an</span>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-ink-faint)', margin: '0 0 var(--space-4)' }}>
+                par organisation · facturation annuelle
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 var(--space-5)', textAlign: 'left', display: 'grid', gap: 10 }}>
+                {[
+                  'Événements illimités',
+                  "Membres d'équipe illimités",
+                  "Accréditations & demandes d'interview",
+                  'Planning & génération de créneaux',
+                  'Newsroom & communications',
+                  'Espace journaliste (lien magique + compte)',
+                  'Multilingue FR / EN / PT / ES',
+                  'Support FR',
+                ].map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
+                    <Check size={17} color="var(--color-success)" strokeWidth={2.4} style={{ flex: 'none' }} /> {f}
+                  </li>
+                ))}
+              </ul>
+              <Link className="btn btn-primary" to="/admin/abonnement" style={{ width: '100%', justifyContent: 'center' }}>
+                Créer votre espace <ArrowRight size={18} />
+              </Link>
+              <a
+                href={DEMO_MAILTO}
+                style={{ display: 'inline-block', marginTop: 'var(--space-3)', fontSize: '0.9rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}
+              >
+                ou demander une démo
+              </a>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       <section style={{ background: 'var(--color-ink)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', right: -80, top: -80, width: 360, height: 360, borderRadius: '50%', border: '1px solid rgba(21,152,211,0.25)' }} />
         <div style={{ position: 'absolute', right: 10, top: 10, width: 240, height: 240, borderRadius: '50%', border: '1px solid rgba(21,152,211,0.18)' }} />
@@ -304,15 +367,15 @@ export function LandingPage() {
             Rejoignez les équipes communication qui centralisent et mesurent leurs relations presse avec PR Event 360.
           </p>
           <div className="lp-btn-row" style={{ justifyContent: 'center', marginTop: 'var(--space-5)' }}>
-            <a className="btn btn-primary" href={DEMO_MAILTO}>
-              Demander une démo <ArrowRight size={18} />
-            </a>
+            <Link className="btn btn-primary" to="/admin/abonnement">
+              Créer votre espace <ArrowRight size={18} />
+            </Link>
             <a
               className="btn"
               href={DEMO_MAILTO}
               style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
             >
-              Nous contacter
+              Demander une démo
             </a>
           </div>
           </Reveal>
