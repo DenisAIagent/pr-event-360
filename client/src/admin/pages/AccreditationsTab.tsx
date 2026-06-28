@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Download } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import type { Accreditation } from '../lib/types';
+import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
+import { printTable } from '../lib/printRequests';
 import { CopyLink } from '../components/CopyLink';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
@@ -16,6 +18,26 @@ const ACC_BADGE: Record<Accreditation['accStatus'], string> = {
   refusee: 'badge-danger',
 };
 
+type AccType = NonNullable<Accreditation['accreditationType']>;
+const ACC_TYPE_LABEL: Record<AccType, string> = {
+  presse: 'Journaliste',
+  photo: 'Photographe',
+  video: 'Vidéaste',
+};
+
+const TYPE_FILTERS: { v: 'all' | AccType; l: string }[] = [
+  { v: 'all', l: 'Tous' },
+  { v: 'presse', l: 'Journalistes' },
+  { v: 'photo', l: 'Photographes' },
+  { v: 'video', l: 'Vidéastes' },
+];
+const STATUS_FILTERS: { v: 'all' | AccStatus; l: string }[] = [
+  { v: 'all', l: 'Tous statuts' },
+  { v: 'acceptee', l: 'Acceptés' },
+  { v: 'pas_encore_traite', l: 'En attente' },
+  { v: 'refusee', l: 'Refusés' },
+];
+
 export function AccreditationsTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
@@ -24,6 +46,9 @@ export function AccreditationsTab() {
     () => apiAuthed.get<Accreditation[]>(`/admin/events/${eventId}/accreditations`),
     [eventId],
   );
+  const ev = useFetch<EventSummary>(() => apiAuthed.get<EventSummary>(`/admin/events/${eventId}`), [eventId]);
+  const [typeF, setTypeF] = useState<'all' | AccType>('all');
+  const [statusF, setStatusF] = useState<'all' | AccStatus>('all');
 
   async function process(journalistId: string, action: 'accept' | 'reject') {
     if (action === 'reject' && !window.confirm('Refuser cette accréditation ? Le journaliste en sera informé.')) {
@@ -82,21 +107,76 @@ export function AccreditationsTab() {
     );
   }
 
+  const filtered = (data ?? []).filter(
+    (a) =>
+      (typeF === 'all' || a.accreditationType === typeF) &&
+      (statusF === 'all' || a.accStatus === statusF),
+  );
+
+  function exportPdf() {
+    const rows = filtered.map((a) => [
+      `${a.firstName} ${a.lastName ?? ''}`.trim(),
+      a.email,
+      a.media ?? '—',
+      a.accreditationType ? ACC_TYPE_LABEL[a.accreditationType] : '—',
+      a.lang.toUpperCase(),
+      ACC_STATUS_LABEL[a.accStatus],
+    ]);
+    const typeLabel = TYPE_FILTERS.find((t) => t.v === typeF)?.l ?? 'Tous';
+    printTable({
+      eventName: ev.data?.name ?? 'Événement',
+      branding: ev.data?.branding ?? null,
+      heading: 'Liste des accréditations',
+      generatedAt: new Date().toLocaleString('fr-FR'),
+      columns: ['Nom', 'Email', 'Média', 'Type', 'Langue', 'Statut'],
+      groups: [
+        {
+          title: typeF === 'all' ? 'Toutes les accréditations' : typeLabel,
+          meta: `${rows.length} accrédité${rows.length > 1 ? 's' : ''}`,
+          rows,
+        },
+      ],
+    });
+  }
+
   return (
-    <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Demandeur</th>
-            <th>Média</th>
-            <th>Langue</th>
-            <th>Type</th>
-            <th>Statut</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data?.map((a) => (
+    <div className="stack">
+      <div className="filters">
+        {TYPE_FILTERS.map((o) => (
+          <button key={o.v} className="chip" aria-pressed={typeF === o.v} onClick={() => setTypeF(o.v)}>
+            {o.l}
+          </button>
+        ))}
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
+        {STATUS_FILTERS.map((o) => (
+          <button key={o.v} className="chip" aria-pressed={statusF === o.v} onClick={() => setStatusF(o.v)}>
+            {o.l}
+          </button>
+        ))}
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ marginLeft: 'auto' }}
+          onClick={exportPdf}
+          disabled={filtered.length === 0}
+        >
+          <Download size={15} /> Exporter en PDF
+        </button>
+      </div>
+
+      <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Demandeur</th>
+              <th>Média</th>
+              <th>Langue</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((a) => (
             <tr key={a.id}>
               <td>
                 <strong>
@@ -109,7 +189,7 @@ export function AccreditationsTab() {
               </td>
               <td>{a.media ?? '—'}</td>
               <td>{a.lang.toUpperCase()}</td>
-              <td>{a.accreditationType ?? '—'}</td>
+              <td>{a.accreditationType ? ACC_TYPE_LABEL[a.accreditationType] : '—'}</td>
               <td>
                 <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
               </td>
@@ -153,9 +233,15 @@ export function AccreditationsTab() {
                 </div>
               </td>
             </tr>
-          ))}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+        {filtered.length === 0 && (
+          <p className="muted" style={{ margin: 'var(--space-3) 0 0' }}>
+            Aucune accréditation ne correspond à ce filtre.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
