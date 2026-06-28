@@ -404,4 +404,26 @@ Le MVP est considéré comme livré lorsque l'ensemble des conditions suivantes 
 
 ---
 
-*Fin du PRD — PR Event 360 v1.0*
+## 10. Addendum — écarts & évolutions livrés (post-v1.0)
+
+Le produit livré reprend l'intégralité du périmètre v1.0 ci-dessus, avec ces écarts et ajouts
+(la **documentation technique fait foi** : [`docs/`](docs/README.md)) :
+
+- **Quotas par artiste** — les quotas photo et vidéo sont portés par l'**artiste** (et non par la
+  scène) : c'est l'artiste qui fixe son nombre d'interviews, de photographes et de vidéastes
+  (`NULL` ⇒ illimité). Les demandes ciblent toujours un artiste.
+- **Attribution des créneaux par le système** — le journaliste ne choisit plus son créneau ;
+  le bouton **« Générer le planning »** attribue les créneaux d'interview **par priorité**.
+  Le journaliste retrouve son planning dans son espace.
+- **Comptes journalistes** — en plus du lien magique, accès par **email + mot de passe** (par
+  événement), avec **mot de passe oublié** ; carte **« Ressources presse »** vers la newsroom.
+- **Back-office redessiné** — coquille rail navy + topbar, **recherche globale** (journalistes /
+  événements, scopée aux droits), file de demandes en **grille** triée par score, raccourcis clavier.
+- **Sécurité** — **2FA (TOTP)** optionnelle sur les comptes back-office ; suppression d'événement
+  et d'accréditation (droit à l'effacement) ; export PDF des accrédités.
+- **v1.5 anticipée (partiel)** — le **planning des créneaux** est généré et consultable ; le badge
+  PDF/QR et le check-in jour-J restent planifiés.
+
+---
+
+*Fin du PRD — PR Event 360 v1.0 (+ addendum post-v1.0)*

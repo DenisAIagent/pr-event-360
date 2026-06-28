@@ -82,6 +82,8 @@ typée (status + message) en cas d'échec.
 | `/admin/*` | Back-office (français) | JWT (login) |
 | `/accreditation/:eventId` | Formulaire public d'accréditation (multilingue) | Libre |
 | `/espace/:token` | Espace journaliste | Token unique non devinable |
+| `/evenement/:eventId/connexion` | Connexion journaliste (email + mot de passe) | Libre |
+| `/evenement/:eventId/mot-de-passe-oublie` · `/reinitialiser` | Réinitialisation du mot de passe journaliste | Libre / jeton |
 | `/espace-preview/:eventId` | Aperçu de l'espace (back-office) | JWT (lu depuis localStorage) |
 | `/newsroom/:eventId` | Espace presse public | Libre |
 

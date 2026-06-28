@@ -46,14 +46,19 @@ npm run migrate:down     # revient en arrière d'une migration (réversibilité)
 npm test
 ```
 
-## Feuille de route (par module, validée avant passage au suivant)
+## Capacités (modules livrés)
 
-0. **Scaffold + schéma PostgreSQL** ✅ (ce dépôt)
-1. Moteur métier pur + tests (génération de créneaux, score, quotas, promotion)
-2. API REST (routes publiques tokenisées + back-office JWT)
-3. Formulaires publics multilingues
-4. Back-office (file triée par score, filtres, KPIs, config, lineup)
-5. Notifications en simulation, puis branchement Brevo/Twilio
+0. **Scaffold + schéma PostgreSQL** ✅
+1. **Moteur métier pur + tests** ✅ — génération de créneaux, score de priorité, quotas, promotion
+2. **API REST** ✅ — surfaces publiques tokenisées + back-office JWT (2FA TOTP optionnelle)
+3. **Formulaires publics multilingues** ✅ — accréditation, espace journaliste, newsroom (FR/EN/PT/ES)
+4. **Back-office** ✅ — coquille rail + recherche globale, file en grille triée par score, KPIs,
+   configuration guidée, lineup & créneaux, génération de planning, médias/newsroom/communications, équipe
+5. **Notifications** ✅ — simulation puis branchement Brevo/Twilio ; récapitulatifs périodiques
+6. **Comptes journalistes** ✅ — accès par lien magique **ou** email + mot de passe (par événement),
+   mot de passe oublié, planning personnel, ressources presse
+
+> Détails et endpoints : [`docs/`](docs/README.md).
 
 ## Sécurité & RGPD
 

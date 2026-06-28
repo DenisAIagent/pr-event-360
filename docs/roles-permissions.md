@@ -39,6 +39,8 @@ Application côté serveur :
 - `requireRole('admin')` → routes `/api/admin/team` et `/api/admin/settings`.
 - `requireEventEditor` → routes d'édition (admin ou attache).
 - `getAccessibleEventOrThrow` → isolation par appartenance sur toute route `/:eventId`.
+- La **recherche globale** (`/api/admin/search`) applique le même périmètre : un non-admin ne
+  trouve que les journalistes/événements de ses événements assignés.
 
 Côté front : la navigation et les onglets sont masqués selon le rôle ; le serveur reste
 la source de vérité (un `assistant` qui force une route d'édition reçoit `403`).

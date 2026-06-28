@@ -49,8 +49,13 @@ npm --workspace client run build         # tsc --noEmit && vite build → client
 Démarrage en production :
 
 ```bash
+npm --workspace server run start:prod    # migrate:deploy → bootstrap:admin → start
+# (ou, si les migrations sont déjà appliquées) :
 npm --workspace server run start         # tsx src/index.ts
 ```
+
+> `start:prod` **applique les migrations en attente** puis démarre — c'est la commande
+> lancée par Railway à chaque déploiement (le schéma est donc toujours à jour).
 
 Le front (`client/dist`) est servi en statique (CDN / hébergeur front) et tape l'API via
 `/api` (proxifié en dev par Vite, à configurer en prod selon l'hébergeur).
@@ -73,9 +78,11 @@ SEED_EMAIL=… SEED_PASSWORD=… SEED_NAME=… npm --workspace server run seed
 ## Passage en « live » (envois réels)
 
 1. Renseigner les clés Brevo (et Twilio si SMS), ou les saisir via **Intégrations**.
-2. Côté Brevo : **vérifier l'expéditeur** et **autoriser l'IP** du serveur
-   (`Sécurité → IP autorisées`) — sinon les envois sont acceptés par l'API mais rejetés
-   à la livraison.
+2. Côté Brevo : **vérifier l'expéditeur**. ⚠️ La fonctionnalité « IP autorisées »
+   (`Sécurité → IP autorisées`) bloque les envois depuis une IP inconnue ; or l'**IP de sortie
+   de Railway change à chaque déploiement**. Sur ce type d'hébergeur, **désactiver** cette
+   fonctionnalité (plutôt que d'y lister une IP qui sera invalidée au prochain déploiement),
+   sinon les envois sont acceptés par l'API mais **rejetés silencieusement** à la livraison.
 3. Passer `NOTIFICATIONS_MODE=live` une fois le parcours validé en simulation.
 4. Pour les médias : créer un compte Cloudinary et renseigner les 3 clés.
 

@@ -23,7 +23,8 @@ users ──┐ (owner)
               ├─ request_type_weights (1-N)
               ├─ media_types (1-N)
               ├─ stages ─── artists ─── artist_windows ─── interview_slots
-              ├─ journalists ─── requests ─── request_status_history
+              ├─ journalists ─┬─ requests ─── request_status_history
+              │               └─ journalist_password_resets
               ├─ email_templates · notifications
               ├─ event_branding (1-1) · event_recap (1-1)
               ├─ event_members (N-N users↔events)
@@ -44,7 +45,8 @@ app_secrets (global, non lié à un événement)
 ### Comptes & accès
 
 **`users`** — comptes back-office.
-`id, email (unique), password_hash (argon2), full_name, role (user_role), active (bool), created_at`
+`id, email (unique), password_hash (argon2), full_name, role (user_role), active (bool),
+mfa_secret (TOTP, chiffré), mfa_enabled (bool), created_at`
 
 **`event_members`** — assignation collaborateur ↔ événement (PK composite `event_id,user_id`).
 Un admin accède à tout sans ligne ici ; les autres rôles n'accèdent qu'aux événements où
@@ -66,6 +68,8 @@ ils sont membres.
 
 **`event_configs`** — paramètres de calcul (1 par événement).
 `itw_duration_min, itw_buffer_min, default_itw_quota, photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap`
+> `photo_quota_per_stage` est **legacy** : depuis la migration 021, les quotas photo/vidéo
+> sont portés par l'**artiste** (`artists.photo_quota` / `video_quota`), plus par la scène.
 
 **`request_type_weights`** — multiplicateur de score par type de demande.
 **`media_types`** — types de média + poids (TV nationale, presse, web…), utilisés dans le score.
@@ -75,7 +79,10 @@ ils sont membres.
 ### Lineup
 
 **`stages`** — scènes (`event_id, name`).
-**`artists`** — `event_id, name, stage_id → stages, itw_quota` (quota d'interviews spécifique, sinon défaut).
+**`artists`** — `event_id, name, stage_id → stages, itw_quota, photo_quota, video_quota`.
+C'est l'**artiste** qui porte ses quotas : interviews (`itw_quota`, sinon défaut de l'événement),
+photographes (`photo_quota`) et vidéastes (`video_quota`). `NULL` ⇒ illimité (photo/vidéo) ou
+défaut (interview).
 **`artist_windows`** — fenêtres de disponibilité d'un artiste (`day, start_time, end_time`).
 **`interview_slots`** — créneaux d'interview générés depuis les fenêtres (`day, start_time, end_time`).
 
@@ -84,13 +91,18 @@ ils sont membres.
 **`journalists`** — un journaliste accrédité (ou en attente) pour un événement.
 `id, event_id, token (unique, accès à l'espace), first_name, last_name, email, phone, media,
 media_type_id → media_types, audience, prev_article, lang, accreditation_type, acc_status,
-commit_publish (bool), consent (bool, RGPD), created_at`
+commit_publish (bool), consent (bool, RGPD), password_hash (argon2, nullable), created_at`
+> Email **non unique** (un journaliste = une ligne par événement). `password_hash` est défini
+> après acceptation pour permettre la connexion email + mot de passe (voir `journalist_password_resets`).
 
-**`requests`** — demande d'un journaliste.
+**`journalist_password_resets`** — réinitialisation du mot de passe d'espace.
+`id, journalist_id → journalists, token_hash (SHA-256), expires_at, used_at` (usage unique, 1 h).
+
+**`requests`** — demande d'un journaliste. **Cible toujours un artiste** (`artist_id NOT NULL`).
 `id, event_id, journalist_id → journalists, type (request_type), artist_id, slot_id, stage_id,
 message, status (request_status), created_at`
-- `interview` → vise un `artist_id` (+ éventuel `slot_id`)
-- `photo_report` / `video_report` → visent un `stage_id`
+- `interview` → artiste (+ `slot_id` attribué par la génération de planning)
+- `photo_report` / `video_report` → artiste (quotas photo/vidéo portés par l'artiste)
 
 **`request_status_history`** — historique des changements de statut.
 `request_id → requests, status, changed_at, changed_by → users, note`
@@ -109,15 +121,18 @@ message, status (request_status), created_at`
 Ordre chronologique (`server/migrations/1700000000NNN_*.ts`) :
 
 ```
-001 init-extensions-enums      010 branding-text-color
-002 users                      011 branding-bg-image
-003 events-config-weights      012 deadline-and-recap
-004 stages-artists-windows-slots  013 password-reset-tokens
-005 journalists                014 user-role-admin       (ALTER TYPE … ADD VALUE, hors transaction)
-006 requests-history           015 event-members         (+ backfill, bootstrap admin)
-007 email-templates            016 invitations           (+ users.active)
-008 notifications              017 app-secrets
-009 event-branding             018 newsroom-newsletters
+001 init-extensions-enums      013 password-reset-tokens
+002 users                      014 user-role-admin        (ALTER TYPE … ADD VALUE, hors transaction)
+003 events-config-weights      015 event-members          (+ backfill, bootstrap admin)
+004 stages-artists-windows-slots  016 invitations         (+ users.active)
+005 journalists                017 app-secrets
+006 requests-history           018 newsroom-newsletters
+007 email-templates            019 user-mfa               (2FA TOTP : mfa_secret, mfa_enabled)
+008 notifications              020 stage-quotas
+009 event-branding             021 report-quotas-on-artist (quotas photo/vidéo → artists ;
+010 branding-text-color            requests.artist_id NOT NULL)
+011 branding-bg-image          022 journalist-password    (journalists.password_hash)
+012 deadline-and-recap         023 journalist-password-resets
 ```
 
 ```bash
