@@ -34,6 +34,7 @@ import { listAccreditations, processAccreditation } from '../../services/accredi
 import { deleteJournalist } from '../../db/repositories/journalistRepo';
 import { changeRequestStatus } from '../../services/requestService';
 import { getDashboard, getQueue } from '../../services/queueService';
+import { generatePlanning } from '../../services/planningService';
 import { listNotificationsByEvent } from '../../db/repositories/notificationRepo';
 
 export const eventsRouter = Router();
@@ -417,6 +418,16 @@ eventsRouter.post(
       body.note ?? undefined,
     );
     sendData(res, updated);
+  }),
+);
+
+// Génère/recalcule le planning des interviews (créneaux attribués par priorité).
+eventsRouter.post(
+  '/:eventId/planning/generate',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(res, await generatePlanning(req.params.eventId!));
   }),
 );
 

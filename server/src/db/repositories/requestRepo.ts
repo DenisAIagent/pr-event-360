@@ -94,6 +94,20 @@ export async function updateRequestStatus(
   return rows[0] ? map(rows[0]) : null;
 }
 
+/** Libère tous les créneaux d'interview de l'événement (avant régénération du planning). */
+export async function clearInterviewSlots(eventId: string, db: Queryable = pool): Promise<void> {
+  await db.query(`UPDATE requests SET slot_id = NULL WHERE event_id = $1 AND type = 'interview'`, [eventId]);
+}
+
+/** Attribue un créneau à une demande. */
+export async function setRequestSlot(
+  requestId: string,
+  slotId: string | null,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query('UPDATE requests SET slot_id = $2 WHERE id = $1', [requestId, slotId]);
+}
+
 // ── Historique ──────────────────────────────────────────────────────
 interface HistoryRow {
   id: string;

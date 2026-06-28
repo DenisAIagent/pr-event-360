@@ -529,6 +529,8 @@ function PlanningView({
     [eventId, query],
   );
 
+  const [busy, setBusy] = useState(false);
+
   async function changeStatus(requestId: string, status: RequestStatus) {
     try {
       await apiAuthed.post(`/admin/events/${eventId}/requests/${requestId}/status`, { status });
@@ -537,6 +539,30 @@ function PlanningView({
       onChanged();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
+  }
+
+  // Attribue automatiquement les créneaux aux interviews acceptées, par priorité.
+  async function generate() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await apiAuthed.post<{ assigned: number; unscheduled: number }>(
+        `/admin/events/${eventId}/planning/generate`,
+      );
+      toast.success(
+        `Planning généré : ${res.assigned} créneau${res.assigned > 1 ? 'x' : ''} attribué${res.assigned > 1 ? 's' : ''}` +
+          (res.unscheduled > 0
+            ? ` · ${res.unscheduled} interview(s) sans créneau (plus de créneaux disponibles)`
+            : '') +
+          '.',
+      );
+      queue.reload();
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Génération impossible.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -590,14 +616,22 @@ function PlanningView({
       <div className="filters">
         <StatusFilter value={statusF} onChange={setStatusF} />
         <button
-          className="btn btn-ghost btn-sm"
+          className="btn btn-primary btn-sm"
           style={{ marginLeft: 'auto' }}
-          onClick={exportPlanning}
-          disabled={empty}
+          onClick={generate}
+          disabled={busy}
         >
-          <Icon name="download" /> Exporter le planning en PDF
+          <Icon name="check" /> {busy ? 'Génération…' : 'Générer le planning'}
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={exportPlanning} disabled={empty}>
+          <Icon name="download" /> Exporter en PDF
         </button>
       </div>
+      <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
+        « Générer le planning » attribue automatiquement les créneaux aux interviews{' '}
+        <strong>acceptées</strong>, par ordre de priorité (meilleur score → créneau le plus tôt). Recalculable
+        à volonté.
+      </p>
 
       {queue.loading && <p className="muted">Chargement…</p>}
       {queue.error && <div className="banner banner-error">{queue.error}</div>}
