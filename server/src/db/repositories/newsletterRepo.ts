@@ -84,3 +84,16 @@ export async function markNewsletterSent(
     [eventId, id, recipientCount],
   );
 }
+
+/** Supprime un brouillon. Les newsletters déjà envoyées sont conservées (archive). */
+export async function deleteNewsletter(
+  eventId: string,
+  id: string,
+  db: Queryable = pool,
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `DELETE FROM newsletters WHERE event_id = $1 AND id = $2 AND status = 'draft'`,
+    [eventId, id],
+  );
+  return (rowCount ?? 0) > 0;
+}

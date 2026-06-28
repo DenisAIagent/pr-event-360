@@ -18,6 +18,7 @@ import {
 } from '../../db/repositories/pressReleaseRepo';
 import {
   createNewsletter,
+  deleteNewsletter,
   listNewsletters,
   updateNewsletter,
 } from '../../db/repositories/newsletterRepo';
@@ -160,6 +161,17 @@ commsRouter.put(
     const updated = await updateNewsletter(req.params.eventId!, req.params.id!, b);
     if (!updated) return sendData(res, { error: 'introuvable ou déjà envoyée' }, 404);
     sendData(res, updated);
+  }),
+);
+
+commsRouter.delete(
+  '/:eventId/newsletters/:id',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await access(req);
+    const ok = await deleteNewsletter(req.params.eventId!, req.params.id!);
+    if (!ok) return sendData(res, { error: 'introuvable ou déjà envoyée' }, 404);
+    sendData(res, { ok: true });
   }),
 );
 

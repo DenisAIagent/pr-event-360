@@ -2,16 +2,32 @@ import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
+import { useToast } from '../components/Toast';
 import type { Newsletter, Recipient } from '../lib/types';
 
 export function CommunicationsTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const list = useFetch<Newsletter[]>(
     () => apiAuthed.get<Newsletter[]>(`/admin/events/${eventId}/newsletters`),
     [eventId],
   );
   const [draft, setDraft] = useState<Newsletter | 'new' | null>(null);
+
+  async function removeDraft(n: Newsletter) {
+    if (!window.confirm(`Supprimer le brouillon « ${n.subject || 'Sans objet'} » ?\n\nCette action est irréversible.`)) {
+      return;
+    }
+    try {
+      await apiAuthed.delete(`/admin/events/${eventId}/newsletters/${n.id}`);
+      toast.success('Brouillon supprimé.');
+      if (draft !== null && draft !== 'new' && draft.id === n.id) setDraft(null);
+      list.reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Suppression impossible.');
+    }
+  }
 
   return (
     <div className="stack">
@@ -52,9 +68,18 @@ export function CommunicationsTab() {
               </div>
             </div>
             {n.status === 'draft' && (
-              <button className="btn btn-ghost btn-sm" onClick={() => setDraft(n)}>
-                Ouvrir
-              </button>
+              <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 'none' }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setDraft(n)}>
+                  Ouvrir
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => removeDraft(n)}
+                  style={{ color: 'var(--color-danger)' }}
+                >
+                  Supprimer
+                </button>
+              </div>
             )}
           </div>
         ))}
