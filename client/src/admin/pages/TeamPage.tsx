@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
 import { useToast } from '../components/Toast';
 import type { EventSummary, Invitation, Team, TeamMember, UserRole } from '../lib/types';
@@ -24,9 +23,7 @@ export function TeamPage() {
   const events = useFetch<EventSummary[]>(() => apiAuthed.get<EventSummary[]>('/admin/events'), []);
 
   return (
-    <div className="admin">
-      <AdminBar />
-      <div className="admin-shell stack">
+    <div className="stack">
         <PageHero
           eyebrow="Configuration"
           title="Équipe"
@@ -71,7 +68,6 @@ export function TeamPage() {
             )}
           </>
         )}
-      </div>
     </div>
   );
 }

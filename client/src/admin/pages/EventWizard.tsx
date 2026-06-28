@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
-import { AdminBar } from '../components/AdminBar';
 import { CopyLink } from '../components/CopyLink';
 import { PageHero } from '../components/PageHero';
 import { Icon } from '../../components/Icon';
@@ -49,9 +48,7 @@ export function EventWizard() {
   }
 
   return (
-    <div className="admin">
-      <AdminBar />
-      <div className="admin-shell">
+    <div className="stack">
         <PageHero
           eyebrow="Nouvel événement"
           title="Créons votre événement"
@@ -80,7 +77,6 @@ export function EventWizard() {
           <DeadlineStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 5)} onSkip={() => go(5)} onBack={() => go(3)} />
         )}
         {step === 5 && eventId && <DoneStep eventId={eventId} onOpen={() => navigate(`/admin/events/${eventId}`)} />}
-      </div>
     </div>
   );
 }

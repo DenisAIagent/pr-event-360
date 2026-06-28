@@ -21,7 +21,17 @@ import {
 } from '../lib/labels';
 import { printTable, type PrintTableGroup } from '../lib/printRequests';
 import { Icon } from '../../components/Icon';
-import { Inbox } from 'lucide-react';
+import {
+  Inbox,
+  Mic,
+  Camera,
+  Video,
+  Clock,
+  Users,
+  Check,
+  ArrowUp,
+  type LucideIcon,
+} from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
@@ -97,22 +107,24 @@ export function RequestsTab() {
   return (
     <div>
       {dash.data && (
-        <div className="kpis">
-          <Kpi num={dash.data.total} label="Demandes" />
-          <Kpi num={dash.data.byType.interview} label="Interviews" />
-          <Kpi num={dash.data.byType.photo_report} label="Reportages photo" />
-          <Kpi num={dash.data.byType.video_report} label="Reportages vidéo" />
-          <Kpi num={dash.data.waitlist} label="Liste d'attente" />
-          <Kpi num={dash.data.journalists} label="Journalistes" />
+        <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+          <Kpi num={dash.data.total} label="Demandes" icon={Inbox} variant="k-navy" />
+          <Kpi num={dash.data.byType.interview} label="Interviews" icon={Mic} variant="k-blue" />
+          <Kpi num={dash.data.byType.photo_report} label="Reportages photo" icon={Camera} variant="k-navy" />
+          <Kpi num={dash.data.byType.video_report} label="Reportages vidéo" icon={Video} variant="k-navy" />
+          <Kpi num={dash.data.waitlist} label="Liste d'attente" icon={Clock} variant="k-amber" />
+          <Kpi num={dash.data.journalists} label="Journalistes" icon={Users} variant="k-green" />
         </div>
       )}
 
-      <div className="filters">
-        {VIEWS.map((v) => (
-          <button key={v.value} className="chip" aria-pressed={view === v.value} onClick={() => setView(v.value)}>
-            {v.label}
-          </button>
-        ))}
+      <div className="toolbar">
+        <div className="segmented">
+          {VIEWS.map((v) => (
+            <button key={v.value} className={view === v.value ? 'on' : ''} onClick={() => setView(v.value)}>
+              {v.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {view === 'queue' && (
@@ -242,8 +254,10 @@ function QueueView({
 
   useEffect(() => {
     if (activeIdx < 0) return;
-    document.querySelector('.req-card.is-active')?.scrollIntoView({ block: 'nearest' });
+    document.querySelector('.row.is-active')?.scrollIntoView({ block: 'nearest' });
   }, [activeIdx]);
+
+  const maxScore = Math.max(1, ...items.map((i) => i.score));
 
   function exportPdf() {
     const items = queue.data ?? [];
@@ -259,7 +273,7 @@ function QueueView({
 
   return (
     <>
-      <div className="filters">
+      <div className="toolbar">
         {TYPE_FILTERS.map((f) => (
           <button key={f.value} className="chip" aria-pressed={typeF === f.value} onClick={() => setTypeF(f.value)}>
             {f.label}
@@ -267,13 +281,9 @@ function QueueView({
         ))}
         <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
         <StatusFilter value={statusF} onChange={setStatusF} />
-        <button
-          className="btn btn-ghost btn-sm"
-          style={{ marginLeft: 'auto' }}
-          onClick={exportPdf}
-          disabled={(queue.data?.length ?? 0) === 0}
-        >
-          <Icon name="download" /> Exporter en PDF
+        <div className="tb-spacer" />
+        <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
+          <Icon name="download" /> Exporter
         </button>
       </div>
 
@@ -288,16 +298,161 @@ function QueueView({
       )}
 
       {items.length > 0 && (
-        <p className="kbd-hint">
-          Raccourcis : <kbd>↑</kbd> <kbd>↓</kbd> (ou <kbd>J</kbd> <kbd>K</kbd>) naviguer ·{' '}
-          <kbd>A</kbd> accepter · <kbd>R</kbd> refuser
-        </p>
+        <>
+          <p className="kbd-hint">
+            Raccourcis : <kbd>↑</kbd> <kbd>↓</kbd> (ou <kbd>J</kbd> <kbd>K</kbd>) naviguer · <kbd>A</kbd> accepter ·{' '}
+            <kbd>R</kbd> refuser
+          </p>
+          <div className="queue">
+            <div className="q-head">
+              <div className="col">Priorité</div>
+              <div className="col">Demandeur</div>
+              <div className="col">Objet</div>
+              <div className="col">Statut</div>
+              <div className="col" style={{ textAlign: 'right', paddingRight: 20 }}>
+                Actions
+              </div>
+            </div>
+            {items.map((r, i) => (
+              <QueueRow key={r.id} item={r} maxScore={maxScore} onChange={changeStatus} active={i === activeIdx} />
+            ))}
+            <div className="q-foot">
+              <div>
+                <b>{items.length}</b> demande{items.length > 1 ? 's' : ''} · triées par score décroissant
+              </div>
+            </div>
+          </div>
+        </>
       )}
-
-      {items.map((r, i) => (
-        <RequestCard key={r.id} item={r} onChange={changeStatus} active={i === activeIdx} />
-      ))}
     </>
+  );
+}
+
+const TYPE_TAG_CLASS: Record<RequestType, string> = {
+  interview: 't-itw',
+  photo_report: 't-photo',
+  video_report: 't-video',
+};
+const TYPE_ICON: Record<RequestType, LucideIcon> = {
+  interview: Mic,
+  photo_report: Camera,
+  video_report: Video,
+};
+const AVA_GRADIENT: Record<RequestType, string> = {
+  interview: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-strong))',
+  photo_report: 'linear-gradient(135deg, var(--navy-600), var(--color-ink))',
+  video_report: 'linear-gradient(135deg, #6b3fa0, #4a2b73)',
+};
+
+/** Une ligne de la file (grille) : priorité, demandeur, objet, statut, actions. */
+function QueueRow({
+  item,
+  maxScore,
+  onChange,
+  active,
+}: {
+  item: QueueItem;
+  maxScore: number;
+  onChange: (id: string, s: RequestStatus) => void;
+  active?: boolean;
+}) {
+  const subject = item.subject.artistName ?? item.subject.stageName ?? '—';
+  const slot = formatSlot(item.subject);
+  const full = item.quota ? item.quota.used >= item.quota.limit : false;
+  const pct = Math.min(100, Math.round((item.score / maxScore) * 100));
+  const tier = pct >= 66 ? 'tier-hi' : pct <= 33 ? 'tier-lo' : '';
+  const TypeIcon = TYPE_ICON[item.type];
+  const initials =
+    `${item.requester.firstName?.[0] ?? ''}${item.requester.lastName?.[0] ?? ''}`.toUpperCase() || '—';
+
+  return (
+    <div
+      className={`row ${tier}${item.status === 'liste_attente' ? ' is-waitlist' : ''}${active ? ' is-active' : ''}`}
+    >
+      <div className="c-score">
+        <div className="score-bar">
+          <i style={{ height: `${Math.max(6, pct)}%` }} />
+        </div>
+        <div className="score-val">
+          <b>{Math.round(item.score)}</b>
+          <small>score</small>
+        </div>
+      </div>
+
+      <div className="c-req">
+        <div className="ava" style={{ background: AVA_GRADIENT[item.type] }}>
+          {initials}
+        </div>
+        <div className="info">
+          <div className="nm">{requesterName(item)}</div>
+          <div className="sub">
+            {item.requester.media ?? 'média n.c.'} · {item.requester.email}
+          </div>
+        </div>
+      </div>
+
+      <div className="c-obj">
+        <span className={`type-tag ${TYPE_TAG_CLASS[item.type]}`}>
+          <TypeIcon size={12} /> {TYPE_LABEL[item.type]}
+        </span>
+        <div className="obj-main">{subject}</div>
+        {slot && (
+          <span className="obj-slot">
+            <Clock size={11} /> {slot}
+          </span>
+        )}
+        {item.quota && (
+          <div className={`quota${full ? ' full' : ''}`}>
+            <span>
+              {item.quota.used}/{item.quota.limit}
+            </span>
+            <div className="track">
+              <i style={{ width: `${Math.min(100, (item.quota.used / Math.max(1, item.quota.limit)) * 100)}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="c-stat">
+        <span className={`badge ${STATUS_BADGE[item.status]}`}>{STATUS_LABEL[item.status]}</span>
+      </div>
+
+      <div className="c-act">
+        {item.status === 'liste_attente' ? (
+          <button className="act promote" onClick={() => onChange(item.id, 'acceptee')}>
+            <ArrowUp size={14} /> Promouvoir
+          </button>
+        ) : item.status === 'acceptee' ? (
+          <button className="act reject" onClick={() => onChange(item.id, 'refusee')}>
+            Annuler
+          </button>
+        ) : (
+          <>
+            <button className="act accept" onClick={() => onChange(item.id, 'acceptee')}>
+              <Check size={14} /> Accepter
+            </button>
+            <button className="act reject" onClick={() => onChange(item.id, 'refusee')}>
+              Refuser
+            </button>
+          </>
+        )}
+        <select
+          className="status-select"
+          value={SETTABLE_STATUSES.includes(item.status) ? item.status : ''}
+          onChange={(e) => onChange(item.id, e.target.value as RequestStatus)}
+          aria-label="Changer le statut"
+        >
+          {!SETTABLE_STATUSES.includes(item.status) && (
+            <option value="">{STATUS_LABEL[item.status]} → …</option>
+          )}
+          {SETTABLE_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
   );
 }
 
@@ -775,9 +930,24 @@ function SubjectGroup({
   );
 }
 
-function Kpi({ num, label }: { num: number; label: string }) {
+function Kpi({
+  num,
+  label,
+  icon: KpiIcon,
+  variant = 'k-navy',
+}: {
+  num: number;
+  label: string;
+  icon: LucideIcon;
+  variant?: string;
+}) {
   return (
-    <div className="kpi">
+    <div className={`kpi ${variant}`}>
+      <div className="top">
+        <div className="ico">
+          <KpiIcon size={16} />
+        </div>
+      </div>
       <div className="num">{num}</div>
       <div className="lbl">{label}</div>
     </div>

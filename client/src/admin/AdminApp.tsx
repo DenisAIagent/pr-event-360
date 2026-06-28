@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './auth/ProtectedRoute';
+import { AdminShell } from './components/AdminShell';
 import { LoginPage } from './auth/LoginPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
@@ -42,25 +43,27 @@ export function AdminApp() {
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="accept-invite" element={<AcceptInvitePage />} />
         <Route element={<ProtectedRoute />}>
-          <Route index element={<EventsListPage />} />
-          <Route path="security" element={<SecurityPage />} />
-          <Route path="events/new" element={<EventWizard />} />
-          <Route element={<AdminRoute />}>
-            <Route path="team" element={<TeamPage />} />
-            <Route path="integrations" element={<IntegrationsPage />} />
-          </Route>
-          <Route path="events/:eventId" element={<EventLayout />}>
-            <Route index element={<Navigate to="requests" replace />} />
-            <Route path="requests" element={<RequestsTab />} />
-            <Route path="accreditations" element={<AccreditationsTab />} />
-            <Route path="lineup" element={<LineupTab />} />
-            <Route path="media" element={<MediaTab />} />
-            <Route path="newsroom" element={<NewsroomTab />} />
-            <Route path="communications" element={<CommunicationsTab />} />
-            <Route path="preview" element={<PreviewTab />} />
-            <Route path="settings" element={<SettingsTab />} />
-            <Route path="branding" element={<BrandingTab />} />
-            <Route path="messages" element={<MessagesTab />} />
+          <Route element={<AdminShell />}>
+            <Route index element={<EventsListPage />} />
+            <Route path="security" element={<SecurityPage />} />
+            <Route path="events/new" element={<EventWizard />} />
+            <Route element={<AdminRoute />}>
+              <Route path="team" element={<TeamPage />} />
+              <Route path="integrations" element={<IntegrationsPage />} />
+            </Route>
+            <Route path="events/:eventId" element={<EventLayout />}>
+              <Route index element={<Navigate to="requests" replace />} />
+              <Route path="requests" element={<RequestsTab />} />
+              <Route path="accreditations" element={<AccreditationsTab />} />
+              <Route path="lineup" element={<LineupTab />} />
+              <Route path="media" element={<MediaTab />} />
+              <Route path="newsroom" element={<NewsroomTab />} />
+              <Route path="communications" element={<CommunicationsTab />} />
+              <Route path="preview" element={<PreviewTab />} />
+              <Route path="settings" element={<SettingsTab />} />
+              <Route path="branding" element={<BrandingTab />} />
+              <Route path="messages" element={<MessagesTab />} />
+            </Route>
           </Route>
         </Route>
       </Routes>

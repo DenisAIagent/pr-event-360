@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useAuthedApi } from '../auth/AuthContext';
-import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
 import type { SettingsStatus } from '../lib/types';
 
@@ -79,9 +78,7 @@ export function IntegrationsPage() {
   }
 
   return (
-    <div className="admin">
-      <AdminBar />
-      <div className="admin-shell stack">
+    <div className="stack">
         <PageHero
           eyebrow="Configuration"
           title="Intégrations"
@@ -134,7 +131,6 @@ export function IntegrationsPage() {
             </button>
           </form>
         )}
-      </div>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
@@ -61,9 +60,7 @@ export function SecurityPage() {
   const enabled = status.data?.enabled;
 
   return (
-    <div className="admin">
-      <AdminBar />
-      <div className="admin-shell stack">
+    <div className="stack">
         <PageHero
           eyebrow="Sécurité"
           title="Double authentification"
@@ -129,7 +126,6 @@ export function SecurityPage() {
             </>
           )}
         </div>
-      </div>
     </div>
   );
 }

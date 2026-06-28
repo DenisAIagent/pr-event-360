@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import { AdminBar } from '../components/AdminBar';
 import { PageHero } from '../components/PageHero';
 import { SkeletonCards } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
+// shell fourni par AdminShell — la page ne rend que son contenu
 import type { EventSummary } from '../lib/types';
 
 export function EventsListPage() {
@@ -21,12 +21,9 @@ export function EventsListPage() {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="admin">
-      <AdminBar />
-
-      <div className="admin-shell">
-        <PageHero
-          eyebrow="Tableau de bord"
+    <div className="stack">
+      <PageHero
+        eyebrow="Tableau de bord"
           title="Vos événements"
           subtitle={
             data ? `${data.length} événement${data.length > 1 ? 's' : ''} · relations presse à 360°` : '…'
@@ -58,7 +55,6 @@ export function EventsListPage() {
             </p>
           )}
         </div>
-      </div>
     </div>
   );
 }

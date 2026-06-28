@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 // de l'IP des visiteurs vers Google/US sans consentement — cf. LG München 2022).
 import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
+import '@fontsource-variable/jetbrains-mono';
 import { App } from './App';
 import './styles/global.css';
 

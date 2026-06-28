@@ -19,6 +19,11 @@
   --color-accent: #1598d3;
   --color-accent-strong: #0f7cb0;
   --color-accent-tint: #eaf7fc;
+  --color-accent-soft: #46b0dd; /* blue 400 — dégradés, accents sur navy */
+
+  /* Nuances navy (rail, bandeaux, dégradés). */
+  --navy-700: #0e2348;
+  --navy-600: #15315e;
 
   /* Statuts sémantiques (réservés aux états / badges). */
   --color-pending: #f5a623; /* attention / orange */
@@ -26,10 +31,22 @@
   --color-success: #2fbf71; /* succès / vert */
   --color-danger: #e24d4d; /* alerte / rouge */
   --color-waitlist: #15315e; /* liste d'attente / navy 600 */
+  /* Fonds teintés des statuts (badges/KPIs pleins). */
+  --color-success-bg: #eafbf2;
+  --color-warning-bg: #fff6e5;
+  --color-danger-bg: #fdecec;
+
+  /* Surfaces secondaires (jauges, segments, hover). */
+  --color-surface-2: #edf1f6;
+  --color-line-strong: #d8e0ea;
+
+  /* Largeur du rail de navigation. */
+  --rail: 248px;
 
   /* ── Typographie ──────────────────────────────────────────────── */
   --font-display: 'Manrope Variable', 'Manrope', 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
   --text-xs: 0.8125rem; /* 13 */
   --text-sm: 0.9375rem; /* 15 */
   --text-base: 1.0625rem; /* 17 */
