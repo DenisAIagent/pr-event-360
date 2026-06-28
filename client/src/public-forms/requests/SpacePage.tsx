@@ -31,6 +31,12 @@ export function SpacePage({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
+  const [pwd, setPwd] = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
+  const [pwdBusy, setPwdBusy] = useState(false);
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdSaved, setPwdSaved] = useState(false);
+
   async function load() {
     try {
       const res = await api.get<SpaceResponse>(`/public/space/${token}`);
@@ -74,6 +80,33 @@ export function SpacePage({
       setError(err instanceof ApiError ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function savePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (readOnly) return;
+    setPwdError(null);
+    setPwdSaved(false);
+    if (pwd.length < 8) {
+      setPwdError(t('space.password.tooShort'));
+      return;
+    }
+    if (pwd !== pwdConfirm) {
+      setPwdError(t('space.password.mismatch'));
+      return;
+    }
+    setPwdBusy(true);
+    try {
+      await api.post(`/public/space/${token}/password`, { password: pwd });
+      setPwdSaved(true);
+      setPwd('');
+      setPwdConfirm('');
+      await load();
+    } catch (err) {
+      setPwdError(err instanceof ApiError ? err.message : t('common.error'));
+    } finally {
+      setPwdBusy(false);
     }
   }
 
@@ -170,6 +203,46 @@ export function SpacePage({
           {t('space.newsroom.cta')} →
         </span>
       </a>
+
+      {!readOnly && (
+        <section className="card stack" aria-labelledby="sec-pwd" style={{ marginBottom: 'var(--space-5)' }}>
+          <h2 id="sec-pwd" style={{ fontSize: 'var(--text-xl)' }}>{t('space.password.title')}</h2>
+          <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
+            {data.journalist.hasPassword || pwdSaved ? t('space.password.setHint') : t('space.password.hint')}
+          </p>
+          <form className="stack" onSubmit={savePassword} noValidate>
+            {pwdError && <div className="banner banner-error">{pwdError}</div>}
+            {pwdSaved && <div className="banner banner-success">{t('space.password.saved')}</div>}
+            <div className="field">
+              <label htmlFor="sp-pwd">{t('space.password.field')}</label>
+              <input
+                id="sp-pwd"
+                type="password"
+                autoComplete="new-password"
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="sp-pwd-confirm">{t('space.password.confirm')}</label>
+              <input
+                id="sp-pwd-confirm"
+                type="password"
+                autoComplete="new-password"
+                value={pwdConfirm}
+                onChange={(e) => setPwdConfirm(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={pwdBusy || !pwd || !pwdConfirm}>
+              {pwdBusy
+                ? '…'
+                : data.journalist.hasPassword
+                  ? t('space.password.replace')
+                  : t('space.password.save')}
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="card" aria-labelledby="new-req" style={{ marginBottom: 'var(--space-5)' }}>
         <h2 id="new-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>

@@ -15,6 +15,7 @@ import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
 import { publicAccreditationRouter } from './routes/public/accreditation';
 import { publicSpaceRouter } from './routes/public/space';
+import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
 
 export function createApp(): Express {
   const env = loadEnv();
@@ -48,6 +49,8 @@ export function createApp(): Express {
 
   // Limite de débit sur les surfaces publiques sensibles (anti-abus).
   const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true });
+  // Limiteur strict pour le login journaliste (anti-bruteforce).
+  const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
 
   app.get('/api/health', (_req, res) => sendData(res, { status: 'ok' }));
 
@@ -64,6 +67,7 @@ export function createApp(): Express {
   app.use('/api/public', publicLimiter, publicAccreditationRouter);
   app.use('/api/public/space', publicLimiter, publicSpaceRouter);
   app.use('/api/public/newsroom', publicLimiter, publicNewsroomRouter);
+  app.use('/api/public/journalist', journalistAuthLimiter, publicJournalistAuthRouter);
 
   // En production, le serveur sert aussi le client compilé (même origine que l'API,
   // ce qui permet au front d'appeler /api en relatif). Les routes /api non trouvées

@@ -9,6 +9,7 @@ import { getBranding } from '../../db/repositories/eventRepo';
 import { getEventOrThrow } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
 import { listJournalistRequests, submitRequest } from '../../services/requestService';
+import { setSpacePassword } from '../../services/journalistAuthService';
 
 export const publicSpaceRouter = Router();
 
@@ -39,6 +40,7 @@ publicSpaceRouter.get(
         lastName: journalist.lastName,
         lang: journalist.lang,
         accreditationType: journalist.accreditationType,
+        hasPassword: journalist.passwordHash != null,
       },
       lineup,
       requests,
@@ -66,5 +68,18 @@ publicSpaceRouter.post(
     const body = req.body as z.infer<typeof RequestSchema>;
     const request = await submitRequest({ token: req.params.token!, ...body });
     sendData(res, request, 201);
+  }),
+);
+
+const PasswordSchema = z.object({ password: z.string().min(8, 'Au moins 8 caractères') });
+
+/** Le journaliste (authentifié par son token d'espace) définit/remplace son mot de passe. */
+publicSpaceRouter.post(
+  '/:token/password',
+  validateBody(PasswordSchema),
+  asyncHandler(async (req, res) => {
+    const { password } = req.body as z.infer<typeof PasswordSchema>;
+    await setSpacePassword(req.params.token!, password);
+    sendData(res, { ok: true });
   }),
 );

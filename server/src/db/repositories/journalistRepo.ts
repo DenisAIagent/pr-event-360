@@ -20,6 +20,7 @@ interface JournalistRow {
   acc_status: AccreditationStatus;
   commit_publish: boolean;
   consent: boolean;
+  password_hash: string | null;
   created_at: string;
 }
 
@@ -40,12 +41,13 @@ const map = (r: JournalistRow): Journalist => ({
   accStatus: r.acc_status,
   commitPublish: r.commit_publish,
   consent: r.consent,
+  passwordHash: r.password_hash,
   createdAt: r.created_at,
 });
 
 const COLS = `id, event_id, token, first_name, last_name, email, phone, media,
   media_type_id, audience, prev_article, lang, accreditation_type, acc_status,
-  commit_publish, consent, created_at`;
+  commit_publish, consent, password_hash, created_at`;
 
 export interface CreateJournalistInput {
   eventId: string;
@@ -108,6 +110,35 @@ export async function findJournalistByToken(
     token,
   ]);
   return rows[0] ? map(rows[0]) : null;
+}
+
+/**
+ * Journaliste ACCEPTÉ d'un événement par email, ayant défini un mot de passe.
+ * Sert au login email + mot de passe (compte par événement). Insensible à la casse ;
+ * en cas de doublons d'accréditation, on prend la plus récente.
+ */
+export async function findAcceptedJournalistByEmail(
+  eventId: string,
+  email: string,
+  db: Queryable = pool,
+): Promise<Journalist | null> {
+  const { rows } = await db.query<JournalistRow>(
+    `SELECT ${COLS} FROM journalists
+     WHERE event_id = $1 AND lower(email) = lower($2)
+       AND acc_status = 'acceptee' AND password_hash IS NOT NULL
+     ORDER BY created_at DESC LIMIT 1`,
+    [eventId, email],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
+/** Définit (ou remplace) le hash de mot de passe d'espace d'un journaliste. */
+export async function setJournalistPassword(
+  id: string,
+  passwordHash: string,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query('UPDATE journalists SET password_hash = $2 WHERE id = $1', [id, passwordHash]);
 }
 
 export async function listJournalistsByEvent(

@@ -103,6 +103,7 @@ export interface SpaceResponse {
     lastName: string | null;
     lang: Lang;
     accreditationType: AccreditationType | null;
+    hasPassword: boolean;
   };
   lineup: { stages: PublicStage[]; artists: PublicArtist[] };
   requests: JournalistRequest[];

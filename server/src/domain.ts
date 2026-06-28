@@ -127,6 +127,8 @@ export interface Journalist {
   accStatus: AccreditationStatus;
   commitPublish: boolean;
   consent: boolean;
+  /** Hash argon2 du mot de passe d'espace (null = aucun mot de passe défini). Jamais sérialisé tel quel. */
+  passwordHash: string | null;
   createdAt: string;
 }
 

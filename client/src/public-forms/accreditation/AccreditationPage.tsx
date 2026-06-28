@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
 import { api, ApiError } from '../../lib/api';
 import type { AccreditationType, PublicEvent } from '../../lib/types';
@@ -151,8 +151,11 @@ export function AccreditationPage() {
       </header>
 
       <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>{event.name}</h1>
-      <p className="lede" style={{ marginBottom: 'var(--space-4)' }}>
+      <p className="lede" style={{ marginBottom: 'var(--space-2)' }}>
         {t('acc.lede', { event: event.name })}
+      </p>
+      <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
+        <Link to={`/evenement/${eventId}/connexion`}>{t('acc.haveAccount')}</Link>
       </p>
 
       {event.deadline && (
