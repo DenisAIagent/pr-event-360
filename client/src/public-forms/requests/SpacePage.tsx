@@ -94,6 +94,18 @@ export function SpacePage({
 
   const canSubmit = !readOnly && !submitting && !!artistId;
 
+  const formatDay = (day: string) =>
+    new Date(day).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short' });
+  const slotText = (r: { slotDay: string | null; slotStart: string | null; slotEnd: string | null }) =>
+    r.slotDay && r.slotStart
+      ? `${formatDay(r.slotDay)} · ${r.slotStart.slice(0, 5)}${r.slotEnd ? `–${r.slotEnd.slice(0, 5)}` : ''}`
+      : null;
+  // Planning personnel : interviews acceptées avec un créneau attribué, triées chronologiquement.
+  const planning = data.requests
+    .filter((r) => r.status === 'acceptee' && r.slotDay && r.slotStart)
+    .slice()
+    .sort((a, b) => `${a.slotDay}${a.slotStart}`.localeCompare(`${b.slotDay}${b.slotStart}`));
+
   return (
     <div style={brandingStyle(data.event.branding)}>
     <main className="page">
@@ -178,6 +190,45 @@ export function SpacePage({
         </form>
       </section>
 
+      {planning.length > 0 && (
+        <section aria-labelledby="my-plan" style={{ marginBottom: 'var(--space-5)' }}>
+          <h2 id="my-plan" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-3)' }}>
+            {t('space.planning.title')}
+          </h2>
+          <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {planning.map((r) => (
+              <li
+                key={r.id}
+                className="card"
+                style={{
+                  padding: 'var(--space-3) var(--space-4)',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-4)',
+                }}
+              >
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 'var(--text-lg)',
+                    color: 'var(--p-accent, var(--color-accent))',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {r.slotStart?.slice(0, 5)}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong>{r.artistName ?? '—'}</strong>
+                  <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>{slotText(r)}</div>
+                </div>
+                <StatusBadge status={r.status} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section aria-labelledby="my-req">
         <h2 id="my-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-3)' }}>
           {t('space.requests.title')}
@@ -186,19 +237,36 @@ export function SpacePage({
           <p className="muted">{t('space.requests.empty')}</p>
         ) : (
           <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {data.requests.map((r) => (
-              <li
-                key={r.id}
-                className="card"
-                style={{ padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-sm)' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
-                  <strong>{t(`space.type.${r.type}`)}</strong>
-                  <StatusBadge status={r.status} />
-                </div>
-                {r.message && <p className="muted" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)' }}>{r.message}</p>}
-              </li>
-            ))}
+            {data.requests.map((r) => {
+              const target = r.artistName ?? r.stageName;
+              const slot = slotText(r);
+              return (
+                <li
+                  key={r.id}
+                  className="card"
+                  style={{ padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-sm)' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    <div>
+                      <strong>{t(`space.type.${r.type}`)}</strong>
+                      {target && (
+                        <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>· {target}</span>
+                      )}
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  {slot && (
+                    <div
+                      className="muted"
+                      style={{ marginTop: 'var(--space-1)', fontSize: 'var(--text-sm)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Icon name="clock" /> {t('space.requests.slot')} : {slot}
+                    </div>
+                  )}
+                  {r.message && <p className="muted" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)' }}>{r.message}</p>}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

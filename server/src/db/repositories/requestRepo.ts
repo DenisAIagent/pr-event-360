@@ -280,6 +280,18 @@ export async function listEnrichedByEvent(
   return rows.map(mapEnriched);
 }
 
+/** Demandes enrichies d'un journaliste (cible + créneau attribué) — pour son espace. */
+export async function listEnrichedByJournalist(
+  journalistId: string,
+  db: Queryable = pool,
+): Promise<EnrichedRequestRow[]> {
+  const { rows } = await db.query<EnrichedDbRow>(
+    `${ENRICHED_SELECT} WHERE r.journalist_id = $1 ORDER BY r.created_at DESC`,
+    [journalistId],
+  );
+  return rows.map(mapEnriched);
+}
+
 /** Comptages d'interviews accordées, groupés par artiste (pour la file). */
 export async function grantedInterviewCountsByEvent(
   eventId: string,

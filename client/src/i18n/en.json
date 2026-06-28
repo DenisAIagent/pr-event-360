@@ -4,12 +4,10 @@
   "lang.en": "English",
   "lang.pt": "Portuguese",
   "lang.es": "Spanish",
-
   "common.optional": "optional",
   "common.loading": "Loading…",
   "common.error": "Something went wrong. Please try again.",
   "common.notFound": "Page not found.",
-
   "acc.eyebrow": "Press accreditation",
   "acc.title": "Accreditation request",
   "acc.lede": "Fill in this form to request your accreditation for {event}.",
@@ -40,7 +38,6 @@
   "acc.deadline.seconds": "s",
   "acc.success.title": "Request sent",
   "acc.success.body": "Thank you {name}. You will receive a confirmation email. After review, a personal link will be sent to you for your interview and report requests.",
-
   "space.eyebrow": "Journalist space",
   "space.welcome": "Hello {name}",
   "space.lede": "Submit your interview and report requests for {event}, and track their status.",
@@ -58,12 +55,14 @@
   "space.sent": "Your request has been recorded.",
   "space.requests.title": "Your requests",
   "space.requests.empty": "No requests yet.",
-
   "status.pas_encore_traite": "Not yet processed",
   "status.en_cours": "Being processed",
   "status.transmise_prod": "Forwarded to production",
   "status.attente_artiste": "Awaiting artist",
   "status.acceptee": "Accepted",
   "status.refusee": "Declined",
-  "status.liste_attente": "Waitlist"
+  "status.liste_attente": "Waitlist",
+  "space.planning.title": "My schedule",
+  "space.planning.lede": "Your confirmed interviews with their time slot.",
+  "space.requests.slot": "Time slot"
 }

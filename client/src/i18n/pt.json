@@ -4,12 +4,10 @@
   "lang.en": "Inglês",
   "lang.pt": "Português",
   "lang.es": "Espanhol",
-
   "common.optional": "opcional",
   "common.loading": "A carregar…",
   "common.error": "Ocorreu um erro. Tente novamente.",
   "common.notFound": "Página não encontrada.",
-
   "acc.eyebrow": "Acreditação de imprensa",
   "acc.title": "Pedido de acreditação",
   "acc.lede": "Preencha este formulário para pedir a sua acreditação para {event}.",
@@ -40,7 +38,6 @@
   "acc.deadline.seconds": "s",
   "acc.success.title": "Pedido enviado",
   "acc.success.body": "Obrigado {name}. Receberá um email de confirmação. Após análise, ser-lhe-á enviada uma ligação pessoal para os seus pedidos de entrevista e reportagem.",
-
   "space.eyebrow": "Espaço do jornalista",
   "space.welcome": "Olá {name}",
   "space.lede": "Envie os seus pedidos de entrevista e reportagem para {event} e acompanhe o seu estado.",
@@ -58,12 +55,14 @@
   "space.sent": "O seu pedido foi registado.",
   "space.requests.title": "Os seus pedidos",
   "space.requests.empty": "Ainda não há pedidos.",
-
   "status.pas_encore_traite": "Ainda não tratado",
   "status.en_cours": "Em tratamento",
   "status.transmise_prod": "Enviado à produção",
   "status.attente_artiste": "A aguardar artista",
   "status.acceptee": "Aceite",
   "status.refusee": "Recusado",
-  "status.liste_attente": "Lista de espera"
+  "status.liste_attente": "Lista de espera",
+  "space.planning.title": "A minha agenda",
+  "space.planning.lede": "As suas entrevistas confirmadas com o respetivo horário.",
+  "space.requests.slot": "Horário"
 }

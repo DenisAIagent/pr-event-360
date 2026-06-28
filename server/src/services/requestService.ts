@@ -19,8 +19,8 @@ import {
   findRequestById,
   insertRequest,
   listEnrichedByEvent,
+  listEnrichedByJournalist,
   listHistory,
-  listRequestsByJournalist,
   updateRequestStatus,
   type EnrichedRequestRow,
 } from '../db/repositories/requestRepo';
@@ -123,9 +123,21 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
 /** Liste des demandes d'un journaliste (espace public), avec historique. */
 export async function listJournalistRequests(token: string) {
   const journalist = await requireAccreditedJournalist(token);
-  const requests = await listRequestsByJournalist(journalist.id);
+  const requests = await listEnrichedByJournalist(journalist.id);
   return Promise.all(
-    requests.map(async (r) => ({ ...r, history: await listHistory(r.id) })),
+    requests.map(async (r) => ({
+      id: r.id,
+      type: r.type,
+      status: r.status,
+      message: r.message,
+      createdAt: r.createdAt,
+      artistName: r.artistName,
+      stageName: r.stageName,
+      slotDay: r.slotDay,
+      slotStart: r.slotStart,
+      slotEnd: r.slotEnd,
+      history: await listHistory(r.id),
+    })),
   );
 }
 

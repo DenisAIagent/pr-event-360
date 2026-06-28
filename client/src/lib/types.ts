@@ -88,6 +88,11 @@ export interface JournalistRequest {
   status: RequestStatus;
   message: string | null;
   createdAt: string;
+  artistName: string | null;
+  stageName: string | null;
+  slotDay: string | null;
+  slotStart: string | null;
+  slotEnd: string | null;
   history: RequestHistoryEntry[];
 }
 

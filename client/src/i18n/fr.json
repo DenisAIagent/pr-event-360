@@ -4,12 +4,10 @@
   "lang.en": "Anglais",
   "lang.pt": "Portugais",
   "lang.es": "Espagnol",
-
   "common.optional": "facultatif",
   "common.loading": "Chargement…",
   "common.error": "Une erreur est survenue. Veuillez réessayer.",
   "common.notFound": "Page introuvable.",
-
   "acc.eyebrow": "Accréditation presse",
   "acc.title": "Demande d’accréditation",
   "acc.lede": "Remplissez ce formulaire pour demander votre accréditation à {event}.",
@@ -40,7 +38,6 @@
   "acc.deadline.seconds": "s",
   "acc.success.title": "Demande envoyée",
   "acc.success.body": "Merci {name}. Vous recevrez un email de confirmation. Après examen, un lien personnel vous sera envoyé pour vos demandes d’interview et de reportage.",
-
   "space.eyebrow": "Espace journaliste",
   "space.welcome": "Bonjour {name}",
   "space.lede": "Soumettez vos demandes d’interview et de reportage pour {event}, et suivez leur statut.",
@@ -58,12 +55,14 @@
   "space.sent": "Votre demande a bien été enregistrée.",
   "space.requests.title": "Vos demandes",
   "space.requests.empty": "Aucune demande pour l’instant.",
-
   "status.pas_encore_traite": "Pas encore traité",
   "status.en_cours": "En cours de traitement",
   "status.transmise_prod": "Transmise à la prod",
   "status.attente_artiste": "En attente artiste",
   "status.acceptee": "Acceptée",
   "status.refusee": "Refusée",
-  "status.liste_attente": "Liste d’attente"
+  "status.liste_attente": "Liste d’attente",
+  "space.planning.title": "Mon planning",
+  "space.planning.lede": "Vos interviews confirmées avec leur créneau.",
+  "space.requests.slot": "Créneau"
 }
