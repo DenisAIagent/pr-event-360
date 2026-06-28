@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
 import { api, ApiError } from '../../lib/api';
@@ -26,7 +26,6 @@ export function SpacePage({
 
   const [type, setType] = useState<RequestType>('interview');
   const [artistId, setArtistId] = useState('');
-  const [slotId, setSlotId] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +52,6 @@ export function SpacePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, previewData]);
 
-  const selectedArtist = useMemo(
-    () => data?.lineup.artists.find((a) => a.id === artistId) ?? null,
-    [data, artistId],
-  );
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (readOnly) return; // aperçu : aucune demande n'est envoyée
@@ -68,13 +62,12 @@ export function SpacePage({
       await api.post(`/public/space/${token}/requests`, {
         type,
         artistId: artistId || null,
-        slotId: type === 'interview' ? slotId || null : null,
+        slotId: null,
         stageId: null,
         message: message || null,
       });
       setSent(true);
       setArtistId('');
-      setSlotId('');
       setMessage('');
       await load();
     } catch (err) {
@@ -152,10 +145,7 @@ export function SpacePage({
             <label>{t('space.type')}</label>
             <select
               value={type}
-              onChange={(e) => {
-                setType(e.target.value as RequestType);
-                setSlotId('');
-              }}
+              onChange={(e) => setType(e.target.value as RequestType)}
             >
               <option value="interview">{t('space.type.interview')}</option>
               <option value="photo_report">{t('space.type.photo_report')}</option>
@@ -163,61 +153,19 @@ export function SpacePage({
             </select>
           </div>
 
-          {type === 'interview' ? (
-            <div className="row">
-              <div className="field">
-                <label>
-                  {t('space.artist')} <span className="req">*</span>
-                </label>
-                <select
-                  value={artistId}
-                  onChange={(e) => {
-                    setArtistId(e.target.value);
-                    setSlotId('');
-                  }}
-                  required
-                >
-                  <option value="">{t('space.select')}</option>
-                  {data.lineup.artists.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>
-                  {t('space.slot')} <span className="hint">({t('common.optional')})</span>
-                </label>
-                <select
-                  value={slotId}
-                  onChange={(e) => setSlotId(e.target.value)}
-                  disabled={!selectedArtist || selectedArtist.slots.length === 0}
-                >
-                  <option value="">{t('space.select')}</option>
-                  {selectedArtist?.slots.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.day} · {s.startTime.slice(0, 5)}–{s.endTime.slice(0, 5)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          ) : (
-            <div className="field">
-              <label>
-                {t('space.artist')} <span className="req">*</span>
-              </label>
-              <select value={artistId} onChange={(e) => setArtistId(e.target.value)} required>
-                <option value="">{t('space.select')}</option>
-                {data.lineup.artists.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          <div className="field">
+            <label>
+              {t('space.artist')} <span className="req">*</span>
+            </label>
+            <select value={artistId} onChange={(e) => setArtistId(e.target.value)} required>
+              <option value="">{t('space.select')}</option>
+              {data.lineup.artists.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="field">
             <label>{t('space.message')}</label>
