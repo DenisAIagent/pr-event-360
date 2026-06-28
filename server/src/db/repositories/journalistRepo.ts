@@ -159,6 +159,62 @@ export async function setJournalistPassword(
   await db.query('UPDATE journalists SET password_hash = $2 WHERE id = $1', [id, passwordHash]);
 }
 
+export interface JournalistSearchHit {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  email: string;
+  media: string | null;
+  eventId: string;
+  eventName: string;
+  accStatus: AccreditationStatus;
+}
+
+/**
+ * Recherche de journalistes par nom / email / média, limitée à un ensemble
+ * d'événements (ceux accessibles à l'utilisateur). Insensible à la casse.
+ */
+export async function searchJournalists(
+  eventIds: string[],
+  query: string,
+  limit = 8,
+  db: Queryable = pool,
+): Promise<JournalistSearchHit[]> {
+  if (eventIds.length === 0) return [];
+  // Échappe les jokers ILIKE pour traiter la saisie comme du texte littéral.
+  const like = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const { rows } = await db.query<{
+    id: string;
+    first_name: string;
+    last_name: string | null;
+    email: string;
+    media: string | null;
+    event_id: string;
+    event_name: string;
+    acc_status: AccreditationStatus;
+  }>(
+    `SELECT j.id, j.first_name, j.last_name, j.email, j.media,
+            j.event_id, e.name AS event_name, j.acc_status
+     FROM journalists j
+     JOIN events e ON e.id = j.event_id
+     WHERE j.event_id = ANY($1::uuid[])
+       AND (j.first_name ILIKE $2 OR j.last_name ILIKE $2 OR j.email ILIKE $2 OR j.media ILIKE $2)
+     ORDER BY j.created_at DESC
+     LIMIT $3`,
+    [eventIds, like, limit],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    email: r.email,
+    media: r.media,
+    eventId: r.event_id,
+    eventName: r.event_name,
+    accStatus: r.acc_status,
+  }));
+}
+
 export async function listJournalistsByEvent(
   eventId: string,
   db: Queryable = pool,

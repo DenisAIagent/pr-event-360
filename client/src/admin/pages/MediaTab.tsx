@@ -83,16 +83,27 @@ export function MediaTab() {
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom du fichier par défaut" />
           </div>
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          disabled={busy}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void onUpload(f);
-          }}
-        />
-        {busy && <p className="muted">Upload en cours…</p>}
+        <div className="inline-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            Choisir un fichier…
+          </button>
+          {busy && <span className="muted">Upload en cours…</span>}
+          <input
+            ref={fileRef}
+            type="file"
+            disabled={busy}
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onUpload(f);
+            }}
+          />
+        </div>
       </section>
 
       {loading && <p className="muted">Chargement…</p>}

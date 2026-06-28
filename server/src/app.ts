@@ -11,6 +11,7 @@ import { authRouter } from './routes/admin/auth';
 import { eventsRouter } from './routes/admin/events';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
+import { searchRouter } from './routes/admin/search';
 import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
 import { publicAccreditationRouter } from './routes/public/accreditation';
@@ -62,6 +63,7 @@ export function createApp(): Express {
   app.use('/api/admin/events', commsRouter);
   app.use('/api/admin/team', teamRouter);
   app.use('/api/admin/settings', settingsRouter);
+  app.use('/api/admin/search', searchRouter);
 
   // Surfaces publiques (journalistes).
   app.use('/api/public', publicLimiter, publicAccreditationRouter);

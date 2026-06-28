@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, useMatch } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
 import {
   Inbox,
   UserCheck,
@@ -45,9 +45,21 @@ function NavItem({ to, label, icon: Icon, end }: NavDef & { end?: boolean }) {
 export function Sidebar() {
   const { user, logout } = useAuth();
   const api = useAuthedApi();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
   const isEditor = user?.role === 'admin' || user?.role === 'attache';
   const [tourOpen, setTourOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const switchRef = useRef<HTMLDivElement>(null);
+
+  // Fermeture du sélecteur d'événement au clic extérieur.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (switchRef.current && !switchRef.current.contains(e.target as Node)) setSwitchOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
 
   // Visite guidée à la première connexion (logique reprise de l'ancien AdminBar).
   useEffect(() => {
@@ -102,13 +114,43 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <Link to="/admin" className="ev-switch">
-        <div className="lbl">{eventId ? 'Événement actif' : 'Tableau de bord'}</div>
-        <div className="val">
-          <strong>{activeEvent?.name ?? 'Tous les événements'}</strong>
-          <ChevronDown size={15} />
-        </div>
-      </Link>
+      <div className="ev-switch-wrap" ref={switchRef}>
+        <button type="button" className="ev-switch" onClick={() => setSwitchOpen((o) => !o)} aria-expanded={switchOpen}>
+          <div className="lbl">{eventId ? 'Événement actif' : 'Tableau de bord'}</div>
+          <div className="val">
+            <strong>{activeEvent?.name ?? 'Tous les événements'}</strong>
+            <ChevronDown size={15} style={{ transform: switchOpen ? 'rotate(180deg)' : 'none' }} />
+          </div>
+        </button>
+        {switchOpen && (
+          <div className="ev-menu">
+            <button
+              type="button"
+              className={`ev-menu-item${!eventId ? ' on' : ''}`}
+              onClick={() => {
+                setSwitchOpen(false);
+                navigate('/admin');
+              }}
+            >
+              <LayoutGrid size={14} /> Tous les événements
+            </button>
+            {(events.data?.length ?? 0) > 0 && <div className="ev-menu-sep" />}
+            {events.data?.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                className={`ev-menu-item${e.id === eventId ? ' on' : ''}`}
+                onClick={() => {
+                  setSwitchOpen(false);
+                  navigate(`/admin/events/${e.id}/requests`);
+                }}
+              >
+                {e.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <nav>
         {eventId && (

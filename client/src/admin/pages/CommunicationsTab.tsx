@@ -169,11 +169,15 @@ function Composer({
           </span>
         </div>
         <div className="field">
-          <label>Aperçu</label>
+          <label>Aperçu <span className="muted" style={{ fontWeight: 400 }}>· valeurs d’exemple</span></label>
           <div
             className="card"
             style={{ background: '#fff', minHeight: 200, overflow: 'auto' }}
-            dangerouslySetInnerHTML={{ __html: bodyHtml || '<p style="color:#999">Aperçu…</p>' }}
+            dangerouslySetInnerHTML={{
+              __html: (bodyHtml || '<p style="color:#999">Aperçu…</p>')
+                .replace(/\{\{\s*firstName\s*\}\}/g, 'Camille')
+                .replace(/\{\{\s*lastName\s*\}\}/g, 'Martin'),
+            }}
           />
         </div>
       </div>

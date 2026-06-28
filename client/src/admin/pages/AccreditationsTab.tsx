@@ -187,9 +187,15 @@ export function AccreditationsTab() {
                   {a.email}
                 </span>
               </td>
-              <td>{a.media ?? '—'}</td>
+              <td>{a.media ?? <span className="muted" aria-label="Non précisé">—</span>}</td>
               <td>{a.lang.toUpperCase()}</td>
-              <td>{a.accreditationType ? ACC_TYPE_LABEL[a.accreditationType] : '—'}</td>
+              <td>
+                {a.accreditationType ? (
+                  ACC_TYPE_LABEL[a.accreditationType]
+                ) : (
+                  <span className="muted" aria-label="Non précisé">—</span>
+                )}
+              </td>
               <td>
                 <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
               </td>
