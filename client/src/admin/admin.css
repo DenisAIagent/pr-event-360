@@ -1108,6 +1108,33 @@ select.status-select {
   text-overflow: ellipsis;
 }
 
+/* « Continuer avec Google » */
+.google-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.google-auth-divider {
+  width: 100%;
+  text-align: center;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  line-height: 0;
+  margin: var(--space-1) 0;
+}
+.google-auth-divider span {
+  background: #fff;
+  padding: 0 var(--space-3);
+  color: var(--color-text-muted, #94a3b8);
+  font-size: var(--text-sm, 13px);
+}
+.google-auth-btn {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+}
+
 /* Console super-admin : liste des organisations */
 .org-list {
   display: flex;

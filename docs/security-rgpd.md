@@ -10,6 +10,11 @@
   incorrect » + hachage factice pour ne pas révéler l'existence d'un compte (anti-timing).
 - **2FA (TOTP)** optionnelle par compte back-office : si activée, le login renvoie un challenge
   court échangé contre un code à 6 chiffres avant l'émission du jeton (`mfa_secret`/`mfa_enabled`).
+- **« Continuer avec Google »** (optionnel, dormant sans `GOOGLE_CLIENT_ID`) : l'ID token Google est
+  **vérifié côté serveur** (signature + audience), l'email doit être **vérifié par Google**. Un compte
+  existant au même email est **lié** automatiquement (Google garantit l'email). Les comptes Google n'ont
+  pas de mot de passe (`password_hash` NULL, `auth_provider='google'`) ; la connexion par mot de passe
+  les refuse. L'ID client Google est **public** (pas un secret) ; aucun secret OAuth n'est manipulé (flux GIS).
 
 ### Comptes journalistes (par événement)
 

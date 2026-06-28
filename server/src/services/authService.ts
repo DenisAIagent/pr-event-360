@@ -44,8 +44,9 @@ export async function login(email: string, password: string): Promise<LoginResul
   const found = await findUserByEmailWithHash(email.toLowerCase());
   // Message générique : on ne révèle pas si l'email existe.
   const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
-  if (!found) {
-    // Hachage factice pour éviter de divulguer l'existence du compte par timing.
+  if (!found || !found.passwordHash) {
+    // Pas de compte, ou compte sans mot de passe (lié à Google uniquement) :
+    // hachage factice pour éviter de divulguer l'existence du compte par timing.
     await argon2.hash(password).catch(() => undefined);
     throw invalid;
   }

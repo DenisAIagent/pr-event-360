@@ -15,7 +15,7 @@ interface UserRow {
   created_at: string;
 }
 interface UserWithHashRow extends UserRow {
-  password_hash: string;
+  password_hash: string | null;
 }
 
 // Toutes les lectures joignent l'organisation pour exposer son nom (UI sans requête).
@@ -38,34 +38,49 @@ const map = (r: UserRow): User => ({
 export async function createUser(
   input: {
     email: string;
-    passwordHash: string;
+    passwordHash?: string | null;
     fullName: string;
     role?: UserRole;
     organizationId: string;
     isPlatformAdmin?: boolean;
+    googleId?: string | null;
+    authProvider?: 'password' | 'google';
   },
   db: Queryable = pool,
 ): Promise<User> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO users (email, password_hash, full_name, role, organization_id, is_platform_admin)
-     VALUES ($1, $2, $3, COALESCE($4::user_role, 'attache'), $5, $6)
+    `INSERT INTO users (email, password_hash, full_name, role, organization_id, is_platform_admin, google_id, auth_provider)
+     VALUES ($1, $2, $3, COALESCE($4::user_role, 'attache'), $5, $6, $7, $8)
      RETURNING id`,
     [
       input.email,
-      input.passwordHash,
+      input.passwordHash ?? null,
       input.fullName,
       input.role ?? null,
       input.organizationId,
       input.isPlatformAdmin ?? false,
+      input.googleId ?? null,
+      input.authProvider ?? 'password',
     ],
   );
   return (await findUserById(rows[0]!.id, db))!;
 }
 
+/** Recherche par identifiant Google (sub). */
+export async function findUserByGoogleId(googleId: string, db: Queryable = pool): Promise<User | null> {
+  const { rows } = await db.query<UserRow>(`${SELECT_USER} WHERE u.google_id = $1`, [googleId]);
+  return rows[0] ? map(rows[0]) : null;
+}
+
+/** Lie un compte existant (créé en mot de passe) à un identifiant Google. */
+export async function linkGoogleId(userId: string, googleId: string, db: Queryable = pool): Promise<void> {
+  await db.query("UPDATE users SET google_id = $2, auth_provider = 'google' WHERE id = $1", [userId, googleId]);
+}
+
 export async function findUserByEmailWithHash(
   email: string,
   db: Queryable = pool,
-): Promise<{ user: User; passwordHash: string } | null> {
+): Promise<{ user: User; passwordHash: string | null } | null> {
   const { rows } = await db.query<UserWithHashRow>(
     `SELECT u.id, u.email, u.full_name, u.role, u.active,
             u.organization_id, o.name AS organization_name, u.is_platform_admin, u.created_at, u.password_hash

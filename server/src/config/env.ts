@@ -21,6 +21,10 @@ const EnvSchema = z.object({
   // Nécessite un wildcard DNS+TLS *.<domaine> côté hébergeur. Optionnel (dormant si absent).
   PLATFORM_BASE_DOMAIN: z.string().optional(),
 
+  // « Continuer avec Google » : ID client OAuth (public, pas un secret). Optionnel :
+  // sans lui, le bouton Google reste masqué (parcours email + mot de passe inchangé).
+  GOOGLE_CLIENT_ID: z.string().optional(),
+
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),
   EMAIL_PROVIDER: z.enum(['brevo']).default('brevo'),

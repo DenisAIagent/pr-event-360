@@ -25,6 +25,9 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | Méthode | Chemin | Accès | Description |
 |---|---|---|---|
 | POST | `/signup` | public · rate-limité | `{orgName, fullName, email, password}` → crée une **organisation** + son admin → `{token, user}` (inscription self-service) |
+| GET | `/config` | public | `{googleEnabled, googleClientId}` — indique si « Continuer avec Google » est disponible |
+| POST | `/google` | public · rate-limité | `{credential}` (ID token Google) → `{token, user}` (connexion/liaison) **ou** `{needsOrg, challenge, fullName, email}` si nouveau compte |
+| POST | `/google/signup` | public · rate-limité | `{challenge, orgName}` → crée l'organisation + le compte Google → `{token, user}` |
 | POST | `/login` | public | `{email, password}` → `{token, user}` **ou** `{mfaRequired, challenge}` si 2FA active |
 | POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → `{token, user}` (échange du challenge contre un code TOTP) |
 | GET | `/mfa/status` | auth | État de la 2FA du compte |

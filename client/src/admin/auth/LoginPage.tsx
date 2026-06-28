@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../lib/api';
 import { useAuth } from './AuthContext';
+import { GoogleAuth } from './GoogleAuth';
 
 export function LoginPage() {
   const { login, completeMfa } = useAuth();
@@ -92,6 +93,7 @@ export function LoginPage() {
             </button>
           </form>
         ) : (
+          <>
           <form onSubmit={submit} className="stack" noValidate>
             {justReset && (
               <div className="banner banner-success">
@@ -117,6 +119,8 @@ export function LoginPage() {
               Pas encore d'espace ? Créer une organisation
             </Link>
           </form>
+          <GoogleAuth />
+          </>
         )}
       </div>
     </main>

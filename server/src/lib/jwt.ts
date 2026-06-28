@@ -35,3 +35,24 @@ export function verifyMfaChallenge(token: string): string {
   if (payload.typ !== 'mfa') throw new Error('Jeton de challenge MFA invalide');
   return payload.sub;
 }
+
+// ── Challenge Google : émis après vérification de l'ID token Google pour un compte
+// INEXISTANT, le temps de demander le nom de l'organisation. Porte les infos vérifiées
+// par Google (jamais re-soumises en clair par le client). typ:'google'.
+const GOOGLE_CHALLENGE_EXPIRES_IN = '10m';
+
+export interface GoogleChallengeClaims {
+  googleId: string;
+  email: string;
+  name: string;
+}
+
+export function signGoogleChallenge(claims: GoogleChallengeClaims): string {
+  return jwt.sign({ ...claims, typ: 'google' }, env.JWT_SECRET, { expiresIn: GOOGLE_CHALLENGE_EXPIRES_IN });
+}
+
+export function verifyGoogleChallenge(token: string): GoogleChallengeClaims {
+  const payload = jwt.verify(token, env.JWT_SECRET) as GoogleChallengeClaims & { typ?: string };
+  if (payload.typ !== 'google') throw new Error('Jeton de challenge Google invalide');
+  return { googleId: payload.googleId, email: payload.email, name: payload.name };
+}

@@ -33,11 +33,13 @@ export function createApp(): Express {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          // accounts.google.com : « Continuer avec Google » (Google Identity Services).
+          scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style'],
           fontSrc: ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'", 'https:'],
+          frameSrc: ["'self'", 'https://accounts.google.com/gsi/'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
         },

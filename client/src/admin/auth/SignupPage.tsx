@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { GoogleAuth } from './GoogleAuth';
 import { ApiError } from '../../lib/api';
 
 const MIN_LENGTH = 8;
@@ -101,6 +102,7 @@ export function SignupPage() {
             Déjà un compte ? Se connecter
           </Link>
         </form>
+        <GoogleAuth />
       </div>
     </main>
   );

@@ -10,6 +10,12 @@ import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../servi
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
 import { signUp } from '../../services/orgService';
+import {
+  googleClientId,
+  isGoogleEnabled,
+  loginWithGoogle,
+  completeGoogleSignup,
+} from '../../services/googleAuthService';
 
 export const authRouter = Router();
 
@@ -120,6 +126,41 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof SignupSchema>;
     sendData(res, await signUp(body), 201);
+  }),
+);
+
+// Config publique d'auth : indique au client si « Continuer avec Google » est disponible.
+authRouter.get(
+  '/config',
+  asyncHandler(async (_req, res) => {
+    sendData(res, { googleEnabled: isGoogleEnabled(), googleClientId: googleClientId() });
+  }),
+);
+
+// Connexion/inscription via Google : le client envoie l'ID token (credential) de Google.
+const GoogleLoginSchema = z.object({ credential: z.string().min(1) });
+authRouter.post(
+  '/google',
+  resetLimiter,
+  validateBody(GoogleLoginSchema),
+  asyncHandler(async (req, res) => {
+    const { credential } = req.body as z.infer<typeof GoogleLoginSchema>;
+    sendData(res, await loginWithGoogle(credential));
+  }),
+);
+
+// Finalise l'inscription Google (nom de l'organisation), via le challenge court émis ci-dessus.
+const GoogleSignupSchema = z.object({
+  challenge: z.string().min(1),
+  orgName: z.string().min(1).max(120),
+});
+authRouter.post(
+  '/google/signup',
+  resetLimiter,
+  validateBody(GoogleSignupSchema),
+  asyncHandler(async (req, res) => {
+    const { challenge, orgName } = req.body as z.infer<typeof GoogleSignupSchema>;
+    sendData(res, await completeGoogleSignup(challenge, orgName), 201);
   }),
 );
 

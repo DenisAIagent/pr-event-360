@@ -66,3 +66,46 @@ export async function signUp(input: {
   });
   return { token, user };
 }
+
+/**
+ * Inscription via Google : crée l'organisation + son admin SANS mot de passe (compte lié
+ * à Google). L'email a déjà été vérifié par Google en amont.
+ */
+export async function signUpWithGoogle(input: {
+  orgName: string;
+  fullName: string;
+  email: string;
+  googleId: string;
+}): Promise<{ token: string; user: User }> {
+  const email = input.email.toLowerCase();
+  if (await findUserByEmail(email)) {
+    throw AppError.conflict('Un compte existe déjà avec cet email');
+  }
+  const orgName = input.orgName.trim();
+  if (!orgName) throw AppError.badRequest("Le nom de l'organisation est requis");
+  const slug = await uniqueSlug(orgName);
+
+  const user = await withTransaction(async (db) => {
+    const org = await createOrganization({ name: orgName, slug }, db);
+    return createUser(
+      {
+        email,
+        fullName: input.fullName,
+        role: 'admin',
+        organizationId: org.id,
+        googleId: input.googleId,
+        authProvider: 'google',
+      },
+      db,
+    );
+  });
+
+  const token = signToken({
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    organizationId: user.organizationId,
+    isPlatformAdmin: user.isPlatformAdmin,
+  });
+  return { token, user };
+}
