@@ -25,6 +25,12 @@ const EnvSchema = z.object({
   // sans lui, le bouton Google reste masqué (parcours email + mot de passe inchangé).
   GOOGLE_CLIENT_ID: z.string().optional(),
 
+  // Stripe (inscription payante). Optionnels : sans eux, la facturation est dormante.
+  // Clés SECRÈTES → uniquement via l'environnement. STRIPE_PRICE_ID est public.
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PRICE_ID: z.string().optional(),
+
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),
   EMAIL_PROVIDER: z.enum(['brevo']).default('brevo'),

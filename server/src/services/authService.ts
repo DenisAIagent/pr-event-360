@@ -16,6 +16,15 @@ export type LoginResult =
   | { token: string; user: User }
   | { mfaRequired: true; challenge: string };
 
+const ACTIVE_STATUSES = new Set(['active', 'trialing']);
+
+/** Refuse l'accès si l'abonnement de l'organisation n'est pas actif. */
+export function assertSubscriptionActive(user: User): void {
+  if (!ACTIVE_STATUSES.has(user.subscriptionStatus)) {
+    throw AppError.forbidden('Abonnement inactif. Renouvelez votre abonnement pour accéder à votre espace.');
+  }
+}
+
 export async function registerUser(input: {
   email: string;
   password: string;
@@ -57,6 +66,7 @@ export async function login(email: string, password: string): Promise<LoginResul
   if (!found.user.active) {
     throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
   }
+  assertSubscriptionActive(found.user);
 
   // Si la double authentification est active : on n'émet PAS encore de jeton de session,
   // mais un challenge court à échanger contre un code TOTP valide.
@@ -91,6 +101,7 @@ export async function completeMfaLogin(
   }
   const user = await findUserById(userId);
   if (!user || !user.active) throw AppError.unauthorized('Compte indisponible.');
+  assertSubscriptionActive(user);
   const token = signToken({
     sub: user.id,
     email: user.email,

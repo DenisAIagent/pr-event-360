@@ -4,7 +4,8 @@ import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AdminShell } from './components/AdminShell';
 import { LoginPage } from './auth/LoginPage';
-import { SignupPage } from './auth/SignupPage';
+import { SubscribePage } from './auth/SubscribePage';
+import { SubscribeSuccessPage } from './auth/SubscribeSuccessPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { AcceptInvitePage } from './auth/AcceptInvitePage';
@@ -48,7 +49,9 @@ export function AdminApp() {
       <ToastProvider>
       <Routes>
         <Route path="login" element={<LoginPage />} />
-        <Route path="signup" element={<SignupPage />} />
+        <Route path="abonnement" element={<SubscribePage />} />
+        <Route path="abonnement/succes" element={<SubscribeSuccessPage />} />
+        <Route path="signup" element={<Navigate to="/admin/abonnement" replace />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="accept-invite" element={<AcceptInvitePage />} />

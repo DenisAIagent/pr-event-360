@@ -25,6 +25,7 @@ export interface User {
   organizationId: string;
   organizationName: string;
   isPlatformAdmin: boolean;
+  subscriptionStatus: string;
   createdAt: string;
 }
 

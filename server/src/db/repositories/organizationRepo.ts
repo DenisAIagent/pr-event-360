@@ -49,6 +49,40 @@ export async function findOrganizationById(
   return rows[0] ? map(rows[0]) : null;
 }
 
+/** Enregistre l'abonnement Stripe d'une organisation (après paiement validé). */
+export async function setOrgSubscription(
+  orgId: string,
+  input: {
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+    status: string;
+    currentPeriodEnd: string | null;
+  },
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query(
+    `UPDATE organizations
+       SET stripe_customer_id = $2, stripe_subscription_id = $3, subscription_status = $4, current_period_end = $5
+     WHERE id = $1`,
+    [orgId, input.stripeCustomerId, input.stripeSubscriptionId, input.status, input.currentPeriodEnd],
+  );
+}
+
+/** Met à jour le statut d'abonnement à partir de l'identifiant d'abonnement Stripe. */
+export async function updateSubscriptionStatusBySubId(
+  stripeSubscriptionId: string,
+  status: string,
+  currentPeriodEnd: string | null,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query(
+    `UPDATE organizations
+       SET subscription_status = $2, current_period_end = COALESCE($3, current_period_end)
+     WHERE stripe_subscription_id = $1`,
+    [stripeSubscriptionId, status, currentPeriodEnd],
+  );
+}
+
 export interface OrganizationSummary extends Organization {
   eventCount: number;
   userCount: number;

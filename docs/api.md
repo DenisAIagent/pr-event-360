@@ -24,11 +24,12 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 
 | Méthode | Chemin | Accès | Description |
 |---|---|---|---|
-| POST | `/signup` | public · rate-limité | `{orgName, fullName, email, password}` → crée une **organisation** + son admin → `{token, user}` (inscription self-service) |
 | GET | `/config` | public | `{googleEnabled, googleClientId}` — indique si « Continuer avec Google » est disponible |
-| POST | `/google` | public · rate-limité | `{credential}` (ID token Google) → `{token, user}` (connexion/liaison) **ou** `{needsOrg, challenge, fullName, email}` si nouveau compte |
-| POST | `/google/signup` | public · rate-limité | `{challenge, orgName}` → crée l'organisation + le compte Google → `{token, user}` |
-| POST | `/login` | public | `{email, password}` → `{token, user}` **ou** `{mfaRequired, challenge}` si 2FA active |
+| POST | `/google` | public · rate-limité | **Connexion** via ID token Google → `{token, user}` (connexion/liaison) **ou** `{needsSignup:true}` si le compte n'existe pas (inscription via paiement) |
+| POST | `/login` | public | `{email, password}` → `{token, user}` **ou** `{mfaRequired, challenge}` si 2FA active. Refusé si l'abonnement de l'organisation est inactif |
+
+> L'inscription n'est plus libre : elle passe par le paiement (voir **Facturation**). La connexion
+> (email ou Google) est réservée aux comptes **inscrits et à l'abonnement actif**.
 | POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → `{token, user}` (échange du challenge contre un code TOTP) |
 | GET | `/mfa/status` | auth | État de la 2FA du compte |
 | POST | `/mfa/setup` | auth | Génère un secret TOTP + QR (provisionnement) |
@@ -111,6 +112,20 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | POST | `/:userId/role` | Changer le rôle (protège le dernier admin) |
 | POST | `/:userId/active` | Activer/désactiver (protège le dernier admin) |
 | PUT | `/:userId/events` | Remplacer les événements assignés |
+
+## Facturation — `/api/admin/billing` + webhook Stripe
+
+> Inscription **payante** (Stripe, abonnement annuel). Dormant si Stripe non configuré
+> (`STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID`). Le compte n'est créé qu'**au paiement validé** (webhook).
+
+| Méthode | Chemin | Accès | Description |
+|---|---|---|---|
+| GET | `/api/admin/billing/config` | public | `{billingEnabled, priceLabel}` |
+| POST | `/api/admin/billing/checkout` | public · rate-limité | `{orgName, fullName, email, password}` **ou** `{orgName, googleCredential}` → `{url}` (Stripe Checkout) |
+| POST | `/api/stripe/webhook` | public (signé) | Événements Stripe (corps brut, signature vérifiée) : `checkout.session.completed` matérialise l'org + le compte ; `customer.subscription.updated/deleted`, `invoice.payment_failed` mettent à jour le statut |
+
+Onboarding manuel (super-admin) : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée une
+organisation active + invite son admin (sans paiement).
 
 ## Intégrations — `/api/admin/settings` (super-admin plateforme)
 

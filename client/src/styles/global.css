@@ -281,6 +281,32 @@ textarea {
   background: oklch(95% 0.05 25);
   color: oklch(40% 0.13 25);
 }
+.banner-info {
+  background: oklch(95% 0.04 250);
+  color: oklch(40% 0.12 250);
+}
+
+/* Badge prix de la page d'abonnement */
+.price-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: var(--radius-md);
+  background: oklch(97% 0.02 250);
+}
+.price-badge strong {
+  font-size: var(--text-xl, 1.4rem);
+  font-weight: 800;
+}
+.price-badge span {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted, #64748b);
+}
+.org-create {
+  padding: var(--space-4);
+}
 
 .stack > * + * {
   margin-top: var(--space-3);

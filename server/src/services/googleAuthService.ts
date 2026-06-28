@@ -1,9 +1,9 @@
 import { OAuth2Client } from 'google-auth-library';
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
-import { signToken, signGoogleChallenge, verifyGoogleChallenge } from '../lib/jwt';
+import { signToken } from '../lib/jwt';
 import { findUserByGoogleId, findUserByEmail, linkGoogleId } from '../db/repositories/userRepo';
-import { signUpWithGoogle } from './orgService';
+import { assertSubscriptionActive } from './authService';
 import type { User } from '../domain';
 
 const env = loadEnv();
@@ -22,13 +22,17 @@ function googleClient(): OAuth2Client {
   return client;
 }
 
-interface VerifiedGoogle {
+export interface VerifiedGoogle {
   googleId: string;
   email: string;
   name: string;
 }
 
 /** Vérifie l'ID token Google (signature + audience) et exige un email vérifié. */
+export async function verifyGoogleCredential(idToken: string): Promise<VerifiedGoogle> {
+  return verifyIdToken(idToken);
+}
+
 async function verifyIdToken(idToken: string): Promise<VerifiedGoogle> {
   const ticket = await googleClient()
     .verifyIdToken({ idToken, audience: env.GOOGLE_CLIENT_ID! })
@@ -52,15 +56,13 @@ function sessionFor(user: User): { token: string; user: User } {
   };
 }
 
-export type GoogleLoginResult =
-  | { token: string; user: User }
-  | { needsOrg: true; challenge: string; fullName: string; email: string };
+export type GoogleLoginResult = { token: string; user: User } | { needsSignup: true };
 
 /**
- * Connexion via Google :
+ * Connexion via Google (réservée aux comptes inscrits) :
  * 1) compte déjà lié → session ;
  * 2) email existant (créé en mot de passe) → liaison automatique (Google a vérifié l'email) ;
- * 3) inconnu → besoin du nom de l'organisation (challenge court renvoyé).
+ * 3) inconnu → `needsSignup` : aucune création ici, le client redirige vers l'abonnement.
  */
 export async function loginWithGoogle(idToken: string): Promise<GoogleLoginResult> {
   const g = await verifyIdToken(idToken);
@@ -68,34 +70,17 @@ export async function loginWithGoogle(idToken: string): Promise<GoogleLoginResul
   const byGoogle = await findUserByGoogleId(g.googleId);
   if (byGoogle) {
     if (!byGoogle.active) throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
+    assertSubscriptionActive(byGoogle);
     return sessionFor(byGoogle);
   }
 
   const byEmail = await findUserByEmail(g.email);
   if (byEmail) {
     if (!byEmail.active) throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
+    assertSubscriptionActive(byEmail);
     await linkGoogleId(byEmail.id, g.googleId);
     return sessionFor(byEmail);
   }
 
-  return { needsOrg: true, challenge: signGoogleChallenge(g), fullName: g.name, email: g.email };
-}
-
-/** Finalise l'inscription Google après saisie du nom de l'organisation. */
-export async function completeGoogleSignup(
-  challenge: string,
-  orgName: string,
-): Promise<{ token: string; user: User }> {
-  let claims;
-  try {
-    claims = verifyGoogleChallenge(challenge);
-  } catch {
-    throw AppError.badRequest('Session Google expirée, recommencez.');
-  }
-  return signUpWithGoogle({
-    orgName,
-    fullName: claims.name,
-    email: claims.email,
-    googleId: claims.googleId,
-  });
+  return { needsSignup: true };
 }

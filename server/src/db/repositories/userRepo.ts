@@ -12,15 +12,17 @@ interface UserRow {
   organization_id: string;
   organization_name: string;
   is_platform_admin: boolean;
+  subscription_status: string;
   created_at: string;
 }
 interface UserWithHashRow extends UserRow {
   password_hash: string | null;
 }
 
-// Toutes les lectures joignent l'organisation pour exposer son nom (UI sans requête).
+// Toutes les lectures joignent l'organisation pour exposer son nom + statut d'abonnement.
 const SELECT_USER = `SELECT u.id, u.email, u.full_name, u.role, u.active,
-  u.organization_id, o.name AS organization_name, u.is_platform_admin, u.created_at
+  u.organization_id, o.name AS organization_name, u.is_platform_admin,
+  o.subscription_status AS subscription_status, u.created_at
   FROM users u JOIN organizations o ON o.id = u.organization_id`;
 
 const map = (r: UserRow): User => ({
@@ -32,6 +34,7 @@ const map = (r: UserRow): User => ({
   organizationId: r.organization_id,
   organizationName: r.organization_name,
   isPlatformAdmin: r.is_platform_admin,
+  subscriptionStatus: r.subscription_status,
   createdAt: r.created_at,
 });
 
@@ -83,7 +86,8 @@ export async function findUserByEmailWithHash(
 ): Promise<{ user: User; passwordHash: string | null } | null> {
   const { rows } = await db.query<UserWithHashRow>(
     `SELECT u.id, u.email, u.full_name, u.role, u.active,
-            u.organization_id, o.name AS organization_name, u.is_platform_admin, u.created_at, u.password_hash
+            u.organization_id, o.name AS organization_name, u.is_platform_admin,
+            o.subscription_status AS subscription_status, u.created_at, u.password_hash
      FROM users u JOIN organizations o ON o.id = u.organization_id
      WHERE u.email = $1`,
     [email],

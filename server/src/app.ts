@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { loadEnv } from './config/env';
 import { sendData } from './http/respond';
+import { asyncHandler } from './http/asyncHandler';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authRouter } from './routes/admin/auth';
 import { eventsRouter } from './routes/admin/events';
@@ -13,6 +14,8 @@ import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
 import { organizationsRouter } from './routes/admin/organizations';
+import { billingRouter } from './routes/admin/billing';
+import { handleWebhook } from './services/billingService';
 import { resolveEventForHost } from './services/siteService';
 import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
@@ -53,6 +56,18 @@ export function createApp(): Express {
     }),
   );
   app.use(cors({ origin: env.CLIENT_URL }));
+
+  // Webhook Stripe : la vérification de signature exige le CORPS BRUT → déclaré AVANT
+  // express.json (qui consommerait/parserait le corps).
+  app.post(
+    '/api/stripe/webhook',
+    express.raw({ type: 'application/json' }),
+    asyncHandler(async (req, res) => {
+      await handleWebhook(req.body as Buffer, req.headers['stripe-signature'] as string | undefined);
+      sendData(res, { received: true });
+    }),
+  );
+
   // Limite relevée : logo + image de fond encodés en data URL (base64) dépassent
   // largement le défaut de 100 ko.
   app.use(express.json({ limit: '6mb' }));
@@ -72,6 +87,7 @@ export function createApp(): Express {
   app.use('/api/admin/events', commsRouter);
   app.use('/api/admin/team', teamRouter);
   app.use('/api/admin/organizations', organizationsRouter);
+  app.use('/api/admin/billing', billingRouter);
   app.use('/api/admin/settings', settingsRouter);
   app.use('/api/admin/search', searchRouter);
 

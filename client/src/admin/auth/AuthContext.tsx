@@ -11,22 +11,21 @@ interface AuthUser {
   organizationId: string;
   organizationName: string;
   isPlatformAdmin: boolean;
+  subscriptionStatus?: string;
 }
 
 /** Le login renvoie un challenge MFA si la double authentification est active. */
 type LoginOutcome = { mfaRequired: true; challenge: string } | undefined;
 
-/** La connexion Google renvoie un challenge si le compte n'existe pas encore (→ nom de l'organisation). */
-type GoogleOutcome = { needsOrg: true; challenge: string; fullName: string; email: string } | undefined;
+/** Connexion Google : un compte inconnu renvoie `needsSignup` (l'inscription se fait via l'abonnement). */
+type GoogleOutcome = { needsSignup: true } | undefined;
 
 interface AuthValue {
   token: string | null;
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<LoginOutcome>;
   completeMfa: (challenge: string, code: string) => Promise<void>;
-  signup: (input: { orgName: string; fullName: string; email: string; password: string }) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<GoogleOutcome>;
-  completeGoogleSignup: (challenge: string, orgName: string) => Promise<void>;
   switchOrg: (orgId: string) => Promise<void>;
   logout: () => void;
 }
@@ -67,34 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(result);
   }, []);
 
-  const signup = useCallback(
-    async (input: { orgName: string; fullName: string; email: string; password: string }) => {
-      const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/signup', input);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-      setState(result);
-    },
-    [],
-  );
-
   const loginWithGoogle = useCallback(async (credential: string): Promise<GoogleOutcome> => {
-    const result = await api.post<
-      { token: string; user: AuthUser } | { needsOrg: true; challenge: string; fullName: string; email: string }
-    >('/admin/auth/google', { credential });
-    if ('needsOrg' in result) {
-      return { needsOrg: true, challenge: result.challenge, fullName: result.fullName, email: result.email };
-    }
+    const result = await api.post<{ token: string; user: AuthUser } | { needsSignup: true }>(
+      '/admin/auth/google',
+      { credential },
+    );
+    if ('needsSignup' in result) return { needsSignup: true };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
     setState(result);
     return undefined;
-  }, []);
-
-  const completeGoogleSignup = useCallback(async (challenge: string, orgName: string) => {
-    const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/google/signup', {
-      challenge,
-      orgName,
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-    setState(result);
   }, []);
 
   const switchOrg = useCallback(
@@ -121,13 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: state?.user ?? null,
       login,
       completeMfa,
-      signup,
       loginWithGoogle,
-      completeGoogleSignup,
       switchOrg,
       logout,
     }),
-    [state, login, completeMfa, signup, loginWithGoogle, completeGoogleSignup, switchOrg, logout],
+    [state, login, completeMfa, loginWithGoogle, switchOrg, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

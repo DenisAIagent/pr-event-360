@@ -9,13 +9,7 @@ import { login, completeMfaLogin, registerUser } from '../../services/authServic
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
-import { signUp } from '../../services/orgService';
-import {
-  googleClientId,
-  isGoogleEnabled,
-  loginWithGoogle,
-  completeGoogleSignup,
-} from '../../services/googleAuthService';
+import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
 
 export const authRouter = Router();
 
@@ -112,23 +106,6 @@ authRouter.post(
   }),
 );
 
-// Inscription self-service : crée une organisation + son admin, et connecte directement.
-const SignupSchema = z.object({
-  orgName: z.string().min(1).max(120),
-  fullName: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
-});
-authRouter.post(
-  '/signup',
-  resetLimiter,
-  validateBody(SignupSchema),
-  asyncHandler(async (req, res) => {
-    const body = req.body as z.infer<typeof SignupSchema>;
-    sendData(res, await signUp(body), 201);
-  }),
-);
-
 // Config publique d'auth : indique au client si « Continuer avec Google » est disponible.
 authRouter.get(
   '/config',
@@ -137,7 +114,8 @@ authRouter.get(
   }),
 );
 
-// Connexion/inscription via Google : le client envoie l'ID token (credential) de Google.
+// CONNEXION via Google (réservée aux comptes inscrits) : le client envoie l'ID token Google.
+// Un compte inconnu renvoie { needsSignup: true } — aucune création ici (passe par l'abonnement).
 const GoogleLoginSchema = z.object({ credential: z.string().min(1) });
 authRouter.post(
   '/google',
@@ -146,21 +124,6 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { credential } = req.body as z.infer<typeof GoogleLoginSchema>;
     sendData(res, await loginWithGoogle(credential));
-  }),
-);
-
-// Finalise l'inscription Google (nom de l'organisation), via le challenge court émis ci-dessus.
-const GoogleSignupSchema = z.object({
-  challenge: z.string().min(1),
-  orgName: z.string().min(1).max(120),
-});
-authRouter.post(
-  '/google/signup',
-  resetLimiter,
-  validateBody(GoogleSignupSchema),
-  asyncHandler(async (req, res) => {
-    const { challenge, orgName } = req.body as z.infer<typeof GoogleSignupSchema>;
-    sendData(res, await completeGoogleSignup(challenge, orgName), 201);
   }),
 );
 
