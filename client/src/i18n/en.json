@@ -64,5 +64,8 @@
   "status.liste_attente": "Waitlist",
   "space.planning.title": "My schedule",
   "space.planning.lede": "Your confirmed interviews with their time slot.",
-  "space.requests.slot": "Time slot"
+  "space.requests.slot": "Time slot",
+  "space.newsroom.title": "Press resources",
+  "space.newsroom.desc": "Press releases, press kits, official photos and videos to download.",
+  "space.newsroom.cta": "Open the newsroom"
 }

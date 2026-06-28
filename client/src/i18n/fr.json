@@ -64,5 +64,8 @@
   "status.liste_attente": "Liste d’attente",
   "space.planning.title": "Mon planning",
   "space.planning.lede": "Vos interviews confirmées avec leur créneau.",
-  "space.requests.slot": "Créneau"
+  "space.requests.slot": "Créneau",
+  "space.newsroom.title": "Ressources presse",
+  "space.newsroom.desc": "Communiqués, dossiers de presse, photos et vidéos officielles à télécharger.",
+  "space.newsroom.cta": "Ouvrir la newsroom"
 }

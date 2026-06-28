@@ -133,17 +133,43 @@ export function SpacePage({
       <p className="lede" style={{ marginBottom: 'var(--space-3)' }}>
         {t('space.lede', { event: data.event.name })}
       </p>
-      <p style={{ marginBottom: 'var(--space-5)' }}>
-        <a
-          href={`/newsroom/${data.event.id}`}
-          target="_blank"
-          rel="noreferrer"
-          className="btn btn-ghost btn-sm"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}
+      <a
+        href={`/newsroom/${data.event.id}`}
+        target="_blank"
+        rel="noreferrer"
+        className="card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+          textDecoration: 'none',
+          color: 'inherit',
+          marginBottom: 'var(--space-5)',
+          borderLeft: '3px solid var(--p-accent, var(--color-accent))',
+        }}
+      >
+        <span
+          style={{
+            display: 'grid',
+            placeItems: 'center',
+            width: 42,
+            height: 42,
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-accent-tint, #eaf7fc)',
+            color: 'var(--p-accent, var(--color-accent))',
+            flex: 'none',
+          }}
         >
-          <Icon name="newspaper" /> Espace presse & médias à télécharger
-        </a>
-      </p>
+          <Icon name="newspaper" />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{ display: 'block' }}>{t('space.newsroom.title')}</strong>
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{t('space.newsroom.desc')}</span>
+        </span>
+        <span className="btn btn-primary btn-sm" style={{ flex: 'none', pointerEvents: 'none' }}>
+          {t('space.newsroom.cta')} →
+        </span>
+      </a>
 
       <section className="card" aria-labelledby="new-req" style={{ marginBottom: 'var(--space-5)' }}>
         <h2 id="new-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>

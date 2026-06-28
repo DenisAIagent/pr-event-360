@@ -64,5 +64,8 @@
   "status.liste_attente": "Lista de espera",
   "space.planning.title": "Mi agenda",
   "space.planning.lede": "Tus entrevistas confirmadas con su franja horaria.",
-  "space.requests.slot": "Franja horaria"
+  "space.requests.slot": "Franja horaria",
+  "space.newsroom.title": "Recursos de prensa",
+  "space.newsroom.desc": "Comunicados, dossieres de prensa, fotos y vídeos oficiales para descargar.",
+  "space.newsroom.cta": "Abrir la newsroom"
 }
