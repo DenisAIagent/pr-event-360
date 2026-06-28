@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   Users,
   Plug,
+  Building2,
   Compass,
   LogOut,
   ChevronDown,
@@ -186,7 +187,12 @@ export function Sidebar() {
 
         <NavItem to="/admin" label="Événements" icon={LayoutGrid} end />
         {isAdmin && <NavItem to="/admin/team" label="Équipe" icon={Users} />}
-        {user?.isPlatformAdmin && <NavItem to="/admin/integrations" label="Intégrations" icon={Plug} />}
+        {user?.isPlatformAdmin && (
+          <>
+            <NavItem to="/admin/organizations" label="Organisations" icon={Building2} />
+            <NavItem to="/admin/integrations" label="Intégrations" icon={Plug} />
+          </>
+        )}
       </nav>
 
       <div className="rail-foot">

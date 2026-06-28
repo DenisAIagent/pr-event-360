@@ -111,6 +111,15 @@ export interface EventSummary {
   branding?: EventBranding | null;
 }
 
+export interface OrganizationSummary {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+  eventCount: number;
+  userCount: number;
+}
+
 export type RecapFrequency = 'none' | 'daily' | 'weekly';
 export interface EventRecap {
   frequency: RecapFrequency;

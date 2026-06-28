@@ -12,6 +12,7 @@ import { eventsRouter } from './routes/admin/events';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
+import { organizationsRouter } from './routes/admin/organizations';
 import { resolveEventForHost } from './services/siteService';
 import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
@@ -63,6 +64,7 @@ export function createApp(): Express {
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).
   app.use('/api/admin/events', commsRouter);
   app.use('/api/admin/team', teamRouter);
+  app.use('/api/admin/organizations', organizationsRouter);
   app.use('/api/admin/settings', settingsRouter);
   app.use('/api/admin/search', searchRouter);
 

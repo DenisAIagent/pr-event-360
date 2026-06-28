@@ -21,6 +21,7 @@ import { NewsroomTab } from './pages/NewsroomTab';
 import { CommunicationsTab } from './pages/CommunicationsTab';
 import { PreviewTab } from './pages/PreviewTab';
 import { TeamPage } from './pages/TeamPage';
+import { OrganizationsPage } from './pages/OrganizationsPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SecurityPage } from './pages/SecurityPage';
 import { EventWizard } from './pages/EventWizard';
@@ -60,6 +61,7 @@ export function AdminApp() {
               <Route path="team" element={<TeamPage />} />
             </Route>
             <Route element={<PlatformRoute />}>
+              <Route path="organizations" element={<OrganizationsPage />} />
               <Route path="integrations" element={<IntegrationsPage />} />
             </Route>
             <Route path="events/:eventId" element={<EventLayout />}>

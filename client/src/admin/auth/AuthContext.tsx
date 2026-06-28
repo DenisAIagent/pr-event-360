@@ -22,6 +22,7 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<LoginOutcome>;
   completeMfa: (challenge: string, code: string) => Promise<void>;
   signup: (input: { orgName: string; fullName: string; email: string; password: string }) => Promise<void>;
+  switchOrg: (orgId: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -70,14 +71,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const switchOrg = useCallback(
+    async (orgId: string) => {
+      const result = await api.post<{ token: string; user: AuthUser }>(
+        `/admin/organizations/${orgId}/switch`,
+        undefined,
+        state?.token ?? undefined,
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+      setState(result);
+    },
+    [state],
+  );
+
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setState(null);
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ token: state?.token ?? null, user: state?.user ?? null, login, completeMfa, signup, logout }),
-    [state, login, completeMfa, signup, logout],
+    () => ({
+      token: state?.token ?? null,
+      user: state?.user ?? null,
+      login,
+      completeMfa,
+      signup,
+      switchOrg,
+      logout,
+    }),
+    [state, login, completeMfa, signup, switchOrg, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
