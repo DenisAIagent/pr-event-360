@@ -7,6 +7,7 @@ import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
 import { printTable } from '../lib/printRequests';
 import { CopyLink } from '../components/CopyLink';
+import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
@@ -212,14 +213,19 @@ export function AccreditationsTab() {
                 ) : a.accStatus === 'acceptee' && a.token ? (
                   <div style={{ minWidth: 280 }}>
                     <CopyLink url={`${window.location.origin}/espace/${a.token}`} compact />
-                    <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>
+                    <span className="muted" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       Lien personnel (déjà envoyé par email)
+                      <InfoBubble title="Le lien personnel">
+                        Adresse <strong>unique et secrète</strong> de l'espace de ce journaliste, envoyée
+                        automatiquement par email à l'acceptation. C'est par là qu'il soumet ses demandes et
+                        suit son planning. S'il dit ne pas l'avoir reçue, copiez-la ici et renvoyez-la-lui.
+                      </InfoBubble>
                     </span>
                   </div>
                 ) : (
                   <span className="muted">—</span>
                 )}
-                <div style={{ marginTop: 'var(--space-2)' }}>
+                <div style={{ marginTop: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                   <button
                     type="button"
                     onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
@@ -236,6 +242,11 @@ export function AccreditationsTab() {
                   >
                     Supprimer (RGPD)
                   </button>
+                  <InfoBubble title="Supprimer (droit à l'effacement)">
+                    Efface <strong>définitivement</strong> ce journaliste et toutes ses demandes. Action
+                    <strong> irréversible</strong> (pas de corbeille). C'est le « droit à l'effacement »
+                    prévu par le RGPD (art. 17), à utiliser si la personne le demande.
+                  </InfoBubble>
                 </div>
               </td>
             </tr>

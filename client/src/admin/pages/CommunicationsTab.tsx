@@ -3,7 +3,18 @@ import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
+import { InfoBubble } from '../components/InfoBubble';
 import type { Newsletter, Recipient } from '../lib/types';
+
+/** Modèle de départ prêt à personnaliser (pour les non-techniciens). */
+const STARTER_HTML = `<h1>Bonjour {{firstName}},</h1>
+<p>Merci de votre intérêt pour notre événement.</p>
+<p>Écrivez votre message ici. Vous pouvez mettre du texte <strong>en gras</strong>, ajouter un <a href="https://exemple.com">lien</a>, ou une liste :</p>
+<ul>
+  <li>Premier point</li>
+  <li>Deuxième point</li>
+</ul>
+<p>À très vite,<br />L'équipe presse</p>`;
 
 export function CommunicationsTab() {
   const { eventId = '' } = useParams();
@@ -156,7 +167,34 @@ function Composer({
 
       <div className="grid-2">
         <div className="field">
-          <label>Contenu HTML</label>
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              Contenu HTML
+              <InfoBubble title="Écrire le contenu (HTML)">
+                Le contenu s'écrit en <strong>HTML</strong> (des balises). Les bases&nbsp;:
+                <ul>
+                  <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
+                  <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
+                  <li>Gras : <code>{'<strong>important</strong>'}</code></li>
+                  <li>Lien : <code>{'<a href="https://…">cliquez ici</a>'}</code></li>
+                  <li>Liste : <code>{'<ul><li>élément</li></ul>'}</code></li>
+                </ul>
+                Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
+                L'aperçu à droite montre le rendu réel.
+              </InfoBubble>
+            </span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
+                  setBodyHtml(STARTER_HTML);
+                }
+              }}
+            >
+              Insérer un modèle
+            </button>
+          </label>
           <textarea
             value={bodyHtml}
             onChange={(e) => setBodyHtml(e.target.value)}
@@ -164,8 +202,14 @@ function Composer({
             placeholder="<h1>Bonjour {{firstName}}</h1><p>…</p>"
             style={{ fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}
           />
-          <span className="field-hint muted">
+          <span className="field-hint muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             Variables : {'{{firstName}}'} et {'{{lastName}}'}. Le contenu est habillé aux couleurs de l’event.
+            <InfoBubble title="Les variables">
+              Ces étiquettes sont remplacées à l'envoi par les infos de chaque destinataire&nbsp;:{' '}
+              <code>{'{{firstName}}'}</code> = prénom, <code>{'{{lastName}}'}</code> = nom. Écrivez-les
+              exactement ainsi (avec les doubles accolades). Seules ces deux variables sont gérées pour les
+              newsletters.
+            </InfoBubble>
           </span>
         </div>
         <div className="field">
@@ -274,6 +318,12 @@ function RecipientPicker({
           <input type="checkbox" checked={onlyAccepted} onChange={(e) => setOnlyAccepted(e.target.checked)} />
           Accrédités acceptés uniquement
         </label>
+        <InfoBubble title="Filtrer les destinataires">
+          <strong>Coché</strong> : la liste ne montre que les journalistes dont l'accréditation est{' '}
+          <strong>acceptée</strong> (le cas habituel). <strong>Décoché</strong> : elle inclut aussi les
+          autres statuts (en attente, refusés) — à utiliser avec prudence pour ne pas écrire à des
+          personnes non accréditées.
+        </InfoBubble>
         <button className="btn btn-ghost btn-sm" onClick={selectAll}>
           Tout sélectionner ({filtered.length})
         </button>

@@ -16,6 +16,7 @@ import {
 import { BrandingEditor } from '../components/settings/BrandingEditor';
 import { SubdomainCard } from '../components/settings/SubdomainCard';
 import { DomainCard } from '../components/settings/DomainCard';
+import { InfoBubble } from '../components/InfoBubble';
 
 const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Sous-domaine', 'Clôture', 'Récap & emails'];
 
@@ -191,13 +192,26 @@ export function LineupTab() {
                   </select>
                 </div>
                 <div className="field">
-                  <label>Quota interviews (sinon défaut)</label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Quota interviews (sinon défaut)
+                    <InfoBubble>
+                      Nombre maximum d'interviews pour cet artiste. Laissez <strong>vide</strong> pour
+                      utiliser la valeur par défaut définie à l'étape « Règles & quotas ».
+                    </InfoBubble>
+                  </label>
                   <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
                 </div>
               </div>
               <div className="grid-2">
                 <div className="field">
-                  <label>Quota photographes</label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Quota photographes
+                    <InfoBubble title="Photographes « dans le pit »">
+                      Le <strong>« pit »</strong> est la zone réservée aux photographes juste devant la
+                      scène. Ce quota limite le nombre de photographes acceptés pour cet artiste. Laissez
+                      vide = illimité.
+                    </InfoBubble>
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -222,7 +236,16 @@ export function LineupTab() {
                 Laisser vide = <strong>illimité</strong>. Au-delà du quota, les demandes passent en liste d’attente.
               </p>
               <div className="field">
-                <label>Tranches de disponibilité → créneaux générés</label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  Tranches de disponibilité → créneaux générés
+                  <InfoBubble title="Comment les créneaux sont créés">
+                    Indiquez les plages où l'artiste est disponible pour des interviews. L'app y crée
+                    <strong> automatiquement</strong> les créneaux, selon la <em>durée</em> et le{' '}
+                    <em>battement</em> définis à l'étape « Règles & quotas ».
+                    <br />
+                    Ex : plage 14:00–15:00, durée 15 min + 5 min de pause → créneaux 14:00, 14:20, 14:40.
+                  </InfoBubble>
+                </label>
                 {windows.map((w, i) => (
                   <div key={i} className="inline-actions" style={{ marginBottom: 'var(--space-1)' }}>
                     <input type="date" value={w.day} onChange={(e) => setWindow(i, { day: e.target.value })} />

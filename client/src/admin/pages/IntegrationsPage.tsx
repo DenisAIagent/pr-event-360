@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { PageHero } from '../components/PageHero';
+import { InfoBubble } from '../components/InfoBubble';
 import type { SettingsStatus } from '../lib/types';
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -82,16 +83,26 @@ export function IntegrationsPage() {
         <PageHero
           eyebrow="Configuration"
           title="Intégrations"
-          subtitle="Clés API des outils externes. Les valeurs sont chiffrées avant stockage et remplacent la configuration du serveur."
+          subtitle="Clés des outils externes (envoi d'emails et SMS, stockage des photos/vidéos). Saisies ici, elles sont chiffrées et utilisées en priorité."
         />
+
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 0 }}>
+          Les clés saisies ici priment sur la configuration du serveur.
+          <InfoBubble title="« Priment sur la configuration du serveur »">
+            Si une clé est définie ici, elle est utilisée à la place de celle du serveur (fichier de
+            configuration). Vous pouvez la <strong>modifier ou l'effacer à tout moment</strong> : effacer une
+            clé fait simplement revenir à la valeur définie côté serveur. Rien n'est cassé.
+          </InfoBubble>
+        </p>
 
         {error && <div className="banner banner-error">{error}</div>}
         {done && <div className="banner banner-success">{done}</div>}
 
         {status && !status.encryptionReady && (
           <div className="banner banner-warn">
-            Le chiffrement n’est pas configuré (APP_ENCRYPTION_KEY manquant). Les clés API ne peuvent
-            pas être enregistrées ici tant que la clé maîtresse n’est pas définie côté serveur.
+            La sauvegarde sécurisée des clés n’est pas encore activée sur le serveur. Demandez à votre
+            administrateur technique de l’activer (variable <code>APP_ENCRYPTION_KEY</code>). En attendant,
+            les clés restent configurées directement côté serveur.
           </div>
         )}
 

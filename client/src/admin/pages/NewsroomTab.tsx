@@ -3,9 +3,16 @@ import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { CopyLink } from '../components/CopyLink';
+import { InfoBubble } from '../components/InfoBubble';
 import { FileText } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import type { PressRelease } from '../lib/types';
+
+/** Modèle de départ de communiqué (pour les non-techniciens). */
+const CP_STARTER_HTML = `<h1>Titre du communiqué</h1>
+<p><strong>Lieu, le 1er janvier</strong> — Phrase d'accroche qui résume l'information principale.</p>
+<p>Développez ici les détails : contexte, dates, citations…</p>
+<p>Contact presse : Prénom Nom — email@exemple.com — 06 12 34 56 78.</p>`;
 
 export function NewsroomTab() {
   const { eventId = '' } = useParams();
@@ -142,7 +149,32 @@ function PressEditor({
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div className="field">
-        <label>Contenu (HTML)</label>
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            Contenu (HTML)
+            <InfoBubble title="Écrire le communiqué (HTML)">
+              Le contenu s'écrit en <strong>HTML</strong> (balises). Les bases&nbsp;:
+              <ul>
+                <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
+                <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
+                <li>Gras : <code>{'<strong>important</strong>'}</code></li>
+                <li>Lien : <code>{'<a href="https://…">lien</a>'}</code></li>
+              </ul>
+              Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
+            </InfoBubble>
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
+                setBodyHtml(CP_STARTER_HTML);
+              }
+            }}
+          >
+            Insérer un modèle
+          </button>
+        </label>
         <textarea
           value={bodyHtml}
           onChange={(e) => setBodyHtml(e.target.value)}

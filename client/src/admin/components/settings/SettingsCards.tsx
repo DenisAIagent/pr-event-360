@@ -1,9 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAuthedApi } from '../../auth/AuthContext';
 import { useFetch } from '../../lib/useFetch';
 import type { EventConfig, EventSettings, EmailTemplate, EventRecap, RecapFrequency } from '../../lib/types';
 import { TRIGGER_LABEL, TYPE_LABEL } from '../../lib/labels';
 import { Icon } from '../../../components/Icon';
+import { InfoBubble } from '../InfoBubble';
+
+/** Bloc d'explication réutilisable du score de priorité (concept central, opaque). */
+const SCORE_HELP = (
+  <>
+    Le <strong>score</strong> classe les demandes quand il y en a plus que de places. Il est calculé
+    automatiquement&nbsp;:
+    <br />
+    <code>poids du média × multiplicateur du type + bonus d'ancienneté</code>.
+    <br />
+    Plus le score est haut, plus la demande est traitée en premier. Les réglages ci-dessous le pilotent.
+  </>
+);
 
 // ── Clôture des inscriptions ────────────────────────────────────────
 function toLocalInput(iso: string | null): string {
@@ -185,14 +198,43 @@ export function ConfigForm({ eventId, config }: { eventId: string; config: Event
 
   return (
     <form className="card" onSubmit={save}>
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Configuration</h3>
+      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Configuration
+        <InfoBubble title="À quoi servent ces réglages ?">{SCORE_HELP}</InfoBubble>
+      </h3>
       {saved && <div className="banner banner-success">Enregistré.</div>}
       <div className="grid-2">
-        <Num label="Durée interview (min)" value={c.itwDurationMin} onChange={num('itwDurationMin')} />
-        <Num label="Battement entre interviews (min)" value={c.itwBufferMin} onChange={num('itwBufferMin')} />
-        <Num label="Quota interviews / artiste (défaut)" value={c.defaultItwQuota} onChange={num('defaultItwQuota')} />
-        <Num label="Bonus d'ancienneté / heure" value={c.ageBonusPerHour} onChange={num('ageBonusPerHour')} step="0.1" />
-        <Num label="Plafond du bonus d'ancienneté" value={c.ageBonusCap} onChange={num('ageBonusCap')} />
+        <Num
+          label="Durée interview (min)"
+          value={c.itwDurationMin}
+          onChange={num('itwDurationMin')}
+          help="Durée d'un créneau d'interview. Sert à découper automatiquement les plages de disponibilité des artistes."
+        />
+        <Num
+          label="Battement entre interviews (min)"
+          value={c.itwBufferMin}
+          onChange={num('itwBufferMin')}
+          help="Temps de pause entre deux interviews qui se suivent (transition, respiration de l'artiste). Ex : 5 min."
+        />
+        <Num
+          label="Quota interviews / artiste (défaut)"
+          value={c.defaultItwQuota}
+          onChange={num('defaultItwQuota')}
+          help="Nombre maximum d'interviews accordées par artiste, quand l'artiste n'a pas de quota propre. Au-delà, les demandes passent en liste d'attente."
+        />
+        <Num
+          label="Bonus d'ancienneté / heure"
+          value={c.ageBonusPerHour}
+          onChange={num('ageBonusPerHour')}
+          step="0.1"
+          help="Points ajoutés au score pour chaque heure d'attente d'une demande. Évite qu'une demande ancienne soit oubliée. Laissez 0 si vous ne savez pas."
+        />
+        <Num
+          label="Plafond du bonus d'ancienneté"
+          value={c.ageBonusCap}
+          onChange={num('ageBonusCap')}
+          help="Limite maximale du bonus d'ancienneté : une vieille demande remonte, mais sans jamais doubler indéfiniment les autres."
+        />
       </div>
       <button className="btn btn-primary" type="submit" style={{ marginTop: 'var(--space-3)' }}>
         Enregistrer la configuration
@@ -206,15 +248,20 @@ function Num({
   value,
   onChange,
   step,
+  help,
 }: {
   label: string;
   value: number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   step?: string;
+  help?: ReactNode;
 }) {
   return (
     <div className="field">
-      <label>{label}</label>
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        {label}
+        {help && <InfoBubble>{help}</InfoBubble>}
+      </label>
       <input type="number" min={0} step={step ?? '1'} value={value} onChange={onChange} />
     </div>
   );
@@ -240,7 +287,14 @@ export function TypeWeights({
 
   return (
     <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Multiplicateurs par type de demande</h3>
+      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Multiplicateurs par type de demande
+        <InfoBubble title="Multiplicateur par type">
+          Importance relative de chaque type de demande dans le score&nbsp;: <strong>1 = normal</strong>,{' '}
+          <strong>2 = priorité doublée</strong>. Ex : mettre les interviews à 1.5 les fait remonter
+          devant les reportages à 1.
+        </InfoBubble>
+      </h3>
       <div className="grid-2">
         {weights.map((w) => (
           <div key={w.type} className="inline-actions" style={{ alignItems: 'center' }}>
@@ -287,7 +341,13 @@ export function MediaTypes({
 
   return (
     <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Poids par type de média</h3>
+      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Poids par type de média
+        <InfoBubble title="Poids du média">
+          Importance de chaque média dans le score (ex : blog = 1, presse nationale = 2, TV nationale = 3).
+          Une demande venant d'un média à poids élevé est traitée en priorité.
+        </InfoBubble>
+      </h3>
       <table className="table" style={{ marginBottom: 'var(--space-3)' }}>
         <thead>
           <tr>
@@ -327,8 +387,18 @@ export function Templates({
   return (
     <div className="card">
       <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Templates d'emails</h3>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
+      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0, display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         Variables disponibles : {'{{firstName}}'}, {'{{event}}'}, {'{{link}}'}, {'{{artist}}'}, {'{{slot}}'}.
+        <InfoBubble title="Que devient chaque variable ?">
+          Ces étiquettes sont remplacées automatiquement à l'envoi&nbsp;:
+          <ul>
+            <li><code>{'{{firstName}}'}</code> : prénom du journaliste</li>
+            <li><code>{'{{event}}'}</code> : nom de l'événement</li>
+            <li><code>{'{{artist}}'}</code> : nom de l'artiste concerné</li>
+            <li><code>{'{{slot}}'}</code> : jour + heure du créneau (ex : ven. 10 juil. · 14:00)</li>
+            <li><code>{'{{link}}'}</code> : lien personnel d'accès du journaliste</li>
+          </ul>
+        </InfoBubble>
       </p>
       <div className="stack">
         {templates.map((t) => (

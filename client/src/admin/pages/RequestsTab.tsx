@@ -32,6 +32,7 @@ import {
   ArrowUp,
   type LucideIcon,
 } from 'lucide-react';
+import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
@@ -112,7 +113,19 @@ export function RequestsTab() {
           <Kpi num={dash.data.byType.interview} label="Interviews" icon={Mic} variant="k-blue" />
           <Kpi num={dash.data.byType.photo_report} label="Reportages photo" icon={Camera} variant="k-navy" />
           <Kpi num={dash.data.byType.video_report} label="Reportages vidéo" icon={Video} variant="k-navy" />
-          <Kpi num={dash.data.waitlist} label="Liste d'attente" icon={Clock} variant="k-amber" />
+          <Kpi
+            num={dash.data.waitlist}
+            label="Liste d'attente"
+            icon={Clock}
+            variant="k-amber"
+            help={
+              <>
+                Une demande passe <strong>automatiquement</strong> en liste d'attente quand le quota
+                (de l'artiste / du type) est atteint. Si une place se libère, la meilleure demande en
+                attente est <strong>promue automatiquement</strong> selon son score.
+              </>
+            }
+          />
           <Kpi num={dash.data.journalists} label="Journalistes" icon={Users} variant="k-green" />
         </div>
       )}
@@ -305,7 +318,14 @@ function QueueView({
           </p>
           <div className="queue">
             <div className="q-head">
-              <div className="col">Priorité</div>
+              <div className="col" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                Priorité
+                <InfoBubble title="Le score de priorité">
+                  Note calculée <strong>automatiquement</strong> pour classer les demandes&nbsp;:{' '}
+                  <code>poids du média × type de demande + ancienneté</code>. Plus c'est haut, plus la
+                  demande remonte. Non modifiable à la main — ajustez les règles dans Paramètres.
+                </InfoBubble>
+              </div>
               <div className="col">Demandeur</div>
               <div className="col">Objet</div>
               <div className="col">Statut</div>
@@ -778,6 +798,11 @@ function PlanningView({
         >
           <Icon name="check" /> {busy ? 'Génération…' : 'Générer le planning'}
         </button>
+        <InfoBubble title="Générer le planning">
+          Attribue les créneaux aux interviews <strong>acceptées</strong>, par priorité (meilleur score →
+          créneau le plus tôt). Vous pouvez le relancer à tout moment&nbsp;: il <strong>recalcule et
+          réattribue</strong> tous les créneaux. Les demandes non acceptées ne sont pas planifiées.
+        </InfoBubble>
         <button className="btn btn-ghost btn-sm" onClick={exportPlanning} disabled={empty}>
           <Icon name="download" /> Exporter en PDF
         </button>
@@ -883,9 +908,16 @@ function SubjectGroup({
         </span>
         <span className="artist-group-meta">
           {quota && (
-            <span className={`badge ${full ? 'badge-danger' : 'badge-success'}`}>
-              Quota {quota.used}/{quota.limit}
-            </span>
+            <>
+              <span className={`badge ${full ? 'badge-danger' : 'badge-success'}`}>
+                Quota {quota.used}/{quota.limit}
+              </span>
+              <InfoBubble title="Quota">
+                <strong>Places accordées / maximum</strong> pour ce groupe. Une fois le maximum atteint, les
+                nouvelles demandes passent en liste d'attente. Le maximum se règle sur l'artiste (Configuration)
+                ou par défaut dans Paramètres.
+              </InfoBubble>
+            </>
           )}
           <span className="badge badge-progress">
             {count} {noun}
@@ -909,6 +941,13 @@ function SubjectGroup({
                   <Icon name="check" /> Accepter {toAccept > 1 ? `les ${toAccept} meilleurs` : 'le meilleur'} (quota
                   restant)
                 </button>
+              )}
+              {toAccept > 0 && (
+                <InfoBubble title="Accepter les meilleurs">
+                  Accepte d'un coup les demandes au <strong>meilleur score</strong> de ce groupe, dans la
+                  limite des <strong>places restantes</strong> avant d'atteindre le quota. Les autres restent
+                  en attente.
+                </InfoBubble>
               )}
               {onExport && (
                 <button
@@ -935,11 +974,13 @@ function Kpi({
   label,
   icon: KpiIcon,
   variant = 'k-navy',
+  help,
 }: {
   num: number;
   label: string;
   icon: LucideIcon;
   variant?: string;
+  help?: React.ReactNode;
 }) {
   return (
     <div className={`kpi ${variant}`}>
@@ -947,6 +988,7 @@ function Kpi({
         <div className="ico">
           <KpiIcon size={16} />
         </div>
+        {help && <InfoBubble>{help}</InfoBubble>}
       </div>
       <div className="num">{num}</div>
       <div className="lbl">{label}</div>
