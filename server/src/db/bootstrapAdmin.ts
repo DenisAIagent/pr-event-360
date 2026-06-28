@@ -14,8 +14,10 @@
  */
 import { registerUser } from '../services/authService';
 import { findUserByEmail, updateUserRole } from './repositories/userRepo';
+import { createOrganization, findOrganizationBySlug } from './repositories/organizationRepo';
 import { pool } from './pool';
 
+/** Le compte bootstrap est l'OPÉRATEUR : admin de l'organisation par défaut + super-admin plateforme. */
 async function main(): Promise<void> {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
@@ -28,17 +30,25 @@ async function main(): Promise<void> {
 
   const existing = await findUserByEmail(email);
   if (existing) {
-    if (existing.role === 'admin') {
-      console.log(`Admin « ${email} » déjà présent — rien à faire.`);
-    } else {
-      await updateUserRole(existing.id, 'admin');
-      console.log(`Compte « ${email} » promu admin.`);
+    if (existing.role !== 'admin') await updateUserRole(existing.id, 'admin');
+    if (!existing.isPlatformAdmin) {
+      await pool.query('UPDATE users SET is_platform_admin = true WHERE id = $1', [existing.id]);
     }
+    console.log(`Compte « ${email} » garanti admin + super-admin plateforme.`);
     return;
   }
 
-  const user = await registerUser({ email, password, fullName, role: 'admin' });
-  console.log(`Admin créé : ${user.email} (${user.id}).`);
+  const org =
+    (await findOrganizationBySlug('mdmc')) ?? (await createOrganization({ name: 'MDMC', slug: 'mdmc' }));
+  const user = await registerUser({
+    email,
+    password,
+    fullName,
+    role: 'admin',
+    organizationId: org.id,
+    isPlatformAdmin: true,
+  });
+  console.log(`Admin créé : ${user.email} (${user.id}) dans l'organisation ${org.slug}.`);
 }
 
 main()

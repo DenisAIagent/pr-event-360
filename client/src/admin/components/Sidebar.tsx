@@ -114,6 +114,12 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {user?.organizationName && (
+        <div className="org-name" title={user.organizationName}>
+          {user.organizationName}
+        </div>
+      )}
+
       <div className="ev-switch-wrap" ref={switchRef}>
         <button type="button" className="ev-switch" onClick={() => setSwitchOpen((o) => !o)} aria-expanded={switchOpen}>
           <div className="lbl">{eventId ? 'Événement actif' : 'Tableau de bord'}</div>
@@ -179,12 +185,8 @@ export function Sidebar() {
         )}
 
         <NavItem to="/admin" label="Événements" icon={LayoutGrid} end />
-        {isAdmin && (
-          <>
-            <NavItem to="/admin/team" label="Équipe" icon={Users} />
-            <NavItem to="/admin/integrations" label="Intégrations" icon={Plug} />
-          </>
-        )}
+        {isAdmin && <NavItem to="/admin/team" label="Équipe" icon={Users} />}
+        {user?.isPlatformAdmin && <NavItem to="/admin/integrations" label="Intégrations" icon={Plug} />}
       </nav>
 
       <div className="rail-foot">

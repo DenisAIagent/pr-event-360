@@ -4,7 +4,7 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireEventEditor } from '../../middleware/auth';
-import { getAccessibleEventOrThrow, getEventOrThrow } from '../../services/eventService';
+import { getAccessibleEventOrThrow, getEventOrThrow, type AccessActor } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
 import { getBranding } from '../../db/repositories/eventRepo';
 import { signUpload } from '../../services/storageService';
@@ -28,7 +28,7 @@ import { listJournalistsByEvent } from '../../db/repositories/journalistRepo';
 export const commsRouter = Router();
 commsRouter.use(requireAuth);
 
-const access = (req: { params: Record<string, string | undefined>; user?: { sub: string; role: 'admin' | 'attache' | 'assistant' } }) =>
+const access = (req: { params: Record<string, string | undefined>; user?: AccessActor }) =>
   getAccessibleEventOrThrow(req.params.eventId!, req.user!);
 
 const KIND = z.enum(['photo', 'video', 'logo', 'press_kit', 'other']);

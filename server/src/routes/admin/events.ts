@@ -81,7 +81,11 @@ eventsRouter.post(
   validateBody(CreateEventSchema),
   asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof CreateEventSchema>;
-    const event = await createEvent({ ownerUserId: req.user!.sub, ...body });
+    const event = await createEvent({
+      organizationId: req.user!.organizationId,
+      ownerUserId: req.user!.sub,
+      ...body,
+    });
     sendData(res, event, 201);
   }),
 );

@@ -3,13 +3,14 @@ import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
-import { requireAuth, requireRole } from '../../middleware/auth';
+import { requireAuth, requirePlatformAdmin } from '../../middleware/auth';
 import { getSettingsStatus, setSecrets } from '../../services/settingsService';
 
 export const settingsRouter = Router();
 
-// Réglages d'intégration (clés API) : réservés aux administrateurs.
-settingsRouter.use(requireAuth, requireRole('admin'));
+// Intégrations (clés API Brevo/Twilio/Cloudinary) = ressources PLATEFORME partagées :
+// réservées au super-admin plateforme, invisibles des admins d'organisation.
+settingsRouter.use(requireAuth, requirePlatformAdmin);
 
 settingsRouter.get(
   '/',

@@ -9,12 +9,22 @@ import type {
 
 /** DTO camelCase renvoyés par les repositories (mappés depuis les lignes SQL). */
 
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   role: UserRole;
   active: boolean;
+  organizationId: string;
+  organizationName: string;
+  isPlatformAdmin: boolean;
   createdAt: string;
 }
 
@@ -29,6 +39,7 @@ export interface EventConfig {
 
 export interface Event {
   id: string;
+  organizationId: string;
   ownerUserId: string;
   name: string;
   location: string | null;

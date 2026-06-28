@@ -9,6 +9,7 @@ import { login, completeMfaLogin, registerUser } from '../../services/authServic
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
+import { signUp } from '../../services/orgService';
 
 export const authRouter = Router();
 
@@ -93,15 +94,32 @@ const RegisterSchema = z.object({
   role: z.enum(['attache', 'assistant']).optional(),
 });
 
-// Création de comptes réservée à un utilisateur déjà authentifié (le 1er compte
-// est créé via le script de seed). Évite l'auto-enrôlement non contrôlé.
+// Création de comptes réservée à un utilisateur déjà authentifié, dans SON organisation.
 authRouter.post(
   '/register',
   requireAuth,
   validateBody(RegisterSchema),
   asyncHandler(async (req, res) => {
-    const user = await registerUser(req.body as z.infer<typeof RegisterSchema>);
+    const body = req.body as z.infer<typeof RegisterSchema>;
+    const user = await registerUser({ ...body, organizationId: req.user!.organizationId });
     sendData(res, user, 201);
+  }),
+);
+
+// Inscription self-service : crée une organisation + son admin, et connecte directement.
+const SignupSchema = z.object({
+  orgName: z.string().min(1).max(120),
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
+});
+authRouter.post(
+  '/signup',
+  resetLimiter,
+  validateBody(SignupSchema),
+  asyncHandler(async (req, res) => {
+    const body = req.body as z.infer<typeof SignupSchema>;
+    sendData(res, await signUp(body), 201);
   }),
 );
 

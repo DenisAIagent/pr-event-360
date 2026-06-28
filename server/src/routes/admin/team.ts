@@ -5,20 +5,21 @@ import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { inviteCollaborator, resendInvitation } from '../../services/invitationService';
-import { deleteInvitation } from '../../db/repositories/invitationRepo';
+import { deleteInvitation, findInvitationById } from '../../db/repositories/invitationRepo';
+import { AppError } from '../../http/AppError';
 import { changeUserActive, changeUserRole, getTeam, setUserEvents } from '../../services/teamService';
 
 export const teamRouter = Router();
 
-// Gestion de l'équipe : entièrement réservée aux administrateurs.
+// Gestion de l'équipe : réservée aux administrateurs, scopée à LEUR organisation.
 teamRouter.use(requireAuth, requireRole('admin'));
 
 const ROLE = z.enum(['admin', 'attache', 'assistant']);
 
 teamRouter.get(
   '/',
-  asyncHandler(async (_req, res) => {
-    sendData(res, await getTeam());
+  asyncHandler(async (req, res) => {
+    sendData(res, await getTeam(req.user!.organizationId));
   }),
 );
 
@@ -32,25 +33,32 @@ teamRouter.post(
   validateBody(InviteSchema),
   asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof InviteSchema>;
-    const invitation = await inviteCollaborator({ ...body, invitedBy: req.user!.sub });
-    // On ne renvoie pas le jeton : il n'existe que dans l'email envoyé.
+    const invitation = await inviteCollaborator({
+      ...body,
+      organizationId: req.user!.organizationId,
+      invitedBy: req.user!.sub,
+    });
     sendData(res, { id: invitation.id, email: invitation.email, role: invitation.role }, 201);
   }),
 );
 
-// Renvoyer une invitation (nouveau jeton + nouvel email).
+// Renvoyer une invitation (nouveau jeton + nouvel email). Scopé à l'organisation.
 teamRouter.post(
   '/invitations/:id/resend',
   asyncHandler(async (req, res) => {
-    const inv = await resendInvitation(req.params.id!, req.user!.sub);
+    const inv = await resendInvitation(req.params.id!, req.user!.sub, req.user!.organizationId);
     sendData(res, { id: inv.id, email: inv.email });
   }),
 );
 
-// Annuler/révoquer une invitation en attente.
+// Annuler/révoquer une invitation en attente (de son organisation uniquement).
 teamRouter.delete(
   '/invitations/:id',
   asyncHandler(async (req, res) => {
+    const inv = await findInvitationById(req.params.id!);
+    if (!inv || inv.organizationId !== req.user!.organizationId) {
+      throw AppError.notFound('Invitation introuvable');
+    }
     await deleteInvitation(req.params.id!);
     sendData(res, { deleted: true });
   }),
@@ -62,7 +70,7 @@ teamRouter.post(
   validateBody(RoleSchema),
   asyncHandler(async (req, res) => {
     const { role } = req.body as z.infer<typeof RoleSchema>;
-    sendData(res, await changeUserRole(req.params.userId!, role));
+    sendData(res, await changeUserRole(req.user!.organizationId, req.params.userId!, role));
   }),
 );
 
@@ -72,7 +80,7 @@ teamRouter.post(
   validateBody(ActiveSchema),
   asyncHandler(async (req, res) => {
     const { active } = req.body as z.infer<typeof ActiveSchema>;
-    sendData(res, await changeUserActive(req.params.userId!, active));
+    sendData(res, await changeUserActive(req.user!.organizationId, req.params.userId!, active));
   }),
 );
 
@@ -82,6 +90,6 @@ teamRouter.put(
   validateBody(EventsSchema),
   asyncHandler(async (req, res) => {
     const { eventIds } = req.body as z.infer<typeof EventsSchema>;
-    sendData(res, await setUserEvents(req.params.userId!, eventIds));
+    sendData(res, await setUserEvents(req.user!.organizationId, req.params.userId!, eventIds));
   }),
 );

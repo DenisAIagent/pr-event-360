@@ -21,6 +21,8 @@ export async function registerUser(input: {
   password: string;
   fullName: string;
   role?: UserRole;
+  organizationId: string;
+  isPlatformAdmin?: boolean;
 }): Promise<User> {
   const passwordHash = await argon2.hash(input.password);
   try {
@@ -29,6 +31,8 @@ export async function registerUser(input: {
       passwordHash,
       fullName: input.fullName,
       role: input.role,
+      organizationId: input.organizationId,
+      isPlatformAdmin: input.isPlatformAdmin,
     });
   } catch (err) {
     if (isUniqueViolation(err)) throw AppError.conflict('Un compte existe déjà avec cet email');
@@ -60,7 +64,13 @@ export async function login(email: string, password: string): Promise<LoginResul
     return { mfaRequired: true, challenge: signMfaChallenge(found.user.id) };
   }
 
-  const token = signToken({ sub: found.user.id, email: found.user.email, role: found.user.role });
+  const token = signToken({
+    sub: found.user.id,
+    email: found.user.email,
+    role: found.user.role,
+    organizationId: found.user.organizationId,
+    isPlatformAdmin: found.user.isPlatformAdmin,
+  });
   return { token, user: found.user };
 }
 
@@ -80,7 +90,13 @@ export async function completeMfaLogin(
   }
   const user = await findUserById(userId);
   if (!user || !user.active) throw AppError.unauthorized('Compte indisponible.');
-  const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  const token = signToken({
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    organizationId: user.organizationId,
+    isPlatformAdmin: user.isPlatformAdmin,
+  });
   return { token, user };
 }
 

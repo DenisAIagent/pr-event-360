@@ -8,6 +8,9 @@ interface AuthUser {
   email: string;
   fullName: string;
   role: UserRole;
+  organizationId: string;
+  organizationName: string;
+  isPlatformAdmin: boolean;
 }
 
 /** Le login renvoie un challenge MFA si la double authentification est active. */
@@ -18,6 +21,7 @@ interface AuthValue {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<LoginOutcome>;
   completeMfa: (challenge: string, code: string) => Promise<void>;
+  signup: (input: { orgName: string; fullName: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -57,14 +61,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(result);
   }, []);
 
+  const signup = useCallback(
+    async (input: { orgName: string; fullName: string; email: string; password: string }) => {
+      const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/signup', input);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+      setState(result);
+    },
+    [],
+  );
+
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setState(null);
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ token: state?.token ?? null, user: state?.user ?? null, login, completeMfa, logout }),
-    [state, login, completeMfa, logout],
+    () => ({ token: state?.token ?? null, user: state?.user ?? null, login, completeMfa, signup, logout }),
+    [state, login, completeMfa, signup, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

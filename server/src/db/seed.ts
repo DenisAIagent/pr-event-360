@@ -5,6 +5,7 @@
  */
 import { registerUser } from '../services/authService';
 import { countUsers } from '../db/repositories/userRepo';
+import { createOrganization, findOrganizationBySlug } from '../db/repositories/organizationRepo';
 import { pool } from '../db/pool';
 
 async function main(): Promise<void> {
@@ -22,8 +23,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const user = await registerUser({ email, password, fullName, role: 'attache' });
-  console.log(`Compte créé : ${user.email} (${user.id})`);
+  const org =
+    (await findOrganizationBySlug('mdmc')) ?? (await createOrganization({ name: 'MDMC', slug: 'mdmc' }));
+  const user = await registerUser({ email, password, fullName, role: 'attache', organizationId: org.id });
+  console.log(`Compte créé : ${user.email} (${user.id}) dans ${org.slug}`);
 }
 
 main()

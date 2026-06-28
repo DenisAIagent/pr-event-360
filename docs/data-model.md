@@ -44,9 +44,14 @@ app_secrets (global, non lié à un événement)
 
 ### Comptes & accès
 
+**`organizations`** — **locataire** (un client = une organisation isolée). `id, name, slug (unique), created_at`.
+> Multi-locataire : `users` et `events` portent un `organization_id`. Un admin ne voit que SON
+> organisation. `users.is_platform_admin` = super-admin opérateur (intégrations partagées + supervision).
+> Voir [roles-permissions.md](roles-permissions.md).
+
 **`users`** — comptes back-office.
-`id, email (unique), password_hash (argon2), full_name, role (user_role), active (bool),
-mfa_secret (TOTP, chiffré), mfa_enabled (bool), created_at`
+`id, organization_id → organizations, email (unique), password_hash (argon2), full_name,
+role (user_role), active (bool), is_platform_admin (bool), mfa_secret (TOTP, chiffré), mfa_enabled (bool), created_at`
 
 **`event_members`** — assignation collaborateur ↔ événement (PK composite `event_id,user_id`).
 Un admin accède à tout sans ligne ici ; les autres rôles n'accèdent qu'aux événements où
@@ -63,8 +68,8 @@ ils sont membres.
 
 ### Événement & configuration
 
-**`events`** — entité racine.
-`id, owner_user_id → users, name, location, start_date, end_date, languages (lang_code[]),
+**`events`** — entité racine (rattachée à une organisation).
+`id, organization_id → organizations, owner_user_id → users, name, location, start_date, end_date, languages (lang_code[]),
 accreditation_deadline, custom_domain (unique, nullable), custom_domain_verified (bool),
 subdomain_slug (unique, nullable), created_at`
 > `custom_domain` (domaine perso) et `subdomain_slug` (sous-domaine plateforme) : white-label,
@@ -139,6 +144,8 @@ Ordre chronologique (`server/migrations/1700000000NNN_*.ts`) :
 012 deadline-and-recap         023 journalist-password-resets
                                024 events-custom-domain   (events.custom_domain + verified)
                                025 event-subdomain        (events.subdomain_slug)
+                               026 organizations          (multi-locataire : organizations +
+                                   organization_id sur users/events/invitations + backfill + super-admin)
 ```
 
 ```bash

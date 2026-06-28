@@ -113,6 +113,9 @@ export function LoginPage() {
             <Link to="/admin/forgot-password" className="auth-link">
               Mot de passe oublié ?
             </Link>
+            <Link to="/admin/signup" className="auth-link">
+              Pas encore d'espace ? Créer une organisation
+            </Link>
           </form>
         )}
       </div>

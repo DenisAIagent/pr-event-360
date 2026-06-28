@@ -4,6 +4,7 @@ import type { UserRole } from '@pr-event-360/core';
 
 export interface Invitation {
   id: string;
+  organizationId: string;
   email: string;
   role: UserRole;
   eventIds: string[];
@@ -15,6 +16,7 @@ export interface Invitation {
 
 interface Row {
   id: string;
+  organization_id: string;
   email: string;
   role: UserRole;
   event_ids: string[] | string;
@@ -36,6 +38,7 @@ function parseUuidArray(value: string[] | string): string[] {
 
 const map = (r: Row): Invitation => ({
   id: r.id,
+  organizationId: r.organization_id,
   email: r.email,
   role: r.role,
   eventIds: parseUuidArray(r.event_ids),
@@ -47,6 +50,7 @@ const map = (r: Row): Invitation => ({
 
 export async function createInvitation(
   input: {
+    organizationId: string;
     email: string;
     role: UserRole;
     eventIds: string[];
@@ -57,10 +61,10 @@ export async function createInvitation(
   db: Queryable = pool,
 ): Promise<Invitation> {
   const { rows } = await db.query<Row>(
-    `INSERT INTO invitations (email, role, event_ids, token_hash, invited_by, expires_at)
-     VALUES ($1, $2, $3::uuid[], $4, $5, $6)
-     RETURNING id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at`,
-    [input.email, input.role, input.eventIds, input.tokenHash, input.invitedBy, input.expiresAt],
+    `INSERT INTO invitations (organization_id, email, role, event_ids, token_hash, invited_by, expires_at)
+     VALUES ($1, $2, $3, $4::uuid[], $5, $6, $7)
+     RETURNING id, organization_id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at`,
+    [input.organizationId, input.email, input.role, input.eventIds, input.tokenHash, input.invitedBy, input.expiresAt],
   );
   return map(rows[0]!);
 }
@@ -71,7 +75,7 @@ export async function findValidInvitationByHash(
   db: Queryable = pool,
 ): Promise<Invitation | null> {
   const { rows } = await db.query<Row>(
-    `SELECT id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
+    `SELECT id, organization_id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
      FROM invitations
      WHERE token_hash = $1 AND accepted_at IS NULL AND expires_at > now()`,
     [tokenHash],
@@ -83,13 +87,17 @@ export async function markInvitationAccepted(id: string, db: Queryable = pool): 
   await db.query('UPDATE invitations SET accepted_at = now() WHERE id = $1', [id]);
 }
 
-/** Invitations en attente (non acceptées, non expirées) pour l'écran d'équipe. */
-export async function listPendingInvitations(db: Queryable = pool): Promise<Invitation[]> {
+/** Invitations en attente d'une organisation (écran d'équipe, scopé). */
+export async function listPendingInvitationsByOrg(
+  organizationId: string,
+  db: Queryable = pool,
+): Promise<Invitation[]> {
   const { rows } = await db.query<Row>(
-    `SELECT id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
+    `SELECT id, organization_id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
      FROM invitations
-     WHERE accepted_at IS NULL AND expires_at > now()
+     WHERE organization_id = $1 AND accepted_at IS NULL AND expires_at > now()
      ORDER BY created_at DESC`,
+    [organizationId],
   );
   return rows.map(map);
 }
@@ -97,7 +105,7 @@ export async function listPendingInvitations(db: Queryable = pool): Promise<Invi
 /** Invitation par id (toutes, même acceptées) — pour le renvoi. */
 export async function findInvitationById(id: string, db: Queryable = pool): Promise<Invitation | null> {
   const { rows } = await db.query<Row>(
-    `SELECT id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
+    `SELECT id, organization_id, email, role, event_ids, invited_by, expires_at, accepted_at, created_at
      FROM invitations WHERE id = $1`,
     [id],
   );

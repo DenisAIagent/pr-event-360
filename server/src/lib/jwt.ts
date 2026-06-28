@@ -9,6 +9,8 @@ export interface AuthClaims {
   sub: string; // user id
   email: string;
   role: UserRole;
+  organizationId: string;
+  isPlatformAdmin: boolean;
 }
 
 export function signToken(claims: AuthClaims): string {

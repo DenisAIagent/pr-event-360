@@ -13,13 +13,14 @@ import {
   type Invitation,
 } from '../db/repositories/invitationRepo';
 import { createUser, findUserByEmail } from '../db/repositories/userRepo';
-import { addEventMember } from '../db/repositories/eventRepo';
+import { addEventMember, findEventById } from '../db/repositories/eventRepo';
 import { getEmailProvider } from './notifications/providers';
 import type { User } from '../domain';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
 export interface InviteInput {
+  organizationId: string;
   email: string;
   role: UserRole;
   eventIds: string[];
@@ -28,7 +29,8 @@ export interface InviteInput {
 
 /**
  * Crée une invitation et envoie le lien d'activation par email. Refuse si un compte
- * existe déjà pour cet email (on ne ré-invite pas un membre existant).
+ * existe déjà pour cet email. Les événements assignés DOIVENT appartenir à l'organisation
+ * de l'invitant (sinon fuite inter-organisations via event_members).
  */
 export async function inviteCollaborator(input: InviteInput): Promise<Invitation> {
   const email = input.email.toLowerCase();
@@ -36,12 +38,21 @@ export async function inviteCollaborator(input: InviteInput): Promise<Invitation
   const existing = await findUserByEmail(email);
   if (existing) throw AppError.conflict('Un compte existe déjà avec cet email');
 
+  // Garde-fou multi-locataire : chaque événement assigné doit être dans l'organisation.
+  for (const eventId of input.eventIds) {
+    const ev = await findEventById(eventId);
+    if (!ev || ev.organizationId !== input.organizationId) {
+      throw AppError.badRequest('Événement invalide pour cette organisation');
+    }
+  }
+
   // Une seule invitation active à la fois pour un email donné.
   await deletePendingInvitationsForEmail(email);
 
   const rawToken = generateToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
   const invitation = await createInvitation({
+    organizationId: input.organizationId,
     email,
     role: input.role,
     eventIds: input.eventIds,
@@ -59,11 +70,21 @@ export async function inviteCollaborator(input: InviteInput): Promise<Invitation
  * renvoie l'email. Le jeton brut n'étant jamais stocké, on ne peut pas « ré-envoyer
  * le même lien » — on en émet un nouveau, ce qui est aussi plus sûr.
  */
-export async function resendInvitation(invitationId: string, invitedBy: string): Promise<Invitation> {
+export async function resendInvitation(
+  invitationId: string,
+  invitedBy: string,
+  organizationId: string,
+): Promise<Invitation> {
   const inv = await findInvitationById(invitationId);
-  if (!inv) throw AppError.notFound('Invitation introuvable.');
+  if (!inv || inv.organizationId !== organizationId) throw AppError.notFound('Invitation introuvable.');
   if (inv.acceptedAt) throw AppError.conflict('Cette invitation a déjà été acceptée.');
-  return inviteCollaborator({ email: inv.email, role: inv.role, eventIds: inv.eventIds, invitedBy });
+  return inviteCollaborator({
+    organizationId: inv.organizationId,
+    email: inv.email,
+    role: inv.role,
+    eventIds: inv.eventIds,
+    invitedBy,
+  });
 }
 
 /** Récupère une invitation valide pour pré-remplir la page d'acceptation. */
@@ -91,7 +112,13 @@ export async function acceptInvitation(
 
     const passwordHash = await argon2.hash(password);
     const user = await createUser(
-      { email: invitation.email, passwordHash, fullName, role: invitation.role },
+      {
+        email: invitation.email,
+        passwordHash,
+        fullName,
+        role: invitation.role,
+        organizationId: invitation.organizationId,
+      },
       db,
     );
 

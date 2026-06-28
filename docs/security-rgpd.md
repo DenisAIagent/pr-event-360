@@ -59,6 +59,17 @@ le back-end) ; le navigateur téléverse en direct avec une signature à durée 
   newsroom) ; 10 req/15 min sur réinitialisation/invitation/MFA et sur le login journaliste.
 - **express.json** plafonné à 6 Mo (logos/images en data URL).
 
+## Isolation multi-locataire
+
+- Chaque client est une **organisation** ; `users`/`events` portent `organization_id`. Toutes les
+  listes et accès sont **scopés à l'organisation** de l'utilisateur (équipe, événements, recherche).
+- L'accès à un événement d'une autre organisation renvoie **404** (pas de fuite d'existence), via
+  `getAccessibleEventOrThrow`. Les enfants (journalistes, demandes, médias…) en héritent.
+- L'assignation d'événements à un membre **valide** que chaque événement appartient à l'organisation
+  (anti-fuite via `event_members`).
+- **Intégrations partagées** (clés API) = plateforme, réservées au super-admin ; jamais exposées aux
+  admins d'organisation.
+
 ## RGPD
 
 - **Consentement explicite obligatoire** à l'accréditation — contrainte applicative

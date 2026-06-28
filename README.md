@@ -57,6 +57,8 @@ npm test
 5. **Notifications** ✅ — simulation puis branchement Brevo/Twilio ; récapitulatifs périodiques
 6. **Comptes journalistes** ✅ — accès par lien magique **ou** email + mot de passe (par événement),
    mot de passe oublié, planning personnel, ressources presse
+7. **Multi-locataire** ✅ — chaque client = une **organisation** isolée (events/équipe/données),
+   inscription self-service, super-admin plateforme. White-label : domaine perso + sous-domaine par event
 
 > Détails et endpoints : [`docs/`](docs/README.md).
 

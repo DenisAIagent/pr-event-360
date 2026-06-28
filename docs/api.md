@@ -24,6 +24,7 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 
 | Méthode | Chemin | Accès | Description |
 |---|---|---|---|
+| POST | `/signup` | public · rate-limité | `{orgName, fullName, email, password}` → crée une **organisation** + son admin → `{token, user}` (inscription self-service) |
 | POST | `/login` | public | `{email, password}` → `{token, user}` **ou** `{mfaRequired, challenge}` si 2FA active |
 | POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → `{token, user}` (échange du challenge contre un code TOTP) |
 | GET | `/mfa/status` | auth | État de la 2FA du compte |
@@ -108,7 +109,11 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | POST | `/:userId/active` | Activer/désactiver (protège le dernier admin) |
 | PUT | `/:userId/events` | Remplacer les événements assignés |
 
-## Intégrations — `/api/admin/settings` (admin)
+## Intégrations — `/api/admin/settings` (super-admin plateforme)
+
+> Ressources **partagées** (clés Brevo/Twilio/Cloudinary) : réservées au super-admin plateforme
+> (`is_platform_admin`). Invisibles des admins d'organisation.
+
 
 | Méthode | Chemin | Description |
 |---|---|---|

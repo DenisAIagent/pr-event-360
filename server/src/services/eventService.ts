@@ -14,7 +14,7 @@ import {
   getRecap,
   addEventMember,
   isEventMember,
-  listAllEvents,
+  listEventsForOrg,
   listEventsForMember,
   listMediaTypes,
   listRequestTypeWeights,
@@ -26,6 +26,8 @@ import { DEFAULT_TEMPLATE_TEXT } from './notifications/templates';
 export interface AccessActor {
   sub: string;
   role: UserRole;
+  organizationId: string;
+  isPlatformAdmin: boolean;
 }
 
 const DEFAULT_CONFIG: EventConfig = {
@@ -53,6 +55,7 @@ const DEFAULT_TYPE_MULTIPLIERS: Record<RequestType, number> = {
 };
 
 export interface CreateEventInput {
+  organizationId: string;
   ownerUserId: string;
   name: string;
   location?: string | null;
@@ -71,6 +74,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
   return withTransaction(async (db) => {
     const event = await insertEvent(
       {
+        organizationId: input.organizationId,
         ownerUserId: input.ownerUserId,
         name: input.name,
         location: input.location,
@@ -110,11 +114,14 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 }
 
 /**
- * Liste les événements visibles par l'utilisateur : tous pour un admin, sinon
- * uniquement ceux où il est assigné (membre).
+ * Liste les événements visibles par l'utilisateur, **scopés à son organisation** :
+ * un admin d'org voit tous les événements de SON organisation ; les autres rôles
+ * uniquement ceux où ils sont assignés (membres, eux-mêmes bornés à l'org).
  */
 export async function listEventsForUserService(actor: AccessActor): Promise<Event[]> {
-  return actor.role === 'admin' ? listAllEvents() : listEventsForMember(actor.sub);
+  return actor.role === 'admin'
+    ? listEventsForOrg(actor.organizationId)
+    : listEventsForMember(actor.sub);
 }
 
 /** Charge un événement ou lève 404. */
@@ -125,12 +132,17 @@ export async function getEventOrThrow(eventId: string): Promise<Event> {
 }
 
 /**
- * Charge un événement en vérifiant que l'utilisateur y a accès :
- * l'admin accède à tout ; les autres doivent en être membres (assignés).
+ * Charge un événement en vérifiant l'accès, AVEC isolation multi-locataire :
+ * 1) l'événement doit appartenir à l'organisation de l'utilisateur (sauf super-admin
+ *    plateforme) — sinon 404, pour ne pas révéler l'existence d'un événement d'un autre client ;
+ * 2) ensuite : admin d'org = accès ; autres rôles = doivent être membres (assignés).
  */
 export async function getAccessibleEventOrThrow(eventId: string, actor: AccessActor): Promise<Event> {
   const event = await getEventOrThrow(eventId);
-  if (actor.role === 'admin') return event;
+  if (event.organizationId !== actor.organizationId && !actor.isPlatformAdmin) {
+    throw AppError.notFound('Événement introuvable');
+  }
+  if (actor.role === 'admin' || actor.isPlatformAdmin) return event;
   const member = await isEventMember(eventId, actor.sub);
   if (!member) throw AppError.forbidden('Vous n’êtes pas assigné à cet événement');
   return event;

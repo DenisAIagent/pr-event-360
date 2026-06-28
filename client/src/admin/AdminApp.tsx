@@ -4,6 +4,7 @@ import { ToastProvider } from './components/Toast';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AdminShell } from './components/AdminShell';
 import { LoginPage } from './auth/LoginPage';
+import { SignupPage } from './auth/SignupPage';
 import { ForgotPasswordPage } from './auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './auth/ResetPasswordPage';
 import { AcceptInvitePage } from './auth/AcceptInvitePage';
@@ -25,10 +26,17 @@ import { SecurityPage } from './pages/SecurityPage';
 import { EventWizard } from './pages/EventWizard';
 import './admin.css';
 
-/** Garde les routes réservées aux administrateurs. */
+/** Garde les routes réservées aux administrateurs (d'organisation). */
 function AdminRoute() {
   const { user } = useAuth();
   if (user?.role !== 'admin') return <Navigate to="/admin" replace />;
+  return <Outlet />;
+}
+
+/** Garde les routes réservées au super-admin plateforme (intégrations partagées). */
+function PlatformRoute() {
+  const { user } = useAuth();
+  if (!user?.isPlatformAdmin) return <Navigate to="/admin" replace />;
   return <Outlet />;
 }
 
@@ -39,6 +47,7 @@ export function AdminApp() {
       <ToastProvider>
       <Routes>
         <Route path="login" element={<LoginPage />} />
+        <Route path="signup" element={<SignupPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="accept-invite" element={<AcceptInvitePage />} />
@@ -49,6 +58,8 @@ export function AdminApp() {
             <Route path="events/new" element={<EventWizard />} />
             <Route element={<AdminRoute />}>
               <Route path="team" element={<TeamPage />} />
+            </Route>
+            <Route element={<PlatformRoute />}>
               <Route path="integrations" element={<IntegrationsPage />} />
             </Route>
             <Route path="events/:eventId" element={<EventLayout />}>

@@ -53,3 +53,15 @@ export function requireEventEditor(req: Request, _res: Response, next: NextFunct
   }
   next();
 }
+
+/**
+ * Exige le rôle SUPER-ADMIN PLATEFORME (opérateur). Réservé aux réglages partagés
+ * (clés d'intégration Brevo/Twilio/Cloudinary), invisibles des admins d'organisation.
+ */
+export function requirePlatformAdmin(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.user) throw AppError.unauthorized();
+  if (!req.user.isPlatformAdmin) {
+    throw AppError.forbidden('Réservé à l’administrateur de la plateforme');
+  }
+  next();
+}

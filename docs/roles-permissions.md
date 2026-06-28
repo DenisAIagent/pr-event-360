@@ -1,5 +1,19 @@
 # Rôles & permissions
 
+## Multi-locataire (organisations)
+
+L'application est **multi-locataire** : chaque client est une **organisation** (`organizations`)
+isolée. `users` et `events` portent un `organization_id` ; toutes les listes sont scopées à
+l'organisation de l'utilisateur. Un client s'inscrit en **self-service** (`POST /api/admin/auth/signup`)
+→ création de l'organisation + son compte **admin**.
+
+- **Isolation étanche** : un utilisateur ne voit/atteint que les données de SON organisation. Tenter
+  d'accéder à un événement d'une autre organisation renvoie **404** (sans révéler son existence).
+- **Super-admin plateforme** (`users.is_platform_admin`) : l'opérateur. Seul à gérer les **intégrations
+  partagées** (clés Brevo/Twilio/Cloudinary, `/api/admin/settings`), non bloqué par le scoping.
+- Les rôles ci-dessous (`admin/attache/assistant`) s'entendent **au sein d'une organisation**
+  (« admin » = admin de SON organisation).
+
 ## Trois niveaux d'accès (`user_role`)
 
 | Rôle | Portée |
@@ -34,13 +48,16 @@ autre rôle       → exige une ligne event_members (sinon 403)
 | Gérer l'équipe (inviter, rôles, désactiver) | ✅ | — | — |
 | Gérer les clés API (Intégrations) | ✅ | — | — |
 
-Application côté serveur :
+Application côté serveur (le JWT porte `organizationId` + `isPlatformAdmin`) :
 - `requireAuth` → JWT valide.
-- `requireRole('admin')` → routes `/api/admin/team` et `/api/admin/settings`.
+- `requireRole('admin')` → `/api/admin/team` (scopé à l'organisation de l'admin).
+- `requirePlatformAdmin` → `/api/admin/settings` (intégrations partagées, super-admin uniquement).
 - `requireEventEditor` → routes d'édition (admin ou attache).
-- `getAccessibleEventOrThrow` → isolation par appartenance sur toute route `/:eventId`.
-- La **recherche globale** (`/api/admin/search`) applique le même périmètre : un non-admin ne
-  trouve que les journalistes/événements de ses événements assignés.
+- `getAccessibleEventOrThrow` → **isolation organisation** (404 si autre org) **puis** appartenance,
+  sur toute route `/:eventId`. Les enfants d'un événement (journalistes, demandes, médias…) en héritent.
+- **Équipe** : `getTeam`, invitations, changement de rôle/activation, assignation d'événements sont
+  scopés à l'organisation (un admin ne touche que les comptes/événements de SON org).
+- **Recherche globale** (`/api/admin/search`) : héritée du scoping (ne renvoie que l'org de l'utilisateur).
 
 Côté front : la navigation et les onglets sont masqués selon le rôle ; le serveur reste
 la source de vérité (un `assistant` qui force une route d'édition reçoit `403`).
