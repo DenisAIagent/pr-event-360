@@ -36,6 +36,8 @@ export interface Event {
   endDate: string | null;
   languages: Lang[];
   accreditationDeadline: string | null;
+  customDomain: string | null;
+  customDomainVerified: boolean;
   createdAt: string;
 }
 

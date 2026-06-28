@@ -64,7 +64,9 @@ ils sont membres.
 ### Événement & configuration
 
 **`events`** — entité racine.
-`id, owner_user_id → users, name, location, start_date, end_date, languages (lang_code[]), accreditation_deadline, created_at`
+`id, owner_user_id → users, name, location, start_date, end_date, languages (lang_code[]),
+accreditation_deadline, custom_domain (unique, nullable), custom_domain_verified (bool), created_at`
+> `custom_domain` : domaine personnalisé white-label (voir [custom-domains.md](custom-domains.md)).
 
 **`event_configs`** — paramètres de calcul (1 par événement).
 `itw_duration_min, itw_buffer_min, default_itw_quota, photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap`
@@ -133,6 +135,7 @@ Ordre chronologique (`server/migrations/1700000000NNN_*.ts`) :
 010 branding-text-color            requests.artist_id NOT NULL)
 011 branding-bg-image          022 journalist-password    (journalists.password_hash)
 012 deadline-and-recap         023 journalist-password-resets
+                               024 events-custom-domain   (events.custom_domain + verified)
 ```
 
 ```bash

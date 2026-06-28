@@ -10,7 +10,14 @@ import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
 import { LandingPage } from './public-forms/landing/LandingPage';
 import { PrivacyPage } from './public-forms/legal/PrivacyPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
+import type { ReactNode } from 'react';
 import { AdminApp } from './admin/AdminApp';
+import { isDomainMode } from './lib/domainEvent';
+
+/** Enveloppe une page publique multilingue. */
+function L({ children }: { children: ReactNode }) {
+  return <I18nProvider initialLang="fr">{children}</I18nProvider>;
+}
 
 /**
  * Routeur principal.
@@ -19,6 +26,26 @@ import { AdminApp } from './admin/AdminApp';
  * - /espace/:token          : espace journaliste (accès tokenisé)
  */
 export function App() {
+  // Mode domaine : l'app est servie sous le domaine d'un événement → surfaces publiques
+  // à la racine (l'ID vient du contexte injecté, pas de l'URL).
+  if (isDomainMode) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<L><AccreditationPage /></L>} />
+          <Route path="/newsroom" element={<NewsroomPage />} />
+          <Route path="/connexion" element={<L><JournalistLoginPage /></L>} />
+          <Route path="/mot-de-passe-oublie" element={<L><JournalistForgotPasswordPage /></L>} />
+          <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
+          <Route path="/espace/:token" element={<L><SpacePage /></L>} />
+          <Route path="/confidentialite" element={<PrivacyPage />} />
+          <Route path="/admin/*" element={<AdminApp />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

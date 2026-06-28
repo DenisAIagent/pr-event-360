@@ -14,6 +14,9 @@ const EnvSchema = z.object({
   APP_ENCRYPTION_KEY: z.string().optional(),
   PUBLIC_BASE_URL: z.string().url().default('http://localhost:4000'),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  // Cible CNAME affichée aux clients pour brancher leur domaine personnalisé
+  // (host Railway du service, ou fallback Cloudflare le moment venu). Optionnel.
+  CUSTOM_DOMAIN_TARGET: z.string().optional(),
 
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),

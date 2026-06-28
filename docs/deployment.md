@@ -15,6 +15,7 @@ requise manque ou est invalide.
 | `PORT` | — | `4000` | Port d'écoute de l'API |
 | `PUBLIC_BASE_URL` | — | `http://localhost:4000` | URL publique du back-end |
 | `CLIENT_URL` | — | `http://localhost:5173` | URL du front (CORS + liens) |
+| `CUSTOM_DOMAIN_TARGET` | — | host de `PUBLIC_BASE_URL` | Cible CNAME affichée aux clients pour les [domaines personnalisés](custom-domains.md) |
 | `NOTIFICATIONS_MODE` | — | `simulation` | `simulation` (rien envoyé) / `live` |
 | `EMAIL_PROVIDER` | — | `brevo` | Fournisseur email |
 | `SMS_PROVIDER` | — | `twilio` | `twilio` / `brevo` |

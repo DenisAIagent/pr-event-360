@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEventId } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
 import { Countdown } from '../../components/Countdown';
@@ -15,7 +15,7 @@ const GROUPS: { kind: NewsroomAssetKind; label: string }[] = [
 ];
 
 export function NewsroomPage() {
-  const { eventId = '' } = useParams();
+  const eventId = useEventId();
   const [data, setData] = useState<NewsroomData | null>(null);
   const [error, setError] = useState<string | null>(null);
 

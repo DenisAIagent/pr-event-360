@@ -10,6 +10,7 @@ import {
   MediaTypes,
   Templates,
 } from '../components/settings/SettingsCards';
+import { DomainCard } from '../components/settings/DomainCard';
 
 export function SettingsTab() {
   const { eventId = '' } = useParams();
@@ -25,6 +26,7 @@ export function SettingsTab() {
   return (
     <div className="stack">
       <DeadlineCard eventId={eventId} />
+      <DomainCard eventId={eventId} />
       <RecapCard eventId={eventId} initial={data.recap} onSaved={reload} />
       <ConfigForm eventId={eventId} config={data.config} />
       <TypeWeights eventId={eventId} weights={data.typeWeights} onSaved={reload} />

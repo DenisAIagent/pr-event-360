@@ -87,6 +87,15 @@ typée (status + message) en cas d'échec.
 | `/espace-preview/:eventId` | Aperçu de l'espace (back-office) | JWT (lu depuis localStorage) |
 | `/newsroom/:eventId` | Espace presse public | Libre |
 
+### Domaines personnalisés (white-label)
+
+Servi sous le domaine d'un client, le serveur résout l'en-tête `Host` → événement
+(`siteService.resolveEventForHost`) et **injecte** un bloc `<script type="application/json"
+id="__pr_event__">` dans l'HTML (CSP-safe, non exécuté). La SPA le lit au démarrage
+(`lib/domainEvent.ts`) et passe en **mode domaine** : les surfaces publiques sont à la **racine**
+(`/`, `/newsroom`, `/connexion`…), l'`eventId` venant du contexte injecté. Détails :
+[custom-domains.md](custom-domains.md).
+
 ## Notifications : abstraction de fournisseur
 
 L'envoi (email/SMS) passe par une interface `EmailProvider` / `SmsProvider`. Le

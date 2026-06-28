@@ -46,8 +46,10 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 |---|---|---|---|
 | POST | `/` | éditeur | Créer un événement (sème config, poids, templates) |
 | GET | `/` | auth | Liste (admin = tous, sinon événements assignés) |
-| GET | `/:eventId` | accès événement | Détail + branding |
+| GET | `/:eventId` | accès événement | Détail + branding + `customDomain`/`customDomainVerified`/`customDomainTarget` |
 | DELETE | `/:eventId` | admin | Supprime l'événement et **toutes** ses données (cascade — RGPD) |
+| PUT | `/:eventId/domain` | éditeur | `{domain\|null}` — affecte le domaine personnalisé (UNIQUE → 409 si pris) |
+| POST | `/:eventId/domain/verify` | éditeur | Vérifie la résolution DNS (CNAME/A) vers la cible → `{verified, target}` |
 | GET | `/:eventId/settings` | accès événement | Config complète (config, médias, poids, templates, branding, récap) |
 | PUT | `/:eventId/config` | éditeur | Règles de calcul |
 | POST | `/:eventId/media-types` | éditeur | Ajouter un type de média |

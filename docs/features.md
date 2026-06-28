@@ -60,7 +60,7 @@ la 1ʳᵉ étape ; les suivantes le configurent via les endpoints existants et s
 | **Médiathèque** | éditeur | Upload Cloudinary (photos/vidéos/logos/dossier de presse) |
 | **Newsroom** | éditeur | Communiqués (brouillon/publié) + lien de la newsroom publique |
 | **Communications** | éditeur | Composer une newsletter HTML (aperçu live brandé) + envoi ciblé |
-| **Paramètres** | éditeur | Règles/quotas, poids média, gabarits, clôture, récap |
+| **Paramètres** | éditeur | Règles/quotas, poids média, gabarits, clôture, récap, **domaine personnalisé** (white-label) |
 | **Apparence** | éditeur | Branding (logo, couleurs) |
 | **Aperçu** | éditeur | Prévisualisation des vues journaliste (desktop/mobile) |
 | **Messages** | accès événement | Journal des notifications envoyées/simulées |

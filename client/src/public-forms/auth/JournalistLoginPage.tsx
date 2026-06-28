@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
+import { useEventId, useEventLinks } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -12,7 +13,8 @@ import { brandingStyle } from '../../lib/branding';
  * redirige vers /espace/:token. Le lien magique reste une alternative valable.
  */
 export function JournalistLoginPage() {
-  const { eventId = '' } = useParams();
+  const eventId = useEventId();
+  const links = useEventLinks();
   const navigate = useNavigate();
   const { t, lang, setLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
@@ -111,7 +113,7 @@ export function JournalistLoginPage() {
           <button type="submit" className="btn btn-primary" disabled={busy || !email || !password}>
             {busy ? '…' : t('login.submit')}
           </button>
-          <Link to={`/evenement/${eventId}/mot-de-passe-oublie`} style={{ fontSize: 'var(--text-sm)' }}>
+          <Link to={links.forgot} style={{ fontSize: 'var(--text-sm)' }}>
             {t('login.forgot')}
           </Link>
           <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
@@ -120,7 +122,7 @@ export function JournalistLoginPage() {
         </form>
 
         <p style={{ marginTop: 'var(--space-4)' }}>
-          <Link to={`/accreditation/${eventId}`}>{t('login.back')}</Link>
+          <Link to={links.accreditation}>{t('login.back')}</Link>
         </p>
       </main>
     </div>

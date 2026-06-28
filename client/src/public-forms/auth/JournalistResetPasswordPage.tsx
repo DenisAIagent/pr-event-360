@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
+import { useEventId, useEventLinks } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -11,7 +12,8 @@ import { brandingStyle } from '../../lib/branding';
  * Choisit un nouveau mot de passe → redirige vers la page de connexion.
  */
 export function JournalistResetPasswordPage() {
-  const { eventId = '' } = useParams();
+  const eventId = useEventId();
+  const links = useEventLinks();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const navigate = useNavigate();
@@ -47,7 +49,7 @@ export function JournalistResetPasswordPage() {
     setBusy(true);
     try {
       await api.post('/public/journalist/reset-password', { token, password });
-      navigate(`/evenement/${eventId}/connexion`, { replace: true });
+      navigate(links.login, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.error'));
     } finally {
@@ -75,7 +77,7 @@ export function JournalistResetPasswordPage() {
           <div className="card">
             <div className="banner banner-error">{t('reset.noToken')}</div>
             <p style={{ marginTop: 'var(--space-3)' }}>
-              <Link to={`/evenement/${eventId}/mot-de-passe-oublie`}>{t('reset.requestAgain')}</Link>
+              <Link to={links.forgot}>{t('reset.requestAgain')}</Link>
             </p>
           </div>
         ) : (

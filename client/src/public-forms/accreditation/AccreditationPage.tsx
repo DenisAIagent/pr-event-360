@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
+import { useEventId, useEventLinks } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import type { AccreditationType, PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -36,7 +37,8 @@ const EMPTY: FormState = {
 };
 
 export function AccreditationPage() {
-  const { eventId = '' } = useParams();
+  const eventId = useEventId();
+  const links = useEventLinks();
   const { t, lang, setLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -155,7 +157,7 @@ export function AccreditationPage() {
         {t('acc.lede', { event: event.name })}
       </p>
       <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
-        <Link to={`/evenement/${eventId}/connexion`}>{t('acc.haveAccount')}</Link>
+        <Link to={links.login}>{t('acc.haveAccount')}</Link>
       </p>
 
       {event.deadline && (

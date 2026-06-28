@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
+import { useEventId, useEventLinks } from '../../lib/domainEvent';
 import { api } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -11,7 +12,8 @@ import { brandingStyle } from '../../lib/branding';
  * réinitialisation. Réponse toujours générique (on ne révèle pas si le compte existe).
  */
 export function JournalistForgotPasswordPage() {
-  const { eventId = '' } = useParams();
+  const eventId = useEventId();
+  const links = useEventLinks();
   const { t, lang, setLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [email, setEmail] = useState('');
@@ -61,7 +63,7 @@ export function JournalistForgotPasswordPage() {
         {done ? (
           <div className="card stack">
             <div className="banner banner-success">{t('forgot.done')}</div>
-            <Link to={`/evenement/${eventId}/connexion`}>{t('forgot.back')}</Link>
+            <Link to={links.login}>{t('forgot.back')}</Link>
           </div>
         ) : (
           <form className="card stack" onSubmit={submit} noValidate>
@@ -79,7 +81,7 @@ export function JournalistForgotPasswordPage() {
             <button type="submit" className="btn btn-primary" disabled={busy || !email}>
               {busy ? '…' : t('forgot.submit')}
             </button>
-            <Link to={`/evenement/${eventId}/connexion`} style={{ fontSize: 'var(--text-sm)' }}>
+            <Link to={links.login} style={{ fontSize: 'var(--text-sm)' }}>
               {t('forgot.back')}
             </Link>
           </form>

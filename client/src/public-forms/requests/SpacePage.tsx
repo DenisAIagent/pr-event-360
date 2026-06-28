@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useI18n, isLang } from '../../i18n';
+import { domainEvent } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import type { RequestType, SpaceResponse } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
@@ -167,7 +168,7 @@ export function SpacePage({
         {t('space.lede', { event: data.event.name })}
       </p>
       <a
-        href={`/newsroom/${data.event.id}`}
+        href={domainEvent ? '/newsroom' : `/newsroom/${data.event.id}`}
         target="_blank"
         rel="noreferrer"
         className="card"

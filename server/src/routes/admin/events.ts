@@ -21,7 +21,12 @@ import {
   upsertRecap,
   getBranding,
   deleteEvent,
+  findEventByCustomDomain,
+  setEventCustomDomain,
+  setCustomDomainVerified,
 } from '../../db/repositories/eventRepo';
+import { resolve as dnsResolve, resolveCname } from 'node:dns/promises';
+import { customDomainTarget, invalidateDomain, normalizeDomain } from '../../services/siteService';
 import { sendRecap } from '../../services/recapService';
 import { addArtist, addStage, getLineup } from '../../services/lineupService';
 import {
@@ -86,7 +91,62 @@ eventsRouter.get(
   asyncHandler(async (req, res) => {
     const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const branding = await getBranding(event.id);
-    sendData(res, { ...event, branding });
+    sendData(res, { ...event, branding, customDomainTarget: customDomainTarget() });
+  }),
+);
+
+// ── Domaine personnalisé (white-label) ──────────────────────────────
+const DomainSchema = z.object({ domain: z.string().trim().max(253).nullable() });
+eventsRouter.put(
+  '/:eventId/domain',
+  requireEventEditor,
+  validateBody(DomainSchema),
+  asyncHandler(async (req, res) => {
+    const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const raw = (req.body as z.infer<typeof DomainSchema>).domain;
+    const domain = raw ? normalizeDomain(raw) : null;
+    if (domain && !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
+      throw AppError.badRequest('Domaine invalide (ex. presse.mon-festival.com)');
+    }
+    if (domain) {
+      const other = await findEventByCustomDomain(domain);
+      if (other && other.id !== event.id) {
+        throw AppError.conflict('Ce domaine est déjà utilisé par un autre événement');
+      }
+    }
+    const updated = await setEventCustomDomain(event.id, domain);
+    invalidateDomain(event.customDomain); // ancien
+    invalidateDomain(domain); // nouveau
+    sendData(res, { ...updated, customDomainTarget: customDomainTarget() });
+  }),
+);
+
+eventsRouter.post(
+  '/:eventId/domain/verify',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    if (!event.customDomain) throw AppError.badRequest('Aucun domaine personnalisé défini');
+    const target = normalizeDomain(customDomainTarget());
+    let verified = false;
+    try {
+      const cnames = await resolveCname(event.customDomain);
+      verified = cnames.some((c) => normalizeDomain(c) === target);
+    } catch {
+      // Pas d'enregistrement CNAME : on tente une comparaison d'adresses (A/AAAA).
+      try {
+        const [domainIps, targetIps] = await Promise.all([
+          dnsResolve(event.customDomain).catch(() => [] as string[]),
+          dnsResolve(target).catch(() => [] as string[]),
+        ]);
+        verified = domainIps.length > 0 && domainIps.some((ip) => targetIps.includes(ip));
+      } catch {
+        verified = false;
+      }
+    }
+    await setCustomDomainVerified(event.id, verified);
+    invalidateDomain(event.customDomain);
+    sendData(res, { verified, target });
   }),
 );
 

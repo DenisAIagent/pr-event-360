@@ -12,6 +12,7 @@ import { eventsRouter } from './routes/admin/events';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
+import { resolveEventForHost } from './services/siteService';
 import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
 import { publicAccreditationRouter } from './routes/public/accreditation';
@@ -76,10 +77,28 @@ export function createApp(): Express {
   // tombent en 404 JSON (notFoundHandler) ; tout le reste renvoie l'app SPA.
   const clientDist = path.resolve(__dirname, '../../client/dist');
   if (fs.existsSync(clientDist)) {
-    app.use(express.static(clientDist));
-    app.get('*', (req, res, next) => {
+    // `index: false` → la racine `/` ne court-circuite pas le handler ci-dessous,
+    // qui peut injecter le contexte d'événement (domaine personnalisé) dans l'HTML.
+    app.use(express.static(clientDist, { index: false }));
+    const indexHtml = fs.readFileSync(path.join(clientDist, 'index.html'), 'utf8');
+
+    app.get('*', async (req, res, next) => {
       if (req.path.startsWith('/api/')) return next();
-      res.sendFile(path.join(clientDist, 'index.html'));
+      // Domaine personnalisé d'un événement → on injecte son ID/nom pour que la SPA
+      // serve ses surfaces publiques à la racine (sans :eventId dans l'URL).
+      const event = await resolveEventForHost(req.hostname).catch(() => null);
+      if (!event) {
+        res.type('html').send(indexHtml);
+        return;
+      }
+      // Bloc de données (non exécuté → non bloqué par la CSP de helmet). Le client le
+      // lit au démarrage. On échappe `<` pour ne pas pouvoir fermer la balise.
+      const payload = JSON.stringify({ id: event.id, name: event.name }).replace(/</g, '\\u003c');
+      const injected = indexHtml.replace(
+        '</head>',
+        `  <script type="application/json" id="__pr_event__">${payload}</script>\n  </head>`,
+      );
+      res.type('html').send(injected);
     });
   }
 

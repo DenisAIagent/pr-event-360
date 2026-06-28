@@ -18,6 +18,7 @@ d'interviews et de reportages, newsroom, communications, gestion d'équipe.
 | [security-rgpd.md](security-rgpd.md) | Authentification, secrets chiffrés, RGPD, en-têtes, rate limiting |
 | [deployment.md](deployment.md) | Variables d'environnement, build, migrations, déploiement Railway |
 | [features.md](features.md) | Tour des surfaces (formulaire public, espace journaliste, newsroom, back-office…) |
+| [custom-domains.md](custom-domains.md) | Domaine personnalisé par événement (white-label) : résolution par Host, mode domaine, TLS |
 
 ## Démarrage rapide
 
