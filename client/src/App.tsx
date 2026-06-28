@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { I18nProvider } from './i18n';
 import { AccreditationPage } from './public-forms/accreditation/AccreditationPage';
 import { JournalistLoginPage } from './public-forms/auth/JournalistLoginPage';
+import { JournalistForgotPasswordPage } from './public-forms/auth/JournalistForgotPasswordPage';
+import { JournalistResetPasswordPage } from './public-forms/auth/JournalistResetPasswordPage';
 import { SpacePage } from './public-forms/requests/SpacePage';
 import { SpacePreviewPage } from './public-forms/requests/SpacePreviewPage';
 import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
@@ -37,6 +39,22 @@ export function App() {
           element={
             <I18nProvider initialLang="fr">
               <JournalistLoginPage />
+            </I18nProvider>
+          }
+        />
+        <Route
+          path="/evenement/:eventId/mot-de-passe-oublie"
+          element={
+            <I18nProvider initialLang="fr">
+              <JournalistForgotPasswordPage />
+            </I18nProvider>
+          }
+        />
+        <Route
+          path="/evenement/:eventId/reinitialiser"
+          element={
+            <I18nProvider initialLang="fr">
+              <JournalistResetPasswordPage />
             </I18nProvider>
           }
         />

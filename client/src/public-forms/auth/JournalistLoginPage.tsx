@@ -111,6 +111,9 @@ export function JournalistLoginPage() {
           <button type="submit" className="btn btn-primary" disabled={busy || !email || !password}>
             {busy ? '…' : t('login.submit')}
           </button>
+          <Link to={`/evenement/${eventId}/mot-de-passe-oublie`} style={{ fontSize: 'var(--text-sm)' }}>
+            {t('login.forgot')}
+          </Link>
           <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
             {t('login.noPassword')}
           </p>

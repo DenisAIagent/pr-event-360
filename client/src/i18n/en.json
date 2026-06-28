@@ -87,5 +87,16 @@
   "space.password.saved": "Password saved.",
   "space.password.tooShort": "Password must be at least 8 characters.",
   "space.password.mismatch": "Passwords do not match.",
-  "acc.haveAccount": "Already accredited? Sign in to your space"
+  "acc.haveAccount": "Already accredited? Sign in to your space",
+  "login.forgot": "Forgot password?",
+  "forgot.title": "Forgot password",
+  "forgot.lede": "Enter your email: if an account exists, you’ll receive a link to reset your password.",
+  "forgot.submit": "Send the link",
+  "forgot.done": "If an account exists for this email, a reset link has just been sent. Check your spam folder.",
+  "forgot.back": "Back to sign in",
+  "reset.title": "New password",
+  "reset.lede": "Choose a new password for your space.",
+  "reset.submit": "Reset password",
+  "reset.noToken": "Reset link missing or invalid.",
+  "reset.requestAgain": "Request a new link"
 }

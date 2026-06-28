@@ -87,5 +87,16 @@
   "space.password.saved": "Mot de passe enregistré.",
   "space.password.tooShort": "Le mot de passe doit faire au moins 8 caractères.",
   "space.password.mismatch": "Les mots de passe ne correspondent pas.",
-  "acc.haveAccount": "Déjà accrédité ? Connectez-vous à votre espace"
+  "acc.haveAccount": "Déjà accrédité ? Connectez-vous à votre espace",
+  "login.forgot": "Mot de passe oublié ?",
+  "forgot.title": "Mot de passe oublié",
+  "forgot.lede": "Saisissez votre email : si un compte existe, vous recevrez un lien pour réinitialiser votre mot de passe.",
+  "forgot.submit": "Envoyer le lien",
+  "forgot.done": "Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé. Pensez à vérifier vos spams.",
+  "forgot.back": "Retour à la connexion",
+  "reset.title": "Nouveau mot de passe",
+  "reset.lede": "Choisissez un nouveau mot de passe pour votre espace.",
+  "reset.submit": "Réinitialiser le mot de passe",
+  "reset.noToken": "Lien de réinitialisation manquant ou invalide.",
+  "reset.requestAgain": "Demander un nouveau lien"
 }

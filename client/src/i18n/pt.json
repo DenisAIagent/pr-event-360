@@ -87,5 +87,16 @@
   "space.password.saved": "Palavra-passe guardada.",
   "space.password.tooShort": "A palavra-passe deve ter pelo menos 8 caracteres.",
   "space.password.mismatch": "As palavras-passe não coincidem.",
-  "acc.haveAccount": "Já acreditado? Entre no seu espaço"
+  "acc.haveAccount": "Já acreditado? Entre no seu espaço",
+  "login.forgot": "Esqueceu a palavra-passe?",
+  "forgot.title": "Palavra-passe esquecida",
+  "forgot.lede": "Introduza o seu email: se existir uma conta, receberá um link para redefinir a palavra-passe.",
+  "forgot.submit": "Enviar o link",
+  "forgot.done": "Se existir uma conta para este email, foi enviado um link de redefinição. Verifique a pasta de spam.",
+  "forgot.back": "Voltar ao início de sessão",
+  "reset.title": "Nova palavra-passe",
+  "reset.lede": "Escolha uma nova palavra-passe para o seu espaço.",
+  "reset.submit": "Redefinir palavra-passe",
+  "reset.noToken": "Link de redefinição em falta ou inválido.",
+  "reset.requestAgain": "Pedir um novo link"
 }

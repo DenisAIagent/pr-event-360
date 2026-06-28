@@ -132,6 +132,24 @@ export async function findAcceptedJournalistByEmail(
   return rows[0] ? map(rows[0]) : null;
 }
 
+/**
+ * Journaliste ACCEPTÉ d'un événement par email (qu'il ait déjà un mot de passe ou non).
+ * Sert à la réinitialisation : on peut redéfinir un mot de passe même si aucun n'existe.
+ */
+export async function findAcceptedJournalistByEmailForReset(
+  eventId: string,
+  email: string,
+  db: Queryable = pool,
+): Promise<Journalist | null> {
+  const { rows } = await db.query<JournalistRow>(
+    `SELECT ${COLS} FROM journalists
+     WHERE event_id = $1 AND lower(email) = lower($2) AND acc_status = 'acceptee'
+     ORDER BY created_at DESC LIMIT 1`,
+    [eventId, email],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
 /** Définit (ou remplace) le hash de mot de passe d'espace d'un journaliste. */
 export async function setJournalistPassword(
   id: string,

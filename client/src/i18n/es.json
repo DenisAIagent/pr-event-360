@@ -87,5 +87,16 @@
   "space.password.saved": "Contraseña guardada.",
   "space.password.tooShort": "La contraseña debe tener al menos 8 caracteres.",
   "space.password.mismatch": "Las contraseñas no coinciden.",
-  "acc.haveAccount": "¿Ya acreditado? Acceda a su espacio"
+  "acc.haveAccount": "¿Ya acreditado? Acceda a su espacio",
+  "login.forgot": "¿Olvidó su contraseña?",
+  "forgot.title": "Contraseña olvidada",
+  "forgot.lede": "Introduzca su correo: si existe una cuenta, recibirá un enlace para restablecer su contraseña.",
+  "forgot.submit": "Enviar el enlace",
+  "forgot.done": "Si existe una cuenta para este correo, se ha enviado un enlace de restablecimiento. Revise su carpeta de spam.",
+  "forgot.back": "Volver al acceso",
+  "reset.title": "Nueva contraseña",
+  "reset.lede": "Elija una nueva contraseña para su espacio.",
+  "reset.submit": "Restablecer contraseña",
+  "reset.noToken": "Enlace de restablecimiento ausente o no válido.",
+  "reset.requestAgain": "Solicitar un nuevo enlace"
 }
