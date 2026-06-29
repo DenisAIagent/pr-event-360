@@ -1,9 +1,10 @@
 import type { Lang } from '@pr-event-360/core';
 import type { Journalist } from '../../domain';
-import { findTemplate } from '../../db/repositories/eventRepo';
+import { findTemplate, getBranding } from '../../db/repositories/eventRepo';
 import { insertNotification } from '../../db/repositories/notificationRepo';
 import { DEFAULT_TEMPLATE_TEXT, renderTemplate, type TriggerKey } from './templates';
 import { getEmailProvider, getSmsProvider } from './providers';
+import { renderBrandedEmail, textToHtml } from './email';
 
 export interface SendNotificationInput {
   eventId: string;
@@ -38,10 +39,24 @@ export async function sendNotification(input: SendNotificationInput): Promise<vo
     const renderedSubject = subject ? renderTemplate(subject, variables) : null;
     const renderedBody = renderTemplate(body, variables);
 
-    const result =
-      channel === 'email'
-        ? await (await getEmailProvider()).send({ to: toAddress, subject: renderedSubject ?? '', body: renderedBody })
-        : await (await getSmsProvider()).send({ to: toAddress, body: renderedBody });
+    let result;
+    if (channel === 'email') {
+      // Email habillé aux couleurs de l'événement (corps texte → HTML).
+      const branding = await getBranding(input.eventId).catch(() => null);
+      const html = renderBrandedEmail({
+        innerHtml: textToHtml(renderedBody),
+        branding,
+        eventName: input.eventName,
+      });
+      result = await (await getEmailProvider()).send({
+        to: toAddress,
+        subject: renderedSubject ?? '',
+        body: renderedBody,
+        html,
+      });
+    } else {
+      result = await (await getSmsProvider()).send({ to: toAddress, body: renderedBody });
+    }
 
     if (result.status === 'failed') {
       // Détail côté serveur uniquement (pas de fuite vers le client).

@@ -6,6 +6,7 @@ import {
   DeadlineCard,
   RecapCard,
   ConfigForm,
+  PhotoRulesCard,
   TypeWeights,
   MediaTypes,
   Templates,
@@ -31,6 +32,7 @@ export function SettingsTab() {
       <DomainCard eventId={eventId} />
       <RecapCard eventId={eventId} initial={data.recap} onSaved={reload} />
       <ConfigForm eventId={eventId} config={data.config} />
+      <PhotoRulesCard eventId={eventId} config={data.config} />
       <TypeWeights eventId={eventId} weights={data.typeWeights} onSaved={reload} />
       <MediaTypes eventId={eventId} mediaTypes={data.mediaTypes} onSaved={reload} />
       <Templates eventId={eventId} templates={data.templates} onSaved={reload} />

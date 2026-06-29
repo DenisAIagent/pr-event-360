@@ -2,6 +2,7 @@ import {
   checkQuota,
   resolveInterviewQuota,
   selectNextForPromotion,
+  type Lang,
   type RequestStatus,
   type RequestType,
 } from '@pr-event-360/core';
@@ -175,11 +176,17 @@ export async function changeRequestStatus(
   if (journalist && (newStatus === 'acceptee' || newStatus === 'refusee')) {
     const artist = request.artistId ? await findArtist(request.artistId, eventId) : null;
     const slot = request.slotId ? await findSlot(request.slotId) : null;
-    const variables = {
+    const variables: Record<string, string> = {
       type: REQUEST_TYPE_LABELS[journalist.lang]?.[request.type] ?? request.type,
       artist: artist?.name ?? '—',
       slot: slot ? ` Créneau : ${slot.day} ${slot.startTime}–${slot.endTime}.` : '',
+      reportage: '',
     };
+    // Reportage photo/vidéo accepté → joindre règle de prise de vue + autorisation + contrat.
+    const isReportage = request.type === 'photo_report' || request.type === 'video_report';
+    if (isReportage && newStatus === 'acceptee') {
+      variables.reportage = await buildReportageBlock(eventId, journalist.lang);
+    }
     await sendNotification({
       eventId: event.id,
       eventName: event.name,
@@ -269,4 +276,23 @@ async function findJournalistByIdViaRequest(request: RequestRecord): Promise<Jou
   // La notification a besoin de la langue/email du demandeur.
   const { findJournalistById } = await import('../db/repositories/journalistRepo');
   return findJournalistById(request.journalistId);
+}
+
+const REPORTAGE_LABELS: Record<Lang, { rule: string; terms: string; contract: string }> = {
+  fr: { rule: 'Règles de prise de vue', terms: "Autorisation d'utilisation des photos/vidéos", contract: '⚠ Un contrat est à signer sur place.' },
+  en: { rule: 'Shooting rules', terms: 'Photo/video usage authorisation', contract: '⚠ A contract must be signed on site.' },
+  pt: { rule: 'Regras de captação', terms: 'Autorização de utilização das fotos/vídeos', contract: '⚠ Um contrato deve ser assinado no local.' },
+  es: { rule: 'Reglas de captación', terms: 'Autorización de uso de fotos/vídeos', contract: '⚠ Debe firmarse un contrato in situ.' },
+};
+
+/** Bloc « reportage » joint à l'email d'acceptation : règle de prise de vue + autorisation + contrat. */
+async function buildReportageBlock(eventId: string, lang: Lang): Promise<string> {
+  const config = await getConfig(eventId);
+  if (!config) return '';
+  const L = REPORTAGE_LABELS[lang] ?? REPORTAGE_LABELS.fr;
+  const parts: string[] = [];
+  if (config.photoRule) parts.push(`${L.rule} : ${config.photoRule}`);
+  if (config.onsiteContract) parts.push(L.contract);
+  if (config.photoTerms) parts.push(`${L.terms} :\n${config.photoTerms}`);
+  return parts.length ? `\n\n${parts.join('\n\n')}` : '';
 }

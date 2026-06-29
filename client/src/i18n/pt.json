@@ -98,5 +98,9 @@
   "reset.lede": "Escolha uma nova palavra-passe para o seu espaço.",
   "reset.submit": "Redefinir palavra-passe",
   "reset.noToken": "Link de redefinição em falta ou inválido.",
-  "reset.requestAgain": "Pedir um novo link"
+  "reset.requestAgain": "Pedir um novo link",
+  "space.photo.title": "Regras de foto & autorização",
+  "space.photo.rule": "Regras de captação",
+  "space.photo.contract": "⚠ Um contrato deve ser assinado no local.",
+  "space.photo.terms": "Autorização de utilização das fotos/vídeos"
 }

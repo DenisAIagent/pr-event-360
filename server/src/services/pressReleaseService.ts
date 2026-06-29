@@ -3,7 +3,8 @@ import { listJournalistsByEvent } from '../db/repositories/journalistRepo';
 import { insertNotification } from '../db/repositories/notificationRepo';
 import { getEventOrThrow } from './eventService';
 import { getEmailProvider } from './notifications/providers';
-import { buildBrandedEmail, personalize, stripHtml, type SendResult } from './newsletterService';
+import type { SendResult } from './newsletterService';
+import { personalize, renderBrandedEmail, stripHtml } from './notifications/email';
 
 /**
  * Envoie un communiqué de presse par email aux journalistes ACCRÉDITÉS (acceptés).
@@ -26,7 +27,7 @@ export async function sendPressReleaseEmail(
   let failed = 0;
 
   for (const j of recipients) {
-    const html = buildBrandedEmail(personalize(pr.bodyHtml, j), branding, event.name);
+    const html = renderBrandedEmail({ innerHtml: personalize(pr.bodyHtml, j), branding, eventName: event.name });
     const result = await provider
       .send({ to: j.email, subject: pr.title, body: stripHtml(pr.bodyHtml), html })
       .catch(() => ({ status: 'failed' as const, provider: provider.name, error: 'exception' }));

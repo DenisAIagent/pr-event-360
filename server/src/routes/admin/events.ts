@@ -13,6 +13,7 @@ import {
 } from '../../services/eventService';
 import {
   updateConfig,
+  updatePhotoRules,
   upsertRequestTypeWeight,
   upsertTemplate,
   insertMediaType,
@@ -225,6 +226,9 @@ const ConfigSchema = z.object({
   photoQuotaPerStage: z.number().int().nonnegative(),
   ageBonusPerHour: z.number().nonnegative(),
   ageBonusCap: z.number().nonnegative(),
+  photoRule: z.string().max(2000).nullable().default(null),
+  onsiteContract: z.boolean().default(false),
+  photoTerms: z.string().max(5000).nullable().default(null),
 });
 eventsRouter.put(
   '/:eventId/config',
@@ -233,6 +237,23 @@ eventsRouter.put(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const updated = await updateConfig(req.params.eventId!, req.body as z.infer<typeof ConfigSchema>);
+    sendData(res, updated);
+  }),
+);
+
+// Règles photo & autorisations (mise à jour partielle, indépendante des quotas/durées).
+const PhotoRulesSchema = z.object({
+  photoRule: z.string().max(2000).nullable().default(null),
+  onsiteContract: z.boolean().default(false),
+  photoTerms: z.string().max(5000).nullable().default(null),
+});
+eventsRouter.put(
+  '/:eventId/photo-rules',
+  requireEventEditor,
+  validateBody(PhotoRulesSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const updated = await updatePhotoRules(req.params.eventId!, req.body as z.infer<typeof PhotoRulesSchema>);
     sendData(res, updated);
   }),
 );

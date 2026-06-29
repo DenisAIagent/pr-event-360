@@ -30,6 +30,10 @@ export interface AccessActor {
   isPlatformAdmin: boolean;
 }
 
+/** Texte d'autorisation d'utilisation des photos par défaut (éditable par le RP). */
+export const DEFAULT_PHOTO_TERMS =
+  "En tant que journaliste accrédité·e, vous êtes autorisé·e à réaliser et utiliser les photos/vidéos uniquement dans le cadre de la publication pour laquelle vous êtes accrédité·e. Vous vous engagez à créditer l'artiste et l'événement lors de toute exploitation (presse, web et réseaux sociaux). Toute autre utilisation — commerciale, revente ou cession à un tiers — est interdite sans autorisation écrite préalable. Les consignes de prise de vue communiquées par la production (durée, emplacement, nombre de titres) doivent être strictement respectées.";
+
 const DEFAULT_CONFIG: EventConfig = {
   itwDurationMin: 15,
   itwBufferMin: 5,
@@ -37,6 +41,9 @@ const DEFAULT_CONFIG: EventConfig = {
   photoQuotaPerStage: 5,
   ageBonusPerHour: 1,
   ageBonusCap: 24,
+  photoRule: null,
+  onsiteContract: false,
+  photoTerms: DEFAULT_PHOTO_TERMS,
 };
 
 // Jeu de départ inspiré de l'exemple du PRD ; entièrement éditable ensuite.

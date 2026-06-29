@@ -9,7 +9,7 @@ import {
   markUsed,
 } from '../db/repositories/passwordResetRepo';
 import { findUserByEmail, updatePasswordHash } from '../db/repositories/userRepo';
-import { getEmailProvider } from './notifications/providers';
+import { ctaButton, sendBrandedEmail } from './notifications/email';
 
 // Durée de validité du lien de réinitialisation.
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
@@ -57,18 +57,13 @@ async function deliverResetLink(toEmail: string, rawToken: string): Promise<void
   const resetUrl = `${env.CLIENT_URL}/admin/reset-password?token=${encodeURIComponent(rawToken)}`;
 
   const subject = 'Réinitialisation de votre mot de passe — PR Event 360';
-  const body = [
-    'Bonjour,',
-    '',
-    'Vous avez demandé à réinitialiser votre mot de passe du back-office PR Event 360.',
-    'Cliquez sur le lien ci-dessous (valable 1 heure) :',
-    '',
-    resetUrl,
-    '',
-    "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe reste inchangé.",
-  ].join('\n');
+  const innerHtml =
+    `<p style="margin:0 0 12px;">Bonjour,</p>` +
+    `<p style="margin:0 0 12px;">Vous avez demandé à réinitialiser votre mot de passe du back-office <strong>PR Event 360</strong>. Cliquez ci-dessous (lien valable 1 heure) :</p>` +
+    ctaButton(resetUrl, 'Réinitialiser mon mot de passe') +
+    `<p style="margin:16px 0 0;color:#9aa0a6;font-size:13px;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe reste inchangé.</p>`;
 
-  const result = await (await getEmailProvider()).send({ to: toEmail, subject, body });
+  const result = await sendBrandedEmail({ to: toEmail, subject, innerHtml });
 
   // Mode simulation : aucun email ne part. On expose le lien dans les logs serveur
   // pour le développement. À NE PAS faire en production (NOTIFICATIONS_MODE=live).

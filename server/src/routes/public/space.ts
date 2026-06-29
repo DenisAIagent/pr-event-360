@@ -5,7 +5,7 @@ import { AppError } from '../../http/AppError';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { findJournalistByToken } from '../../db/repositories/journalistRepo';
-import { getBranding } from '../../db/repositories/eventRepo';
+import { getBranding, getConfig } from '../../db/repositories/eventRepo';
 import { getEventOrThrow } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
 import { listJournalistRequests, submitRequest } from '../../services/requestService';
@@ -28,10 +28,11 @@ publicSpaceRouter.get(
       throw AppError.forbidden('Accréditation non encore acceptée');
     }
     const event = await getEventOrThrow(journalist.eventId);
-    const [lineup, requests, branding] = await Promise.all([
+    const [lineup, requests, branding, config] = await Promise.all([
       getPublicLineup(journalist.eventId, journalist.lang),
       listJournalistRequests(token),
       getBranding(journalist.eventId),
+      getConfig(journalist.eventId),
     ]);
     sendData(res, {
       event: { id: event.id, name: event.name, languages: event.languages, branding },
@@ -44,6 +45,9 @@ publicSpaceRouter.get(
       },
       lineup,
       requests,
+      photoRules: config
+        ? { photoRule: config.photoRule, onsiteContract: config.onsiteContract, photoTerms: config.photoTerms }
+        : null,
     });
   }),
 );

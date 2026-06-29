@@ -98,5 +98,9 @@
   "reset.lede": "Choisissez un nouveau mot de passe pour votre espace.",
   "reset.submit": "Réinitialiser le mot de passe",
   "reset.noToken": "Lien de réinitialisation manquant ou invalide.",
-  "reset.requestAgain": "Demander un nouveau lien"
+  "reset.requestAgain": "Demander un nouveau lien",
+  "space.photo.title": "Règles photo & autorisations",
+  "space.photo.rule": "Règles de prise de vue",
+  "space.photo.contract": "⚠ Un contrat est à signer sur place.",
+  "space.photo.terms": "Autorisation d'utilisation des photos/vidéos"
 }

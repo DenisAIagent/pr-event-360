@@ -14,7 +14,7 @@ import {
 } from '../db/repositories/invitationRepo';
 import { createUser, findUserByEmail } from '../db/repositories/userRepo';
 import { addEventMember, findEventById } from '../db/repositories/eventRepo';
-import { getEmailProvider } from './notifications/providers';
+import { ctaButton, sendBrandedEmail } from './notifications/email';
 import type { User } from '../domain';
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
@@ -137,18 +137,13 @@ async function deliverInvite(toEmail: string, rawToken: string): Promise<void> {
   const acceptUrl = `${env.CLIENT_URL}/admin/accept-invite?token=${encodeURIComponent(rawToken)}`;
 
   const subject = 'Invitation à rejoindre PR Event 360';
-  const body = [
-    'Bonjour,',
-    '',
-    "Vous avez été invité(e) à rejoindre l'équipe back-office de PR Event 360.",
-    'Cliquez sur le lien ci-dessous (valable 7 jours) pour créer votre compte :',
-    '',
-    acceptUrl,
-    '',
-    "Si vous ne vous attendiez pas à cette invitation, ignorez simplement cet email.",
-  ].join('\n');
+  const innerHtml =
+    `<p style="margin:0 0 12px;">Bonjour,</p>` +
+    `<p style="margin:0 0 12px;">Vous avez été invité(e) à rejoindre l'équipe back-office de <strong>PR Event 360</strong>. Cliquez ci-dessous (lien valable 7 jours) pour créer votre compte :</p>` +
+    ctaButton(acceptUrl, 'Créer mon compte') +
+    `<p style="margin:16px 0 0;color:#9aa0a6;font-size:13px;">Si vous ne vous attendiez pas à cette invitation, ignorez simplement cet email.</p>`;
 
-  const result = await (await getEmailProvider()).send({ to: toEmail, subject, body });
+  const result = await sendBrandedEmail({ to: toEmail, subject, innerHtml });
   if (result.status === 'simulated') {
     console.info(`[invitation][simulation] lien pour ${toEmail} : ${acceptUrl}`);
   } else if (result.status === 'failed') {

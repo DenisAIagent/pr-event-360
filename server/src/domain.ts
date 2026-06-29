@@ -36,6 +36,9 @@ export interface EventConfig {
   photoQuotaPerStage: number;
   ageBonusPerHour: number;
   ageBonusCap: number;
+  photoRule: string | null;
+  onsiteContract: boolean;
+  photoTerms: string | null;
 }
 
 export interface Event {

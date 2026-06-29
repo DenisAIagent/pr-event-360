@@ -1,9 +1,10 @@
 import type { RecapFrequency } from '../domain';
 import { nowMs } from '../lib/clock';
-import { findEventById, getRecap, touchRecapSent } from '../db/repositories/eventRepo';
+import { findEventById, getRecap, getBranding, touchRecapSent } from '../db/repositories/eventRepo';
 import { listJournalistsCreatedSince } from '../db/repositories/journalistRepo';
 import { insertNotification } from '../db/repositories/notificationRepo';
 import { getEmailProvider } from './notifications/providers';
+import { renderBrandedEmail, textToHtml } from './notifications/email';
 
 const WINDOW_MS: Record<Exclude<RecapFrequency, 'none'>, number> = {
   daily: 24 * 3_600_000,
@@ -44,9 +45,16 @@ export async function sendRecap(eventId: string): Promise<RecapResult> {
       ? `Aucune nouvelle inscription depuis le dernier récapitulatif.`
       : `Nouvelles inscriptions pour ${event.name} :\n\n${lines.join('\n')}`;
 
+  const branding = await getBranding(eventId).catch(() => null);
+  const html = renderBrandedEmail({
+    innerHtml: textToHtml(body),
+    branding,
+    eventName: event.name,
+    footer: `Récapitulatif interne — ${event.name}.`,
+  });
   const provider = await getEmailProvider();
   for (const to of recap.recipients) {
-    const result = await provider.send({ to, subject, body }).catch(() => ({
+    const result = await provider.send({ to, subject, body, html }).catch(() => ({
       status: 'failed' as const,
       provider: provider.name,
       error: 'exception',

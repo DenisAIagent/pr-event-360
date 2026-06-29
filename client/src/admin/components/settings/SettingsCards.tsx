@@ -243,6 +243,84 @@ export function ConfigForm({ eventId, config }: { eventId: string; config: Event
   );
 }
 
+const PHOTO_RULE_PRESETS = [
+  'Concert entier',
+  '3 premiers titres',
+  '3 premiers titres, sans flash, depuis la fosse',
+  '3 derniers titres',
+  'Aucune photo en backstage',
+];
+
+/** Règles de prise de vue + contrat sur place + autorisation d'utilisation des photos. */
+export function PhotoRulesCard({ eventId, config }: { eventId: string; config: EventConfig }) {
+  const apiAuthed = useAuthedApi();
+  const [rule, setRule] = useState(config.photoRule ?? '');
+  const [contract, setContract] = useState(config.onsiteContract);
+  const [terms, setTerms] = useState(config.photoTerms ?? '');
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await apiAuthed.put(`/admin/events/${eventId}/photo-rules`, {
+        photoRule: rule.trim() || null,
+        onsiteContract: contract,
+        photoTerms: terms.trim() || null,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="card" onSubmit={save}>
+      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Règles photo & autorisations
+        <InfoBubble title="À quoi ça sert ?">
+          La <strong>règle de prise de vue</strong> et l'<strong>autorisation d'utilisation</strong> sont
+          jointes automatiquement à l'email d'acceptation de chaque <strong>reportage photo/vidéo</strong>,
+          et affichées dans l'espace du journaliste. Cochez « contrat à signer sur place » si la production
+          l'exige.
+        </InfoBubble>
+      </h3>
+      {saved && <div className="banner banner-success">Enregistré.</div>}
+
+      <div className="field">
+        <label>Règle de prise de vue</label>
+        <input
+          list="photo-rule-presets"
+          value={rule}
+          onChange={(e) => setRule(e.target.value)}
+          placeholder="Ex. 3 premiers titres, sans flash, depuis la fosse"
+        />
+        <datalist id="photo-rule-presets">
+          {PHOTO_RULE_PRESETS.map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
+      </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 'var(--space-2) 0' }}>
+        <input type="checkbox" checked={contract} onChange={(e) => setContract(e.target.checked)} />
+        Contrat à signer sur place (indiqué à l'acceptation des reportages)
+      </label>
+
+      <div className="field">
+        <label>Autorisation d'utilisation des photos/vidéos (envoyée à chaque acceptation de reportage)</label>
+        <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={6} />
+      </div>
+
+      <button className="btn btn-primary" type="submit" disabled={busy}>
+        {busy ? 'Enregistrement…' : 'Enregistrer les règles photo'}
+      </button>
+    </form>
+  );
+}
+
 function Num({
   label,
   value,

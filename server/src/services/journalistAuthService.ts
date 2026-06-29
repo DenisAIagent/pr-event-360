@@ -14,7 +14,8 @@ import {
   findValidJournalistResetByHash,
   markJournalistResetUsed,
 } from '../db/repositories/journalistResetRepo';
-import { getEmailProvider } from './notifications/providers';
+import { getBranding, findEventById } from '../db/repositories/eventRepo';
+import { ctaButton, sendBrandedEmail } from './notifications/email';
 
 const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
@@ -94,18 +95,21 @@ async function deliverResetLink(toEmail: string, eventId: string, rawToken: stri
   const env = loadEnv();
   const resetUrl = `${env.CLIENT_URL}/evenement/${eventId}/reinitialiser?token=${encodeURIComponent(rawToken)}`;
   const subject = 'Réinitialisation de votre mot de passe — Espace journaliste';
-  const body = [
-    'Bonjour,',
-    '',
-    'Vous avez demandé à réinitialiser le mot de passe de votre espace journaliste.',
-    'Cliquez sur le lien ci-dessous (valable 1 heure) pour en choisir un nouveau :',
-    '',
-    resetUrl,
-    '',
-    "Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe reste inchangé.",
-  ].join('\n');
+  const branding = await getBranding(eventId).catch(() => null);
+  const event = await findEventById(eventId).catch(() => null);
+  const innerHtml =
+    `<p style="margin:0 0 12px;">Bonjour,</p>` +
+    `<p style="margin:0 0 12px;">Vous avez demandé à réinitialiser le mot de passe de votre espace journaliste. Cliquez ci-dessous (lien valable 1 heure) pour en choisir un nouveau :</p>` +
+    ctaButton(resetUrl, 'Choisir un nouveau mot de passe') +
+    `<p style="margin:16px 0 0;color:#9aa0a6;font-size:13px;">Si vous n'êtes pas à l'origine de cette demande, ignorez cet email : votre mot de passe reste inchangé.</p>`;
 
-  const result = await (await getEmailProvider()).send({ to: toEmail, subject, body });
+  const result = await sendBrandedEmail({
+    to: toEmail,
+    subject,
+    innerHtml,
+    branding,
+    eventName: event?.name ?? null,
+  });
   if (result.status === 'simulated') {
     console.info(`[journalist-reset][simulation] lien pour ${toEmail} : ${resetUrl}`);
   } else if (result.status === 'failed') {

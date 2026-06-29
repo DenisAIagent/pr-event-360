@@ -107,4 +107,5 @@ export interface SpaceResponse {
   };
   lineup: { stages: PublicStage[]; artists: PublicArtist[] };
   requests: JournalistRequest[];
+  photoRules?: { photoRule: string | null; onsiteContract: boolean; photoTerms: string | null } | null;
 }

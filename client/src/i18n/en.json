@@ -98,5 +98,9 @@
   "reset.lede": "Choose a new password for your space.",
   "reset.submit": "Reset password",
   "reset.noToken": "Reset link missing or invalid.",
-  "reset.requestAgain": "Request a new link"
+  "reset.requestAgain": "Request a new link",
+  "space.photo.title": "Photo rules & authorisation",
+  "space.photo.rule": "Shooting rules",
+  "space.photo.contract": "⚠ A contract must be signed on site.",
+  "space.photo.terms": "Photo/video usage authorisation"
 }

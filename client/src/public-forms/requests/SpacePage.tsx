@@ -245,6 +245,33 @@ export function SpacePage({
         </section>
       )}
 
+      {data.photoRules && (data.photoRules.photoRule || data.photoRules.photoTerms || data.photoRules.onsiteContract) && (
+        <section className="card stack" aria-labelledby="sec-photo" style={{ marginBottom: 'var(--space-5)' }}>
+          <h2 id="sec-photo" style={{ fontSize: 'var(--text-xl)' }}>
+            {t('space.photo.title')}
+          </h2>
+          {data.photoRules.photoRule && (
+            <div>
+              <strong>{t('space.photo.rule')}</strong>
+              <p className="muted" style={{ whiteSpace: 'pre-wrap', marginTop: 'var(--space-1)' }}>
+                {data.photoRules.photoRule}
+              </p>
+            </div>
+          )}
+          {data.photoRules.onsiteContract && (
+            <div className="banner banner-warn">{t('space.photo.contract')}</div>
+          )}
+          {data.photoRules.photoTerms && (
+            <div>
+              <strong>{t('space.photo.terms')}</strong>
+              <p className="muted" style={{ whiteSpace: 'pre-wrap', marginTop: 'var(--space-1)' }}>
+                {data.photoRules.photoTerms}
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="card" aria-labelledby="new-req" style={{ marginBottom: 'var(--space-5)' }}>
         <h2 id="new-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
           {t('space.new.title')}

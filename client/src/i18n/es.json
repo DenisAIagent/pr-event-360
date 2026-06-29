@@ -98,5 +98,9 @@
   "reset.lede": "Elija una nueva contraseña para su espacio.",
   "reset.submit": "Restablecer contraseña",
   "reset.noToken": "Enlace de restablecimiento ausente o no válido.",
-  "reset.requestAgain": "Solicitar un nuevo enlace"
+  "reset.requestAgain": "Solicitar un nuevo enlace",
+  "space.photo.title": "Reglas de foto y autorización",
+  "space.photo.rule": "Reglas de captación",
+  "space.photo.contract": "⚠ Debe firmarse un contrato in situ.",
+  "space.photo.terms": "Autorización de uso de fotos/vídeos"
 }

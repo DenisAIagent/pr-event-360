@@ -63,6 +63,9 @@ interface ConfigRow {
   photo_quota_per_stage: number;
   age_bonus_per_hour: string;
   age_bonus_cap: string;
+  photo_rule: string | null;
+  onsite_contract: boolean;
+  photo_terms: string | null;
 }
 const mapConfig = (r: ConfigRow): EventConfig => ({
   itwDurationMin: r.itw_duration_min,
@@ -71,7 +74,13 @@ const mapConfig = (r: ConfigRow): EventConfig => ({
   photoQuotaPerStage: r.photo_quota_per_stage,
   ageBonusPerHour: Number(r.age_bonus_per_hour),
   ageBonusCap: Number(r.age_bonus_cap),
+  photoRule: r.photo_rule ?? null,
+  onsiteContract: r.onsite_contract,
+  photoTerms: r.photo_terms ?? null,
 });
+
+const CONFIG_COLS = `itw_duration_min, itw_buffer_min, default_itw_quota, photo_quota_per_stage,
+  age_bonus_per_hour, age_bonus_cap, photo_rule, onsite_contract, photo_terms`;
 
 export async function insertEvent(
   input: {
@@ -364,10 +373,9 @@ export async function insertConfig(
   const { rows } = await db.query<ConfigRow>(
     `INSERT INTO event_configs
        (event_id, itw_duration_min, itw_buffer_min, default_itw_quota,
-        photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING itw_duration_min, itw_buffer_min, default_itw_quota,
-               photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap`,
+        photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap, photo_rule, onsite_contract, photo_terms)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING ${CONFIG_COLS}`,
     [
       eventId,
       cfg.itwDurationMin,
@@ -376,6 +384,9 @@ export async function insertConfig(
       cfg.photoQuotaPerStage,
       cfg.ageBonusPerHour,
       cfg.ageBonusCap,
+      cfg.photoRule ?? null,
+      cfg.onsiteContract,
+      cfg.photoTerms ?? null,
     ],
   );
   return mapConfig(rows[0]!);
@@ -383,9 +394,7 @@ export async function insertConfig(
 
 export async function getConfig(eventId: string, db: Queryable = pool): Promise<EventConfig | null> {
   const { rows } = await db.query<ConfigRow>(
-    `SELECT itw_duration_min, itw_buffer_min, default_itw_quota,
-            photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap
-     FROM event_configs WHERE event_id = $1`,
+    `SELECT ${CONFIG_COLS} FROM event_configs WHERE event_id = $1`,
     [eventId],
   );
   return rows[0] ? mapConfig(rows[0]) : null;
@@ -399,10 +408,10 @@ export async function updateConfig(
   const { rows } = await db.query<ConfigRow>(
     `UPDATE event_configs SET
        itw_duration_min = $2, itw_buffer_min = $3, default_itw_quota = $4,
-       photo_quota_per_stage = $5, age_bonus_per_hour = $6, age_bonus_cap = $7
+       photo_quota_per_stage = $5, age_bonus_per_hour = $6, age_bonus_cap = $7,
+       photo_rule = $8, onsite_contract = $9, photo_terms = $10
      WHERE event_id = $1
-     RETURNING itw_duration_min, itw_buffer_min, default_itw_quota,
-               photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap`,
+     RETURNING ${CONFIG_COLS}`,
     [
       eventId,
       cfg.itwDurationMin,
@@ -411,7 +420,24 @@ export async function updateConfig(
       cfg.photoQuotaPerStage,
       cfg.ageBonusPerHour,
       cfg.ageBonusCap,
+      cfg.photoRule ?? null,
+      cfg.onsiteContract,
+      cfg.photoTerms ?? null,
     ],
+  );
+  return rows[0] ? mapConfig(rows[0]) : null;
+}
+
+/** Mise à jour PARTIELLE des règles photo (sans toucher aux quotas/durées). */
+export async function updatePhotoRules(
+  eventId: string,
+  input: { photoRule: string | null; onsiteContract: boolean; photoTerms: string | null },
+  db: Queryable = pool,
+): Promise<EventConfig | null> {
+  const { rows } = await db.query<ConfigRow>(
+    `UPDATE event_configs SET photo_rule = $2, onsite_contract = $3, photo_terms = $4
+     WHERE event_id = $1 RETURNING ${CONFIG_COLS}`,
+    [eventId, input.photoRule, input.onsiteContract, input.photoTerms],
   );
   return rows[0] ? mapConfig(rows[0]) : null;
 }

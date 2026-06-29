@@ -48,10 +48,10 @@ export const DEFAULT_TEMPLATE_TEXT: Record<TriggerKey, Record<Lang, TemplateText
     es: { subject: 'Solicitud recibida', body: 'Hola {{firstName}}, tu solicitud ha sido recibida y será tramitada por nuestro equipo.' },
   },
   request_accepted: {
-    fr: { subject: '{{type}} – {{artist}} : demande acceptée', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) a été acceptée.{{slot}}' },
-    en: { subject: '{{type}} – {{artist}}: request accepted', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) has been accepted.{{slot}}' },
-    pt: { subject: '{{type}} – {{artist}}: pedido aceite', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) foi aceite.{{slot}}' },
-    es: { subject: '{{type}} – {{artist}}: solicitud aceptada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) ha sido aceptada.{{slot}}' },
+    fr: { subject: '{{type}} – {{artist}} : demande acceptée', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) a été acceptée.{{slot}}{{reportage}}' },
+    en: { subject: '{{type}} – {{artist}}: request accepted', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) has been accepted.{{slot}}{{reportage}}' },
+    pt: { subject: '{{type}} – {{artist}}: pedido aceite', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) foi aceite.{{slot}}{{reportage}}' },
+    es: { subject: '{{type}} – {{artist}}: solicitud aceptada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) ha sido aceptada.{{slot}}{{reportage}}' },
   },
   request_rejected: {
     fr: { subject: '{{type}} – {{artist}} : demande non retenue', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) n’a pas pu être retenue.' },
