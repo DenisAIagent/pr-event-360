@@ -147,6 +147,32 @@ export async function countUsers(db: Queryable = pool): Promise<number> {
   return Number(rows[0]!.count);
 }
 
+export async function deleteUserById(userId: string, db: Queryable = pool): Promise<void> {
+  await db.query('DELETE FROM users WHERE id = $1', [userId]);
+}
+
+export async function countUsersInOrg(organizationId: string, db: Queryable = pool): Promise<number> {
+  const { rows } = await db.query<{ n: string }>(
+    'SELECT count(*)::int AS n FROM users WHERE organization_id = $1',
+    [organizationId],
+  );
+  return Number(rows[0]!.n);
+}
+
+/** Choisit un héritier (admin actif de préférence) pour récupérer les événements d'un compte supprimé. */
+export async function findReassignTargetInOrg(
+  organizationId: string,
+  exceptUserId: string,
+  db: Queryable = pool,
+): Promise<string | null> {
+  const { rows } = await db.query<{ id: string }>(
+    `SELECT id FROM users WHERE organization_id = $1 AND id <> $2 AND active = true
+     ORDER BY (role = 'admin') DESC, created_at ASC LIMIT 1`,
+    [organizationId, exceptUserId],
+  );
+  return rows[0]?.id ?? null;
+}
+
 /** Administrateurs actifs d'une organisation (pour empêcher de retirer le dernier admin de l'org). */
 export async function countActiveAdminsInOrg(organizationId: string, db: Queryable = pool): Promise<number> {
   const { rows } = await db.query<{ count: string }>(

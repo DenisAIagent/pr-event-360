@@ -270,6 +270,15 @@ export async function removeAllMembershipsForUser(userId: string, db: Queryable 
   await db.query('DELETE FROM event_members WHERE user_id = $1', [userId]);
 }
 
+/** Réattribue la propriété des événements d'un utilisateur (avant suppression de son compte). */
+export async function reassignOwnedEvents(
+  fromUserId: string,
+  toUserId: string,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query('UPDATE events SET owner_user_id = $2 WHERE owner_user_id = $1', [fromUserId, toUserId]);
+}
+
 /** Met à jour la date de clôture des inscriptions (NULL = pas de limite). */
 export async function setAccreditationDeadline(
   eventId: string,

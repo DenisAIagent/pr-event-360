@@ -112,6 +112,7 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | POST | `/:userId/role` | Changer le rôle (protège le dernier admin) |
 | POST | `/:userId/active` | Activer/désactiver (protège le dernier admin) |
 | PUT | `/:userId/events` | Remplacer les événements assignés |
+| DELETE | `/:userId` | **Supprimer** le compte (réattribue ses événements à l'admin ; pas soi-même, pas le dernier admin) |
 
 ## Facturation — `/api/admin/billing` + webhook Stripe
 
@@ -132,6 +133,12 @@ Onboarding (super-admin) — **invitation à s'inscrire** (accès offert, sans p
 | POST | `/api/admin/auth/org-invite/accept` | public · rate-limité | `{token, orgName, fullName, password}` **ou** `{token, orgName, googleCredential}` → l'invité crée son organisation (active) → `{token, user}` |
 
 Variante directe : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée l'organisation + invite l'admin (l'opérateur nomme l'orga).
+
+Suppression (super-admin) :
+| Méthode | Chemin | Description |
+|---|---|---|
+| DELETE | `/api/admin/organizations/:orgId` | Supprime l'organisation + **toutes** ses données (cascade). Interdit sur sa propre organisation |
+| POST | `/api/admin/organizations/delete-account` | `{email}` → supprime le compte ; si seul membre de son org → supprime l'org entière. Libère l'email |
 
 ## Intégrations — `/api/admin/settings` (super-admin plateforme)
 

@@ -7,7 +7,7 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { inviteCollaborator, resendInvitation } from '../../services/invitationService';
 import { deleteInvitation, findInvitationById } from '../../db/repositories/invitationRepo';
 import { AppError } from '../../http/AppError';
-import { changeUserActive, changeUserRole, getTeam, setUserEvents } from '../../services/teamService';
+import { changeUserActive, changeUserRole, deleteTeamMember, getTeam, setUserEvents } from '../../services/teamService';
 
 export const teamRouter = Router();
 
@@ -91,5 +91,14 @@ teamRouter.put(
   asyncHandler(async (req, res) => {
     const { eventIds } = req.body as z.infer<typeof EventsSchema>;
     sendData(res, await setUserEvents(req.user!.organizationId, req.params.userId!, eventIds));
+  }),
+);
+
+// Supprimer définitivement un compte de l'organisation (réattribue ses événements à l'admin).
+teamRouter.delete(
+  '/:userId',
+  asyncHandler(async (req, res) => {
+    await deleteTeamMember(req.user!.organizationId, req.user!.sub, req.params.userId!);
+    sendData(res, { deleted: true });
   }),
 );

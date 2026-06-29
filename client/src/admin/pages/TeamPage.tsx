@@ -293,6 +293,23 @@ function MemberRow({
               {editing ? 'Fermer' : 'Événements'}
             </button>
           )}
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={busy || isSelf}
+            style={{ color: 'var(--color-danger)' }}
+            title={isSelf ? 'Impossible de supprimer votre propre compte' : 'Supprimer le compte'}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  `Supprimer définitivement le compte de ${member.fullName} (${member.email}) ?\n\nSes événements (s'il en possède) vous seront réattribués. Cette action est irréversible.`,
+                )
+              )
+                return;
+              call(() => apiAuthed.delete(`/admin/team/${member.id}`));
+            }}
+          >
+            Supprimer
+          </button>
         </div>
       </div>
 

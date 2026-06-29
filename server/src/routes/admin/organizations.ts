@@ -15,6 +15,7 @@ import { findUserById } from '../../db/repositories/userRepo';
 import { uniqueSlug } from '../../services/orgService';
 import { inviteCollaborator } from '../../services/invitationService';
 import { createOrgInviteLink } from '../../services/orgInviteService';
+import { deleteOrganization, deleteAccountByEmail } from '../../services/accountAdminService';
 
 export const organizationsRouter = Router();
 
@@ -60,6 +61,26 @@ organizationsRouter.post(
       invitedBy: req.user!.sub,
     });
     sendData(res, { id: org.id, name: org.name, slug: org.slug }, 201);
+  }),
+);
+
+// Supprime DÉFINITIVEMENT une organisation cliente et toutes ses données (super-admin).
+organizationsRouter.delete(
+  '/:orgId',
+  asyncHandler(async (req, res) => {
+    await deleteOrganization(req.params.orgId!, req.user!.sub);
+    sendData(res, { deleted: true });
+  }),
+);
+
+// Supprime n'importe quel compte par email (super-admin) — libère l'email.
+const DeleteAccountSchema = z.object({ email: z.string().email() });
+organizationsRouter.post(
+  '/delete-account',
+  validateBody(DeleteAccountSchema),
+  asyncHandler(async (req, res) => {
+    const { email } = req.body as z.infer<typeof DeleteAccountSchema>;
+    sendData(res, await deleteAccountByEmail(email, req.user!.sub));
   }),
 );
 

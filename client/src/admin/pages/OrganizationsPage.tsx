@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowRight, Check, Plus, Copy } from 'lucide-react';
+import { Building2, ArrowRight, Check, Plus, Copy, Trash2 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
@@ -23,10 +23,48 @@ export function OrganizationsPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const { data, loading, error } = useFetch<OrganizationSummary[]>(
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState('');
+  const { data, loading, error, reload } = useFetch<OrganizationSummary[]>(
     () => apiAuthed.get<OrganizationSummary[]>('/admin/organizations'),
     [],
   );
+
+  async function removeOrg(org: OrganizationSummary) {
+    if (
+      !window.confirm(
+        `Supprimer DÉFINITIVEMENT l'organisation « ${org.name} » ?\n\n${org.eventCount} événement(s), ${org.userCount} compte(s) et TOUTES leurs données (journalistes, demandes, médias…) seront effacés. Action irréversible.`,
+      )
+    )
+      return;
+    setBusyId(org.id);
+    try {
+      await apiAuthed.delete(`/admin/organizations/${org.id}`);
+      toast.success(`Organisation « ${org.name} » supprimée.`);
+      reload();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Suppression impossible.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    const email = deleteEmail.trim();
+    if (!email) return;
+    if (!window.confirm(`Supprimer le compte « ${email} » ?\n\nSi c'est le seul compte de son organisation, toute l'organisation et ses données seront supprimées. Irréversible.`))
+      return;
+    try {
+      const r = await apiAuthed.post<{ deletedOrg: boolean }>('/admin/organizations/delete-account', { email });
+      toast.success(r.deletedOrg ? `Compte + organisation supprimés. Email libéré.` : `Compte « ${email} » supprimé.`);
+      setDeleteEmail('');
+      setShowDeleteAccount(false);
+      reload();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Suppression impossible.');
+    }
+  }
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -140,9 +178,41 @@ export function OrganizationsPage() {
               >
                 {current ? 'En cours' : busyId === org.id ? 'Bascule…' : <>Entrer <ArrowRight size={14} /></>}
               </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={current || busyId === org.id}
+                style={{ color: 'var(--color-danger)' }}
+                title={current ? 'Impossible de supprimer votre propre organisation' : "Supprimer l'organisation"}
+                onClick={() => removeOrg(org)}
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           );
         })}
+      </div>
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        {!showDeleteAccount ? (
+          <button type="button" className="auth-link" onClick={() => setShowDeleteAccount(true)}>
+            Supprimer un compte par email…
+          </button>
+        ) : (
+          <form onSubmit={deleteAccount} className="org-create card stack">
+            <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
+              Supprimer un compte précis par son email (libère l'email). Si c'est le seul compte de son
+              organisation, l'organisation entière est supprimée.
+            </p>
+            <div className="field">
+              <label>Email du compte à supprimer</label>
+              <input type="email" value={deleteEmail} onChange={(e) => setDeleteEmail(e.target.value)} required autoFocus />
+            </div>
+            <button type="submit" className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger)' }}>
+              <Trash2 size={14} /> Supprimer ce compte
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

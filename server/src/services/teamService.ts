@@ -3,6 +3,7 @@ import { AppError } from '../http/AppError';
 import { withTransaction } from '../db/pool';
 import {
   countActiveAdminsInOrg,
+  deleteUserById,
   findUserById,
   listUsersByOrg,
   setUserActive,
@@ -12,6 +13,7 @@ import {
   addEventMember,
   findEventById,
   listEventIdsForUser,
+  reassignOwnedEvents,
   removeAllMembershipsForUser,
 } from '../db/repositories/eventRepo';
 import { listPendingInvitationsByOrg, type Invitation } from '../db/repositories/invitationRepo';
@@ -80,6 +82,28 @@ export async function setUserEvents(organizationId: string, userId: string, even
       await addEventMember(eventId, userId, db);
     }
     return listEventIdsForUser(userId, db);
+  });
+}
+
+/**
+ * Supprime définitivement un compte de l'organisation. Réattribue ses événements à
+ * l'admin qui supprime. Garde-fous : pas soi-même, pas le dernier admin actif.
+ */
+export async function deleteTeamMember(
+  organizationId: string,
+  actingUserId: string,
+  targetUserId: string,
+): Promise<void> {
+  const target = await targetInOrg(targetUserId, organizationId);
+  if (targetUserId === actingUserId) {
+    throw AppError.badRequest('Vous ne pouvez pas supprimer votre propre compte.');
+  }
+  if (target.role === 'admin') {
+    await assertNotLastAdmin(organizationId);
+  }
+  await withTransaction(async (db) => {
+    await reassignOwnedEvents(targetUserId, actingUserId, db);
+    await deleteUserById(targetUserId, db);
   });
 }
 
