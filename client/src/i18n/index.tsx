@@ -24,14 +24,26 @@ function interpolate(template: string, vars?: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_m, k: string) => vars[k] ?? `{${k}}`);
 }
 
+/** Langue préférée du navigateur, ramenée à une langue supportée (fr par défaut). */
+export function detectBrowserLang(): Lang {
+  if (typeof navigator === 'undefined') return 'fr';
+  const prefs = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const p of prefs) {
+    const code = p?.slice(0, 2).toLowerCase();
+    if (code && (LANGS as readonly string[]).includes(code)) return code as Lang;
+  }
+  return 'fr';
+}
+
 export function I18nProvider({
-  initialLang = 'fr',
+  initialLang,
   children,
 }: {
   initialLang?: Lang;
   children: ReactNode;
 }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
+  // Par défaut : la langue du navigateur (le formulaire l'aligne ensuite sur les langues de l'événement).
+  const [lang, setLang] = useState<Lang>(() => initialLang ?? detectBrowserLang());
 
   const value = useMemo<I18nValue>(() => {
     const t: Translate = (key, vars) => {

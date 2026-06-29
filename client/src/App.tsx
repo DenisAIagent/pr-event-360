@@ -16,7 +16,7 @@ import { isDomainMode } from './lib/domainEvent';
 
 /** Enveloppe une page publique multilingue. */
 function L({ children }: { children: ReactNode }) {
-  return <I18nProvider initialLang="fr">{children}</I18nProvider>;
+  return <I18nProvider>{children}</I18nProvider>;
 }
 
 /**
@@ -56,7 +56,7 @@ export function App() {
         <Route
           path="/accreditation/:eventId"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <AccreditationPage />
             </I18nProvider>
           }
@@ -64,7 +64,7 @@ export function App() {
         <Route
           path="/evenement/:eventId/connexion"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <JournalistLoginPage />
             </I18nProvider>
           }
@@ -72,7 +72,7 @@ export function App() {
         <Route
           path="/evenement/:eventId/mot-de-passe-oublie"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <JournalistForgotPasswordPage />
             </I18nProvider>
           }
@@ -80,7 +80,7 @@ export function App() {
         <Route
           path="/evenement/:eventId/reinitialiser"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <JournalistResetPasswordPage />
             </I18nProvider>
           }
@@ -88,7 +88,7 @@ export function App() {
         <Route
           path="/espace/:token"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <SpacePage />
             </I18nProvider>
           }
@@ -97,7 +97,7 @@ export function App() {
         <Route
           path="/espace-preview/:eventId"
           element={
-            <I18nProvider initialLang="fr">
+            <I18nProvider>
               <SpacePreviewPage />
             </I18nProvider>
           }
