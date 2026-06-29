@@ -26,6 +26,7 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<LoginOutcome>;
   completeMfa: (challenge: string, code: string) => Promise<void>;
   loginWithGoogle: (credential: string) => Promise<GoogleOutcome>;
+  acceptOrgInvite: (body: { token: string; orgName: string; fullName?: string; password?: string; googleCredential?: string }) => Promise<void>;
   switchOrg: (orgId: string) => Promise<void>;
   logout: () => void;
 }
@@ -77,6 +78,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return undefined;
   }, []);
 
+  const acceptOrgInvite = useCallback(
+    async (body: { token: string; orgName: string; fullName?: string; password?: string; googleCredential?: string }) => {
+      const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/org-invite/accept', body);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+      setState(result);
+    },
+    [],
+  );
+
   const switchOrg = useCallback(
     async (orgId: string) => {
       const result = await api.post<{ token: string; user: AuthUser }>(
@@ -102,10 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       completeMfa,
       loginWithGoogle,
+      acceptOrgInvite,
       switchOrg,
       logout,
     }),
-    [state, login, completeMfa, loginWithGoogle, switchOrg, logout],
+    [state, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

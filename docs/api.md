@@ -124,8 +124,14 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | POST | `/api/admin/billing/checkout` | public · rate-limité | `{orgName, fullName, email, password}` **ou** `{orgName, googleCredential}` → `{url}` (Stripe Checkout) |
 | POST | `/api/stripe/webhook` | public (signé) | Événements Stripe (corps brut, signature vérifiée) : `checkout.session.completed` matérialise l'org + le compte ; `customer.subscription.updated/deleted`, `invoice.payment_failed` mettent à jour le statut |
 
-Onboarding manuel (super-admin) : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée une
-organisation active + invite son admin (sans paiement).
+Onboarding (super-admin) — **invitation à s'inscrire** (accès offert, sans paiement) :
+| Méthode | Chemin | Accès | Description |
+|---|---|---|---|
+| POST | `/api/admin/organizations/invite` | super-admin | `{email}` → `{inviteUrl}` — **lien copiable** à partager soi-même (14 j, usage unique) |
+| GET | `/api/admin/auth/org-invite?token=` | public | Pré-remplissage (`{email}`) |
+| POST | `/api/admin/auth/org-invite/accept` | public · rate-limité | `{token, orgName, fullName, password}` **ou** `{token, orgName, googleCredential}` → l'invité crée son organisation (active) → `{token, user}` |
+
+Variante directe : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée l'organisation + invite l'admin (l'opérateur nomme l'orga).
 
 ## Intégrations — `/api/admin/settings` (super-admin plateforme)
 

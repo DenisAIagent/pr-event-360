@@ -10,6 +10,7 @@ import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../servi
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
 import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
+import { getOrgInvite, acceptOrgInvite } from '../../services/orgInviteService';
 
 export const authRouter = Router();
 
@@ -111,6 +112,31 @@ authRouter.get(
   '/config',
   asyncHandler(async (_req, res) => {
     sendData(res, { googleEnabled: isGoogleEnabled(), googleClientId: googleClientId() });
+  }),
+);
+
+// Invitation à s'inscrire (super-admin) : l'invité crée lui-même son organisation, sans paiement.
+authRouter.get(
+  '/org-invite',
+  resetLimiter,
+  asyncHandler(async (req, res) => {
+    sendData(res, await getOrgInvite(String(req.query.token ?? '')));
+  }),
+);
+const OrgInviteAcceptSchema = z.object({
+  token: z.string().min(1),
+  orgName: z.string().min(1).max(120),
+  fullName: z.string().optional(),
+  password: z.string().optional(),
+  googleCredential: z.string().optional(),
+});
+authRouter.post(
+  '/org-invite/accept',
+  resetLimiter,
+  validateBody(OrgInviteAcceptSchema),
+  asyncHandler(async (req, res) => {
+    const { token, ...body } = req.body as z.infer<typeof OrgInviteAcceptSchema>;
+    sendData(res, await acceptOrgInvite(token, body), 201);
   }),
 );
 

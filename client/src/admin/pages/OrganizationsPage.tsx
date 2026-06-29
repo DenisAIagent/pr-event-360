@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowRight, Check, Plus } from 'lucide-react';
+import { Building2, ArrowRight, Check, Plus, Copy } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
@@ -19,33 +19,39 @@ export function OrganizationsPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [creating, setCreating] = useState(false);
-  const { data, loading, error, reload } = useFetch<OrganizationSummary[]>(
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const { data, loading, error } = useFetch<OrganizationSummary[]>(
     () => apiAuthed.get<OrganizationSummary[]>('/admin/organizations'),
     [],
   );
 
-  async function createOrg(e: React.FormEvent) {
+  async function invite(e: React.FormEvent) {
     e.preventDefault();
-    if (!newOrgName.trim() || !newAdminEmail.trim()) return;
-    setCreating(true);
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    setInviteLink(null);
     try {
-      await apiAuthed.post('/admin/organizations', {
-        orgName: newOrgName.trim(),
-        adminEmail: newAdminEmail.trim(),
+      const r = await apiAuthed.post<{ inviteUrl: string }>('/admin/organizations/invite', {
+        email: inviteEmail.trim(),
       });
-      toast.success(`Organisation « ${newOrgName.trim()} » créée. Invitation envoyée à ${newAdminEmail.trim()}.`);
-      setNewOrgName('');
-      setNewAdminEmail('');
-      setShowCreate(false);
-      reload();
+      setInviteLink(r.inviteUrl);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Création impossible.');
+      toast.error(err instanceof ApiError ? err.message : 'Invitation impossible.');
     } finally {
-      setCreating(false);
+      setInviting(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('Lien copié.');
+    } catch {
+      toast.error('Copie impossible — sélectionnez le lien manuellement.');
     }
   }
 
@@ -69,29 +75,39 @@ export function OrganizationsPage() {
         title="Organisations"
         subtitle={data ? `${data.length} organisation${data.length > 1 ? 's' : ''} cliente${data.length > 1 ? 's' : ''}` : '…'}
         action={
-          <button type="button" className="btn btn-primary" onClick={() => setShowCreate((s) => !s)}>
-            <Plus size={16} /> Créer une organisation
+          <button type="button" className="btn btn-primary" onClick={() => setShowInvite((s) => !s)}>
+            <Plus size={16} /> Inviter un client
           </button>
         }
       />
 
-      {showCreate && (
-        <form onSubmit={createOrg} className="org-create card stack">
+      {showInvite && (
+        <form onSubmit={invite} className="org-create card stack">
           <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
-            Crée une organisation (active) et envoie une invitation d'admin par email — onboarding manuel,
-            sans paiement.
+            Invitez un email à créer son propre espace (accès offert, sans paiement). Vous obtenez un
+            <strong> lien à partager vous-même</strong> — la personne nomme son organisation et choisit son accès.
           </p>
           <div className="field">
-            <label>Nom de l'organisation</label>
-            <input value={newOrgName} onChange={(e) => setNewOrgName(e.target.value)} required autoFocus />
+            <label>Email de la personne à inviter</label>
+            <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required autoFocus />
           </div>
-          <div className="field">
-            <label>Email de l'administrateur</label>
-            <input type="email" value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} required />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={creating}>
-            {creating ? 'Création…' : "Créer + inviter l'admin"}
+          <button type="submit" className="btn btn-primary" disabled={inviting}>
+            {inviting ? 'Génération…' : 'Générer le lien d’invitation'}
           </button>
+
+          {inviteLink && (
+            <div className="invite-link">
+              <p className="muted" style={{ margin: '0 0 6px', fontSize: 'var(--text-sm)' }}>
+                Lien d'invitation (valable 14 jours) — copiez-le et envoyez-le à la personne :
+              </p>
+              <div className="invite-link-row">
+                <input value={inviteLink} readOnly onFocus={(e) => e.currentTarget.select()} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={copyLink}>
+                  <Copy size={14} /> Copier
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       )}
 

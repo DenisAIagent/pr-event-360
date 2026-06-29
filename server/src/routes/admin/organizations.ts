@@ -14,6 +14,7 @@ import {
 import { findUserById } from '../../db/repositories/userRepo';
 import { uniqueSlug } from '../../services/orgService';
 import { inviteCollaborator } from '../../services/invitationService';
+import { createOrgInviteLink } from '../../services/orgInviteService';
 
 export const organizationsRouter = Router();
 
@@ -27,7 +28,19 @@ organizationsRouter.get(
   }),
 );
 
-// Onboarding manuel : crée une organisation (active) + invite son admin par email.
+// Invitation à s'inscrire : on invite un email, l'invité crée lui-même son organisation
+// (accès offert, sans paiement). Renvoie un lien copiable (à partager soi-même).
+const InviteOrgSchema = z.object({ email: z.string().email() });
+organizationsRouter.post(
+  '/invite',
+  validateBody(InviteOrgSchema),
+  asyncHandler(async (req, res) => {
+    const { email } = req.body as z.infer<typeof InviteOrgSchema>;
+    sendData(res, await createOrgInviteLink(email, req.user!.sub), 201);
+  }),
+);
+
+// Onboarding manuel (alternatif) : crée directement une organisation + invite son admin.
 const CreateOrgSchema = z.object({
   orgName: z.string().min(1).max(120),
   adminEmail: z.string().email(),
