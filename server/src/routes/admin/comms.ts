@@ -9,6 +9,7 @@ import { getPublicLineup } from '../../services/lineupService';
 import { getBranding } from '../../db/repositories/eventRepo';
 import { signUpload } from '../../services/storageService';
 import { sendNewsletter } from '../../services/newsletterService';
+import { sendPressReleaseEmail } from '../../services/pressReleaseService';
 import { createAsset, deleteAsset, listAssets } from '../../db/repositories/assetRepo';
 import {
   createPressRelease,
@@ -89,6 +90,8 @@ const PressSchema = z.object({
   title: z.string().min(1),
   bodyHtml: z.string().default(''),
   status: z.enum(['draft', 'published']).default('draft'),
+  // Notifier les accrédités par email à la publication (case à cocher côté UI).
+  notifyEmail: z.boolean().default(false),
 });
 commsRouter.get(
   '/:eventId/press-releases',
@@ -103,8 +106,10 @@ commsRouter.post(
   validateBody(PressSchema),
   asyncHandler(async (req, res) => {
     await access(req);
-    const b = req.body as z.infer<typeof PressSchema>;
-    sendData(res, await createPressRelease({ eventId: req.params.eventId!, ...b }), 201);
+    const { notifyEmail, ...b } = req.body as z.infer<typeof PressSchema>;
+    const pr = await createPressRelease({ eventId: req.params.eventId!, ...b });
+    const email = b.status === 'published' && notifyEmail ? await sendPressReleaseEmail(req.params.eventId!, pr) : null;
+    sendData(res, { ...pr, email }, 201);
   }),
 );
 commsRouter.put(
@@ -113,10 +118,11 @@ commsRouter.put(
   validateBody(PressSchema),
   asyncHandler(async (req, res) => {
     await access(req);
-    const b = req.body as z.infer<typeof PressSchema>;
+    const { notifyEmail, ...b } = req.body as z.infer<typeof PressSchema>;
     const updated = await updatePressRelease(req.params.eventId!, req.params.id!, b);
     if (!updated) return sendData(res, { error: 'introuvable' }, 404);
-    sendData(res, updated);
+    const email = b.status === 'published' && notifyEmail ? await sendPressReleaseEmail(req.params.eventId!, updated) : null;
+    sendData(res, { ...updated, email });
   }),
 );
 commsRouter.delete(

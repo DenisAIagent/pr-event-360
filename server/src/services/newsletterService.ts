@@ -100,13 +100,13 @@ export async function sendNewsletter(
 }
 
 /** Remplace {{firstName}} / {{lastName}} dans le corps. Simple et sûr. */
-function personalize(html: string, j: Journalist): string {
+export function personalize(html: string, j: Journalist): string {
   return html
     .replace(/\{\{\s*firstName\s*\}\}/g, escapeHtml(j.firstName))
     .replace(/\{\{\s*lastName\s*\}\}/g, escapeHtml(j.lastName ?? ''));
 }
 
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
 }
 

@@ -4,6 +4,7 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { CopyLink } from '../components/CopyLink';
 import { InfoBubble } from '../components/InfoBubble';
+import { useToast } from '../components/Toast';
 import { FileText } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import type { PressRelease } from '../lib/types';
@@ -103,9 +104,11 @@ function PressEditor({
   onSaved: () => void;
 }) {
   const apiAuthed = useAuthedApi();
+  const toast = useToast();
   const [title, setTitle] = useState(initial?.title ?? '');
   const [bodyHtml, setBodyHtml] = useState(initial?.bodyHtml ?? '');
   const [status, setStatus] = useState<'draft' | 'published'>(initial?.status ?? 'draft');
+  const [notifyEmail, setNotifyEmail] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -113,9 +116,18 @@ function PressEditor({
     setBusy(true);
     setErr(null);
     try {
-      const payload = { title, bodyHtml, status };
-      if (initial) await apiAuthed.put(`/admin/events/${eventId}/press-releases/${initial.id}`, payload);
-      else await apiAuthed.post(`/admin/events/${eventId}/press-releases`, payload);
+      const willNotify = status === 'published' && notifyEmail;
+      const payload = { title, bodyHtml, status, notifyEmail: willNotify };
+      const res = initial
+        ? await apiAuthed.put<{ email: { sent: number; total: number } | null }>(
+            `/admin/events/${eventId}/press-releases/${initial.id}`,
+            payload,
+          )
+        : await apiAuthed.post<{ email: { sent: number; total: number } | null }>(
+            `/admin/events/${eventId}/press-releases`,
+            payload,
+          );
+      if (res.email) toast.success(`CP publié et envoyé à ${res.email.sent}/${res.email.total} accrédité(s).`);
       onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erreur');
@@ -194,6 +206,12 @@ function PressEditor({
             <option value="published">Publié</option>
           </select>
         </div>
+        {status === 'published' && (
+          <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)' }}>
+            <input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} />
+            Notifier les accrédités par email
+          </label>
+        )}
         <div className="inline-actions">
           {initial && (
             <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy}>
