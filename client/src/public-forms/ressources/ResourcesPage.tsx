@@ -143,6 +143,10 @@ const FAQ: { q: string; a: string }[] = [
     a: 'En mode « simulation » (par défaut), tout est journalisé mais rien n’est envoyé. Passez en mode « live » dans Intégrations et renseignez votre clé d’envoi pour des emails réels.',
   },
   {
+    q: 'Les destinataires ne reçoivent pas les emails — comment résoudre ?',
+    a: 'Vérifiez d’abord le mode « live » et la clé d’envoi dans Intégrations, ainsi que l’expéditeur (une adresse vérifiée chez votre fournisseur d’email). Cause la plus fréquente : le fournisseur (ex. Brevo) bloque les envois depuis une adresse IP non autorisée — l’email est accepté par l’API mais rejeté à la livraison (erreur du type « unrecognised IP address »), sans erreur visible côté plateforme. Solution : dans votre compte d’envoi → Sécurité → « IP autorisées », autorisez l’IP de votre serveur OU, mieux, désactivez la restriction (recommandé si l’IP de sortie de votre hébergeur change à chaque déploiement). Diagnostic : l’onglet « Messages » liste les envois en statut « échec », et le journal d’événements de votre fournisseur précise la raison du rejet.',
+  },
+  {
     q: 'Comment exercer le droit à l’effacement (RGPD) ?',
     a: 'Chaque ligne d’accréditation dispose d’un bouton « Supprimer (RGPD) » qui efface définitivement le journaliste et toutes ses demandes. Voir aussi notre politique de confidentialité.',
   },
