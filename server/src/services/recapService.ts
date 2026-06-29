@@ -4,7 +4,7 @@ import { findEventById, getRecap, getBranding, touchRecapSent } from '../db/repo
 import { listJournalistsCreatedSince } from '../db/repositories/journalistRepo';
 import { insertNotification } from '../db/repositories/notificationRepo';
 import { getEmailProvider } from './notifications/providers';
-import { renderBrandedEmail, textToHtml } from './notifications/email';
+import { eventSenderName, renderBrandedEmail, textToHtml } from './notifications/email';
 
 const WINDOW_MS: Record<Exclude<RecapFrequency, 'none'>, number> = {
   daily: 24 * 3_600_000,
@@ -54,7 +54,7 @@ export async function sendRecap(eventId: string): Promise<RecapResult> {
   });
   const provider = await getEmailProvider();
   for (const to of recap.recipients) {
-    const result = await provider.send({ to, subject, body, html }).catch(() => ({
+    const result = await provider.send({ to, subject, body, html, fromName: eventSenderName(event.name) }).catch(() => ({
       status: 'failed' as const,
       provider: provider.name,
       error: 'exception',

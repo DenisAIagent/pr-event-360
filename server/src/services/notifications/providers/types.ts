@@ -12,6 +12,8 @@ export interface EmailMessage {
   body: string;
   /** Corps HTML optionnel ; si absent, le fournisseur génère un HTML depuis `body`. */
   html?: string;
+  /** Nom d'expéditeur affiché (ex. « Rock In Rio Press Team ») ; sinon nom par défaut. */
+  fromName?: string;
 }
 
 export interface SmsMessage {

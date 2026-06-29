@@ -82,9 +82,15 @@ export function renderBrandedEmail({ innerHtml, branding, eventName, footer }: B
   </body></html>`;
 }
 
+/** Nom d'expéditeur pour un email lié à un événement (ex. « Rock In Rio Press Team »). */
+export function eventSenderName(eventName: string): string {
+  return `${eventName} Press Team`;
+}
+
 export interface SendBrandedEmailInput extends BrandedEmail {
   to: string;
   subject: string;
+  fromName?: string;
 }
 
 /** Construit le HTML de marque et l'envoie via le fournisseur (Brevo). */
@@ -95,5 +101,6 @@ export async function sendBrandedEmail(input: SendBrandedEmailInput) {
     subject: input.subject,
     body: stripHtml(input.innerHtml),
     html,
+    fromName: input.fromName,
   });
 }

@@ -42,10 +42,10 @@ export const DEFAULT_TEMPLATE_TEXT: Record<TriggerKey, Record<Lang, TemplateText
     es: { subject: 'Acreditación no aprobada', body: 'Hola {{firstName}}, tu solicitud de acreditación para {{event}} no fue aprobada. Gracias por tu interés.' },
   },
   request_received: {
-    fr: { subject: 'Demande bien reçue', body: 'Bonjour {{firstName}}, votre demande a bien été reçue et sera traitée par notre équipe.' },
-    en: { subject: 'Request received', body: 'Hello {{firstName}}, your request has been received and will be processed by our team.' },
-    pt: { subject: 'Pedido recebido', body: 'Olá {{firstName}}, o seu pedido foi recebido e será tratado pela nossa equipa.' },
-    es: { subject: 'Solicitud recibida', body: 'Hola {{firstName}}, tu solicitud ha sido recibida y será tramitada por nuestro equipo.' },
+    fr: { subject: '{{type}} – {{artist}} : demande bien reçue', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) a bien été reçue et sera traitée par notre équipe.' },
+    en: { subject: '{{type}} – {{artist}}: request received', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) has been received and will be processed by our team.' },
+    pt: { subject: '{{type}} – {{artist}}: pedido recebido', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) foi recebido e será tratado pela nossa equipa.' },
+    es: { subject: '{{type}} – {{artist}}: solicitud recibida', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) ha sido recibida y será tramitada por nuestro equipo.' },
   },
   request_accepted: {
     fr: { subject: '{{type}} – {{artist}} : demande acceptée', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) a été acceptée.{{slot}}{{reportage}}' },

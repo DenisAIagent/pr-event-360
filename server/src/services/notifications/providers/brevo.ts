@@ -23,7 +23,9 @@ export function createBrevoEmailProvider(config: BrevoEmailConfig): EmailProvide
             accept: 'application/json',
           },
           body: JSON.stringify({
-            sender: { email: config.senderEmail, name: config.senderName },
+            // L'adresse d'envoi reste l'expéditeur vérifié Brevo ; seul le NOM affiché varie
+            // (ex. « Rock In Rio Press Team ») pour les emails liés à un événement.
+            sender: { email: config.senderEmail, name: message.fromName ?? config.senderName },
             to: [{ email: message.to }],
             subject: message.subject,
             // HTML si fourni (newsletters), sinon corps texte (Brevo génère le HTML).

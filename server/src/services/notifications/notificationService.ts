@@ -4,7 +4,7 @@ import { findTemplate, getBranding } from '../../db/repositories/eventRepo';
 import { insertNotification } from '../../db/repositories/notificationRepo';
 import { DEFAULT_TEMPLATE_TEXT, renderTemplate, type TriggerKey } from './templates';
 import { getEmailProvider, getSmsProvider } from './providers';
-import { renderBrandedEmail, textToHtml } from './email';
+import { eventSenderName, renderBrandedEmail, textToHtml } from './email';
 
 export interface SendNotificationInput {
   eventId: string;
@@ -53,6 +53,7 @@ export async function sendNotification(input: SendNotificationInput): Promise<vo
         subject: renderedSubject ?? '',
         body: renderedBody,
         html,
+        fromName: eventSenderName(input.eventName),
       });
     } else {
       result = await (await getSmsProvider()).send({ to: toAddress, body: renderedBody });

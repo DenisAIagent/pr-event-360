@@ -15,7 +15,7 @@ import {
   markJournalistResetUsed,
 } from '../db/repositories/journalistResetRepo';
 import { getBranding, findEventById } from '../db/repositories/eventRepo';
-import { ctaButton, sendBrandedEmail } from './notifications/email';
+import { ctaButton, eventSenderName, sendBrandedEmail } from './notifications/email';
 
 const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
@@ -109,6 +109,7 @@ async function deliverResetLink(toEmail: string, eventId: string, rawToken: stri
     innerHtml,
     branding,
     eventName: event?.name ?? null,
+    fromName: event?.name ? eventSenderName(event.name) : undefined,
   });
   if (result.status === 'simulated') {
     console.info(`[journalist-reset][simulation] lien pour ${toEmail} : ${resetUrl}`);

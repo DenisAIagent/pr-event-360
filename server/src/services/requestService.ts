@@ -110,12 +110,17 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
     return created;
   });
 
-  // Accusé de réception envoyé hors transaction.
+  // Accusé de réception : précise le type + l'artiste (pas d'ambiguïté en cas de demandes multiples).
+  const recvArtist = input.artistId ? await findArtist(input.artistId, journalist.eventId) : null;
   await sendNotification({
     eventId: event.id,
     eventName: event.name,
     journalist,
     triggerKey: TRIGGERS.REQUEST_RECEIVED,
+    variables: {
+      type: REQUEST_TYPE_LABELS[journalist.lang]?.[input.type] ?? input.type,
+      artist: recvArtist?.name ?? '—',
+    },
   });
 
   return request;

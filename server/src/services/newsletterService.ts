@@ -5,7 +5,7 @@ import { findNewsletter, markNewsletterSent } from '../db/repositories/newslette
 import { insertNotification } from '../db/repositories/notificationRepo';
 import { getEventOrThrow } from './eventService';
 import { getEmailProvider } from './notifications/providers';
-import { personalize, renderBrandedEmail, stripHtml } from './notifications/email';
+import { eventSenderName, personalize, renderBrandedEmail, stripHtml } from './notifications/email';
 
 export interface SendResult {
   sent: number;
@@ -46,7 +46,7 @@ export async function sendNewsletter(
       eventName: event.name,
     });
     const result = await provider
-      .send({ to: j.email, subject: newsletter.subject, body: stripHtml(newsletter.bodyHtml), html })
+      .send({ to: j.email, subject: newsletter.subject, body: stripHtml(newsletter.bodyHtml), html, fromName: eventSenderName(event.name) })
       .catch(() => ({ status: 'failed' as const, provider: provider.name, error: 'exception' }));
 
     if (result.status === 'failed') failed += 1;
