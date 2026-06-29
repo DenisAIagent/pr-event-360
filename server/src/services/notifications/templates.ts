@@ -1,4 +1,4 @@
-import type { Lang } from '@pr-event-360/core';
+import type { Lang, RequestType } from '@pr-event-360/core';
 
 /** Déclencheurs de notification (clés stables, partagées DB ↔ code). */
 export const TRIGGERS = {
@@ -48,17 +48,25 @@ export const DEFAULT_TEMPLATE_TEXT: Record<TriggerKey, Record<Lang, TemplateText
     es: { subject: 'Solicitud recibida', body: 'Hola {{firstName}}, tu solicitud ha sido recibida y será tramitada por nuestro equipo.' },
   },
   request_accepted: {
-    fr: { subject: 'Demande acceptée', body: 'Bonjour {{firstName}}, votre demande a été acceptée. Détails : {{artist}} {{slot}}.' },
-    en: { subject: 'Request accepted', body: 'Hello {{firstName}}, your request has been accepted. Details: {{artist}} {{slot}}.' },
-    pt: { subject: 'Pedido aceite', body: 'Olá {{firstName}}, o seu pedido foi aceite. Detalhes: {{artist}} {{slot}}.' },
-    es: { subject: 'Solicitud aceptada', body: 'Hola {{firstName}}, tu solicitud ha sido aceptada. Detalles: {{artist}} {{slot}}.' },
+    fr: { subject: '{{type}} – {{artist}} : demande acceptée', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) a été acceptée.{{slot}}' },
+    en: { subject: '{{type}} – {{artist}}: request accepted', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) has been accepted.{{slot}}' },
+    pt: { subject: '{{type}} – {{artist}}: pedido aceite', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) foi aceite.{{slot}}' },
+    es: { subject: '{{type}} – {{artist}}: solicitud aceptada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) ha sido aceptada.{{slot}}' },
   },
   request_rejected: {
-    fr: { subject: 'Demande non retenue', body: 'Bonjour {{firstName}}, votre demande n’a pas pu être retenue.' },
-    en: { subject: 'Request not approved', body: 'Hello {{firstName}}, your request could not be approved.' },
-    pt: { subject: 'Pedido não aprovado', body: 'Olá {{firstName}}, o seu pedido não pôde ser aprovado.' },
-    es: { subject: 'Solicitud no aprobada', body: 'Hola {{firstName}}, tu solicitud no pudo ser aprobada.' },
+    fr: { subject: '{{type}} – {{artist}} : demande non retenue', body: 'Bonjour {{firstName}}, votre demande « {{type}} » concernant {{artist}} ({{event}}) n’a pas pu être retenue.' },
+    en: { subject: '{{type}} – {{artist}}: request not approved', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) could not be approved.' },
+    pt: { subject: '{{type}} – {{artist}}: pedido não aprovado', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) não pôde ser aprovado.' },
+    es: { subject: '{{type}} – {{artist}}: solicitud no aprobada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) no pudo ser aprobada.' },
   },
+};
+
+/** Libellés humains du type de demande, par langue (variable {{type}} des notifications). */
+export const REQUEST_TYPE_LABELS: Record<Lang, Record<RequestType, string>> = {
+  fr: { interview: 'Interview', photo_report: 'Reportage photo', video_report: 'Reportage vidéo' },
+  en: { interview: 'Interview', photo_report: 'Photo report', video_report: 'Video report' },
+  pt: { interview: 'Entrevista', photo_report: 'Reportagem fotográfica', video_report: 'Reportagem em vídeo' },
+  es: { interview: 'Entrevista', photo_report: 'Reportaje fotográfico', video_report: 'Reportaje en vídeo' },
 };
 
 /** Substitue les variables {{clé}} dans un texte ; toute clé inconnue → chaîne vide. */

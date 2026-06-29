@@ -27,7 +27,7 @@ import {
 import { getEventOrThrow } from './eventService';
 import { scoreRequest } from './scoring';
 import { sendNotification } from './notifications/notificationService';
-import { TRIGGERS } from './notifications/templates';
+import { TRIGGERS, REQUEST_TYPE_LABELS } from './notifications/templates';
 import type { EventConfig, Journalist, RequestRecord } from '../domain';
 
 // Statuts qu'un attaché peut poser manuellement (liste d'attente = système only).
@@ -170,21 +170,22 @@ export async function changeRequestStatus(
     return result;
   });
 
-  // Notifications hors transaction, aux étapes clés.
-  if (journalist && newStatus === 'acceptee') {
+  // Notifications hors transaction, aux étapes clés. On précise toujours le TYPE de demande
+  // et l'ARTISTE concerné (objet + corps) pour lever toute ambiguïté en cas de demandes multiples.
+  if (journalist && (newStatus === 'acceptee' || newStatus === 'refusee')) {
+    const artist = request.artistId ? await findArtist(request.artistId, eventId) : null;
+    const slot = request.slotId ? await findSlot(request.slotId) : null;
+    const variables = {
+      type: REQUEST_TYPE_LABELS[journalist.lang]?.[request.type] ?? request.type,
+      artist: artist?.name ?? '—',
+      slot: slot ? ` Créneau : ${slot.day} ${slot.startTime}–${slot.endTime}.` : '',
+    };
     await sendNotification({
       eventId: event.id,
       eventName: event.name,
       journalist,
-      triggerKey: TRIGGERS.REQUEST_ACCEPTED,
-      variables: { artist: '', slot: '' },
-    });
-  } else if (journalist && newStatus === 'refusee') {
-    await sendNotification({
-      eventId: event.id,
-      eventName: event.name,
-      journalist,
-      triggerKey: TRIGGERS.REQUEST_REJECTED,
+      triggerKey: newStatus === 'acceptee' ? TRIGGERS.REQUEST_ACCEPTED : TRIGGERS.REQUEST_REJECTED,
+      variables,
     });
   }
 
