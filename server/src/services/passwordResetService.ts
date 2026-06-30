@@ -68,7 +68,9 @@ async function deliverResetLink(toEmail: string, rawToken: string): Promise<void
   // Mode simulation : aucun email ne part. On expose le lien dans les logs serveur
   // pour le développement. À NE PAS faire en production (NOTIFICATIONS_MODE=live).
   if (result.status === 'simulated') {
-    console.info(`[reset-password][simulation] lien pour ${toEmail} : ${resetUrl}`);
+    // Lien complet seulement hors production (confort de dev) ; jamais de token en logs prod.
+    if (env.NODE_ENV === 'production') console.info(`[reset-password][simulation] lien généré pour ${toEmail} (token omis en production)`);
+    else console.info(`[reset-password][simulation] lien pour ${toEmail} : ${resetUrl}`);
   } else if (result.status === 'failed') {
     console.error(`[reset-password] échec d'envoi à ${toEmail} via ${result.provider}: ${result.error ?? ''}`);
   }

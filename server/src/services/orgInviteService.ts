@@ -55,6 +55,11 @@ export async function acceptOrgInvite(
 
   if (body.googleCredential) {
     const g = await verifyGoogleCredential(body.googleCredential);
+    // L'invitation est nominative : le compte Google doit correspondre à l'adresse invitée
+    // (sinon n'importe quel détenteur du lien pourrait réclamer l'organisation).
+    if (g.email.toLowerCase() !== inv.email.toLowerCase()) {
+      throw AppError.forbidden("Le compte Google ne correspond pas à l'adresse invitée.");
+    }
     email = g.email;
     fullName = g.name;
     googleId = g.googleId;

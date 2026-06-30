@@ -22,7 +22,8 @@ const env = loadEnv();
 let stripe: Stripe | null = null;
 
 export function isBillingEnabled(): boolean {
-  return Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID);
+  // Les 3 clés ensemble : sans le secret de webhook, le paiement aboutirait sans création de compte.
+  return Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID && env.STRIPE_WEBHOOK_SECRET);
 }
 export function priceLabel(): string {
   return '800 € / an';

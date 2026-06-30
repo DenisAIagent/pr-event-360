@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
-import { requireAuth } from '../../middleware/auth';
+import { requireAuth, requireRole } from '../../middleware/auth';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
@@ -17,6 +17,8 @@ export const authRouter = Router();
 // Limite de débit sur la réinitialisation de mot de passe (surface publique) :
 // anti force brute sur les jetons et anti-énumération des comptes.
 const resetLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+// Anti force brute / credential-stuffing sur le login admin (le plus ciblé).
+const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -25,6 +27,7 @@ const LoginSchema = z.object({
 
 authRouter.post(
   '/login',
+  loginLimiter,
   validateBody(LoginSchema),
   asyncHandler(async (req, res) => {
     const { email, password } = req.body as z.infer<typeof LoginSchema>;
@@ -99,6 +102,7 @@ const RegisterSchema = z.object({
 authRouter.post(
   '/register',
   requireAuth,
+  requireRole('admin'),
   validateBody(RegisterSchema),
   asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof RegisterSchema>;

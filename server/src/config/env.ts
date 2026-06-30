@@ -8,7 +8,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL est requis'),
-  JWT_SECRET: z.string().min(8, 'JWT_SECRET doit faire au moins 8 caractères'),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET doit faire au moins 32 caractères (256 bits) — openssl rand -hex 32'),
   // Clé maîtresse (32 octets base64) pour chiffrer les clés API stockées en base.
   // Optionnelle : sans elle, les clés API restent gérées via l'environnement.
   APP_ENCRYPTION_KEY: z.string().optional(),

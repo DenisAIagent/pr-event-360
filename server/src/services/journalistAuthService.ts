@@ -112,7 +112,9 @@ async function deliverResetLink(toEmail: string, eventId: string, rawToken: stri
     fromName: event?.name ? eventSenderName(event.name) : undefined,
   });
   if (result.status === 'simulated') {
-    console.info(`[journalist-reset][simulation] lien pour ${toEmail} : ${resetUrl}`);
+    // Lien complet seulement hors production (confort de dev) ; jamais de token en logs prod.
+    if (env.NODE_ENV === 'production') console.info(`[journalist-reset][simulation] lien généré pour ${toEmail} (token omis en production)`);
+    else console.info(`[journalist-reset][simulation] lien pour ${toEmail} : ${resetUrl}`);
   } else if (result.status === 'failed') {
     console.error(
       `[journalist-reset] échec d'envoi à ${toEmail} via ${result.provider}: ${result.error ?? ''}`,

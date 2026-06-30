@@ -6,6 +6,7 @@ import { AppError } from '../../http/AppError';
 import { getBranding } from '../../db/repositories/eventRepo';
 import { listAssets } from '../../db/repositories/assetRepo';
 import { findPressReleaseBySlug, listPublishedPressReleases } from '../../db/repositories/pressReleaseRepo';
+import { sanitizeRichHtml } from '../../lib/sanitizeRichHtml';
 
 export const publicNewsroomRouter = Router();
 
@@ -20,7 +21,8 @@ publicNewsroomRouter.get(
     const branding = await getBranding(eventId);
     sendData(res, {
       event: { id: event.id, name: event.name, branding },
-      pressRelease: pr,
+      // Défense en profondeur : assainit aussi à la lecture (couvre les CP créés avant le durcissement).
+      pressRelease: { ...pr, bodyHtml: sanitizeRichHtml(pr.bodyHtml) },
     });
   }),
 );
@@ -49,7 +51,7 @@ publicNewsroomRouter.get(
         registrationClosed: isRegistrationClosed(event, Date.now()),
       },
       assets,
-      pressReleases,
+      pressReleases: pressReleases.map((pr) => ({ ...pr, bodyHtml: sanitizeRichHtml(pr.bodyHtml) })),
     });
   }),
 );

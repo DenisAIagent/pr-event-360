@@ -18,7 +18,10 @@ export function signToken(claims: AuthClaims): string {
 }
 
 export function verifyToken(token: string): AuthClaims {
-  return jwt.verify(token, env.JWT_SECRET) as AuthClaims;
+  // Algorithme épinglé (anti alg-confusion) ; rejette les jetons de challenge (typ) comme session.
+  const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as AuthClaims & { typ?: string };
+  if (payload.typ) throw new Error('Jeton de type invalide pour une session');
+  return payload;
 }
 
 // ── Challenge MFA : jeton court (5 min) émis après le mot de passe, échangé contre
@@ -31,7 +34,7 @@ export function signMfaChallenge(userId: string): string {
 }
 
 export function verifyMfaChallenge(token: string): string {
-  const payload = jwt.verify(token, env.JWT_SECRET) as { sub: string; typ?: string };
+  const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as { sub: string; typ?: string };
   if (payload.typ !== 'mfa') throw new Error('Jeton de challenge MFA invalide');
   return payload.sub;
 }
@@ -52,7 +55,7 @@ export function signGoogleChallenge(claims: GoogleChallengeClaims): string {
 }
 
 export function verifyGoogleChallenge(token: string): GoogleChallengeClaims {
-  const payload = jwt.verify(token, env.JWT_SECRET) as GoogleChallengeClaims & { typ?: string };
+  const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as GoogleChallengeClaims & { typ?: string };
   if (payload.typ !== 'google') throw new Error('Jeton de challenge Google invalide');
   return { googleId: payload.googleId, email: payload.email, name: payload.name };
 }

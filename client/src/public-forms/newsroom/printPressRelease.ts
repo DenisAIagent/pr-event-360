@@ -30,6 +30,7 @@ export function printPressRelease(opts: {
     : '';
 
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="script-src 'none'; object-src 'none'; base-uri 'none'" />
   <title>${escapeHtml(opts.title)} — ${escapeHtml(opts.eventName)}</title>
   <style>
     * { box-sizing: border-box; }

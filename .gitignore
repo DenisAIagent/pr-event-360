@@ -28,3 +28,6 @@ coverage/
 
 # Docker volume data (si bind-mount local)
 pgdata/
+
+# Réglages Claude Code locaux (liste d'autorisation personnelle)
+.claude/settings.local.json

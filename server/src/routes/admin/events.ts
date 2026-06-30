@@ -502,6 +502,7 @@ eventsRouter.post(
 // Effacement RGPD (art. 17) — suppression définitive d'un journaliste et de ses demandes.
 eventsRouter.delete(
   '/:eventId/accreditations/:journalistId',
+  requireEventEditor,
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     await deleteJournalist(req.params.eventId!, req.params.journalistId!);

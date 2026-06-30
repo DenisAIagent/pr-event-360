@@ -1,6 +1,7 @@
 import { pool } from '../pool';
 import type { Queryable } from '../types';
 import type { Newsletter } from '../../domain';
+import { sanitizeRichHtml } from '../../lib/sanitizeRichHtml';
 
 interface Row {
   id: string;
@@ -52,7 +53,7 @@ export async function createNewsletter(
 ): Promise<Newsletter> {
   const { rows } = await db.query<Row>(
     `INSERT INTO newsletters (event_id, subject, body_html) VALUES ($1, $2, $3) RETURNING ${COLS}`,
-    [input.eventId, input.subject, input.bodyHtml],
+    [input.eventId, input.subject, sanitizeRichHtml(input.bodyHtml)],
   );
   return map(rows[0]!);
 }
@@ -67,7 +68,7 @@ export async function updateNewsletter(
     `UPDATE newsletters SET subject = $3, body_html = $4
      WHERE event_id = $1 AND id = $2 AND status = 'draft'
      RETURNING ${COLS}`,
-    [eventId, id, input.subject, input.bodyHtml],
+    [eventId, id, input.subject, sanitizeRichHtml(input.bodyHtml)],
   );
   return rows[0] ? map(rows[0]) : null;
 }

@@ -58,7 +58,7 @@ const RequestSchema = z
     artistId: z.string().uuid().nullish(),
     slotId: z.string().uuid().nullish(),
     stageId: z.string().uuid().nullish(),
-    message: z.string().nullish(),
+    message: z.string().max(2000).nullish(),
   })
   .refine((d) => !!d.artistId, {
     message: 'Un artiste est requis',

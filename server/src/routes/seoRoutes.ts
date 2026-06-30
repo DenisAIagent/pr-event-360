@@ -47,6 +47,7 @@ seoRouter.get(
     const base = `${proto}://${req.get('host')}`;
     res
       .type('text/plain')
+      .setHeader('Cache-Control', 'public, max-age=3600')
       .send(`User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`);
   },
 );
@@ -78,6 +79,7 @@ seoRouter.get(
       }
     }
 
-    res.type('application/xml').send(renderSitemap(urls));
+    // Cache 5 min : la requête joint press_releases × events à chaque appel (anti-DoS léger).
+    res.type('application/xml').setHeader('Cache-Control', 'public, max-age=300').send(renderSitemap(urls));
   }),
 );

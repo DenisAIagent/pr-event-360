@@ -2,6 +2,7 @@ import { pool } from '../pool';
 import type { Queryable } from '../types';
 import type { PressRelease } from '../../domain';
 import { uniqueSlug } from '../../lib/slug';
+import { sanitizeRichHtml } from '../../lib/sanitizeRichHtml';
 
 interface Row {
   id: string;
@@ -105,7 +106,7 @@ export async function createPressRelease(input: PressInput, db: Queryable = pool
     [
       input.eventId,
       input.title,
-      input.bodyHtml,
+      sanitizeRichHtml(input.bodyHtml),
       slug,
       input.seoDescription ?? null,
       input.coverImageUrl ?? null,
@@ -141,7 +142,7 @@ export async function updatePressRelease(
       eventId,
       id,
       input.title,
-      input.bodyHtml,
+      sanitizeRichHtml(input.bodyHtml),
       slug,
       input.seoDescription ?? null,
       input.coverImageUrl ?? null,

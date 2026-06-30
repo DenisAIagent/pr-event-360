@@ -54,12 +54,16 @@ commsRouter.post(
   }),
 );
 
+// z.string().url() accepte javascript:/data: — on exige explicitement https:// (anti-XSS sur les attributs src/href).
+const httpsUrl = (max = 2000) =>
+  z.string().url().max(max).regex(/^https:\/\//i, 'URL https:// requise');
+
 const AssetSchema = z.object({
   kind: KIND,
   title: z.string().min(1),
-  description: z.string().nullish(),
-  url: z.string().url(),
-  thumbnailUrl: z.string().url().nullish(),
+  description: z.string().max(2000).nullish(),
+  url: httpsUrl(),
+  thumbnailUrl: httpsUrl().nullish(),
   mime: z.string().nullish(),
   bytes: z.number().int().nonnegative().nullish(),
   source: z.enum(['upload', 'link']).optional(),
@@ -93,7 +97,7 @@ const PressSchema = z.object({
   // SEO : slug d'URL (optionnel, normalisé serveur), description et image de couverture (Open Graph).
   slug: z.string().max(120).nullish(),
   seoDescription: z.string().max(500).nullish(),
-  coverImageUrl: z.string().url().max(2000).nullish(),
+  coverImageUrl: httpsUrl().nullish(),
   // Notifier les accrédités par email à la publication (case à cocher côté UI).
   notifyEmail: z.boolean().default(false),
 });

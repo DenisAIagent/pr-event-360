@@ -93,8 +93,10 @@ export function createApp(): Express {
           scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style'],
           fontSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'", 'https:'],
+          imgSrc: ["'self'", 'data:', 'https:'], // les RP collent des URLs d'images externes
+          // Restreint aux destinations réellement appelées par le navigateur (anti-exfiltration
+          // en cas de XSS) : notre API ('self'), l'upload Cloudinary, et Google Identity.
+          connectSrc: ["'self'", 'https://api.cloudinary.com', 'https://accounts.google.com'],
           frameSrc: ["'self'", 'https://accounts.google.com/gsi/'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
@@ -121,9 +123,10 @@ export function createApp(): Express {
     }),
   );
 
-  // Limite relevée : logo + image de fond encodés en data URL (base64) dépassent
-  // largement le défaut de 100 ko.
-  app.use(express.json({ limit: '6mb' }));
+  // Budget JSON par famille de routes : 6 Mo uniquement pour l'admin (logo + image de fond en
+  // data URL base64) ; les surfaces publiques sont plafonnées à 100 ko (anti-abus mémoire).
+  app.use('/api/admin', express.json({ limit: '6mb' }));
+  app.use(express.json({ limit: '100kb' }));
 
   // Limite de débit sur les surfaces publiques sensibles (anti-abus).
   const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true });

@@ -35,14 +35,14 @@ publicAccreditationRouter.get(
 
 // Minimum requis par le PRD : prénom, email, consentement.
 const AccreditationSchema = z.object({
-  firstName: z.string().min(1, 'Prénom requis'),
-  lastName: z.string().nullish(),
-  email: z.string().email('Email invalide'),
-  phone: z.string().nullish(),
-  media: z.string().nullish(),
+  firstName: z.string().min(1, 'Prénom requis').max(120),
+  lastName: z.string().max(120).nullish(),
+  email: z.string().email('Email invalide').max(254),
+  phone: z.string().max(40).nullish(),
+  media: z.string().max(200).nullish(),
   mediaTypeId: z.string().uuid().nullish(),
-  audience: z.string().nullish(),
-  prevArticle: z.string().nullish(),
+  audience: z.string().max(500).nullish(),
+  prevArticle: z.string().max(2000).nullish(),
   lang: LANG.default('fr'),
   accreditationType: z.enum(['presse', 'photo', 'video']).nullish(),
   commitPublish: z.boolean().default(false),
