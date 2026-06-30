@@ -26,6 +26,8 @@ import { publicNewsroomRouter } from './routes/public/newsroom';
 import { publicAccreditationRouter } from './routes/public/accreditation';
 import { publicSpaceRouter } from './routes/public/space';
 import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
+import { publicReviewsRouter } from './routes/public/reviews';
+import { reviewRouter, reviewAdminRouter } from './routes/admin/reviews';
 import { seoRouter } from './routes/seoRoutes';
 
 /**
@@ -146,12 +148,15 @@ export function createApp(): Express {
   app.use('/api/admin/billing', billingRouter);
   app.use('/api/admin/settings', settingsRouter);
   app.use('/api/admin/search', searchRouter);
+  app.use('/api/admin/review', reviewRouter); // avis de l'utilisateur courant
+  app.use('/api/admin/reviews', reviewAdminRouter); // modération (super-admin)
 
   // Surfaces publiques (journalistes).
   app.use('/api/public', publicLimiter, publicAccreditationRouter);
   app.use('/api/public/space', publicLimiter, publicSpaceRouter);
   app.use('/api/public/newsroom', publicLimiter, publicNewsroomRouter);
   app.use('/api/public/journalist', journalistAuthLimiter, publicJournalistAuthRouter);
+  app.use('/api/public/reviews', publicLimiter, publicReviewsRouter);
 
   // En production, le serveur sert aussi le client compilé (même origine que l'API,
   // ce qui permet au front d'appeler /api en relatif). Les routes /api non trouvées

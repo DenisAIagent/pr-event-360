@@ -16,6 +16,8 @@ import {
   Plug,
   Building2,
   Compass,
+  Star,
+  ShieldCheck,
   LogOut,
   ChevronDown,
   type LucideIcon,
@@ -186,11 +188,13 @@ export function Sidebar() {
         )}
 
         <NavItem to="/admin" label="Événements" icon={LayoutGrid} end />
+        <NavItem to="/admin/avis" label="Votre avis" icon={Star} />
         {isAdmin && <NavItem to="/admin/team" label="Équipe" icon={Users} />}
         {user?.isPlatformAdmin && (
           <>
             <NavItem to="/admin/organizations" label="Organisations" icon={Building2} />
             <NavItem to="/admin/integrations" label="Intégrations" icon={Plug} />
+            <NavItem to="/admin/avis-moderation" label="Modération avis" icon={ShieldCheck} />
           </>
         )}
       </nav>

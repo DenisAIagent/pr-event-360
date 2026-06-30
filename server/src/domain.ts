@@ -189,6 +189,23 @@ export interface EventAsset {
   createdAt: string;
 }
 
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface AppReview {
+  id: string;
+  userId: string | null;
+  organizationId: string | null;
+  authorName: string;
+  authorRole: string | null;
+  authorOrg: string | null;
+  rating: number;
+  quote: string;
+  consentPublic: boolean;
+  status: ReviewStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
 export interface PressRelease {
   id: string;
   eventId: string;

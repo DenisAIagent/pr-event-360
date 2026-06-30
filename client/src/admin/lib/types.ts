@@ -1,6 +1,26 @@
 export type Lang = 'fr' | 'en' | 'pt' | 'es';
 export type RequestType = 'interview' | 'photo_report' | 'video_report';
 export type UserRole = 'admin' | 'attache' | 'assistant';
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface AppReview {
+  id: string;
+  userId: string | null;
+  authorName: string;
+  authorRole: string | null;
+  authorOrg: string | null;
+  rating: number;
+  quote: string;
+  consentPublic: boolean;
+  status: ReviewStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+export interface MyReviewResponse {
+  review: AppReview | null;
+  suggested: { authorName: string; authorOrg: string };
+}
 
 export interface TeamMember {
   id: string;

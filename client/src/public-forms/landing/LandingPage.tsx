@@ -13,11 +13,22 @@ import {
   UserCheck,
   BarChart3,
   Users2,
+  Star,
   type LucideIcon,
 } from 'lucide-react';
+import { api } from '../../lib/api';
 import './landing.css';
 
 const DEMO_MAILTO = 'mailto:tech@band.stream?subject=Démo%20PR%20Event%20360';
+
+interface PublicReview {
+  id: string;
+  authorName: string;
+  authorRole: string | null;
+  authorOrg: string | null;
+  rating: number;
+  quote: string;
+}
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -139,6 +150,11 @@ function IconTile({ icon: Ic, size = 21 }: { icon: LucideIcon; size?: number }) 
 
 /** Page marketing publique (racine du site). Navy/bleu, Inter/Manrope. */
 export function LandingPage() {
+  const [reviews, setReviews] = useState<PublicReview[]>([]);
+  useEffect(() => {
+    api.get<PublicReview[]>('/public/reviews').then(setReviews).catch(() => setReviews([]));
+  }, []);
+
   return (
     <div className="lp">
       <header className="lp-header">
@@ -291,40 +307,57 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section id="testimonial" style={{ background: 'var(--color-surface, var(--color-bg))', borderTop: '1px solid var(--color-line)' }}>
-        <div className="lp-wrap" style={{ padding: '72px 0' }}>
-          <Reveal>
-            <figure
+      {reviews.length > 0 && (
+        <section id="testimonial" style={{ background: 'var(--color-surface, var(--color-bg))', borderTop: '1px solid var(--color-line)' }}>
+          <div className="lp-wrap" style={{ padding: '72px 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
+              <span className="eyebrow">Ils l'ont essayé</span>
+            </div>
+            <div
               style={{
-                maxWidth: 760,
+                display: 'grid',
+                gap: 'var(--space-4)',
+                gridTemplateColumns: reviews.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                maxWidth: reviews.length === 1 ? 760 : 1080,
                 margin: '0 auto',
-                textAlign: 'center',
                 padding: '0 var(--space-4)',
               }}
             >
-              <span className="eyebrow">Ils l'ont essayé</span>
-              <blockquote
-                style={{
-                  fontSize: 'clamp(1.4rem, 1rem + 1.6vw, 2rem)',
-                  fontWeight: 400,
-                  lineHeight: 1.4,
-                  margin: 'var(--space-4) 0 var(--space-4)',
-                  color: 'var(--color-ink)',
-                }}
-              >
-                <span style={{ color: 'var(--color-accent, #1598d3)' }}>«&nbsp;</span>
-                Si j'avais eu ça pour le Motocultor, le gain de temps et de tableaux Excel évités&nbsp;!
-                C'est un gain de temps fou.
-                <span style={{ color: 'var(--color-accent, #1598d3)' }}>&nbsp;»</span>
-              </blockquote>
-              <figcaption style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
-                <strong style={{ color: 'var(--color-ink)' }}>Yann Landry</strong> · ex-attaché de presse,
-                Motocultor Festival
-              </figcaption>
-            </figure>
-          </Reveal>
-        </div>
-      </section>
+              {reviews.map((r, i) => (
+                <Reveal key={r.id} delay={i * 80}>
+                  <figure
+                    className="lp-feature"
+                    style={{ margin: 0, textAlign: reviews.length === 1 ? 'center' : 'left', height: '100%' }}
+                  >
+                    <div style={{ display: 'inline-flex', gap: 2, marginBottom: 'var(--space-3)' }} aria-label={`${r.rating}/5`}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={16} fill={n <= r.rating ? '#f5b50a' : 'none'} color={n <= r.rating ? '#f5b50a' : '#c3c7cd'} />
+                      ))}
+                    </div>
+                    <blockquote
+                      style={{
+                        fontSize: reviews.length === 1 ? 'clamp(1.3rem, 1rem + 1.4vw, 1.9rem)' : '1.05rem',
+                        fontWeight: 400,
+                        lineHeight: 1.45,
+                        margin: '0 0 var(--space-3)',
+                        color: 'var(--color-ink)',
+                      }}
+                    >
+                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>«&nbsp;</span>
+                      {r.quote}
+                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>&nbsp;»</span>
+                    </blockquote>
+                    <figcaption style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
+                      <strong style={{ color: 'var(--color-ink)' }}>{r.authorName}</strong>
+                      {(r.authorRole || r.authorOrg) && ` · ${[r.authorRole, r.authorOrg].filter(Boolean).join(', ')}`}
+                    </figcaption>
+                  </figure>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="pricing" style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-line)' }}>
         <div className="lp-wrap" style={{ padding: '80px 0' }}>
