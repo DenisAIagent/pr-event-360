@@ -18,12 +18,20 @@ export function brandingStyle(branding: EventBranding | undefined): CSSPropertie
     style['--color-bg'] = branding.bgColor;
   }
   if (branding?.bgImageUrl) {
-    // L'image se compose au-dessus de la couleur de fond (qui sert de repli).
-    style.backgroundImage = `url("${branding.bgImageUrl}")`;
+    // Voile sombre semi-opaque AU-DESSUS de la photo : garantit la lisibilité du texte
+    // d'en-tête posé sur l'image (contraste WCAG), quelle que soit la photo.
+    style.backgroundImage = `linear-gradient(rgba(13,15,23,0.62), rgba(13,15,23,0.62)), url("${branding.bgImageUrl}")`;
     style.backgroundSize = 'cover';
     style.backgroundPosition = 'center';
     style.backgroundRepeat = 'no-repeat';
     style.backgroundAttachment = 'fixed';
+    // Sur photo voilée (sombre), le texte de page passe en clair par défaut si l'événement
+    // n'a pas fixé sa propre couleur de texte.
+    if (!branding.textColor) {
+      style['--color-ink'] = '#f4f5f7';
+      style['--color-ink-soft'] = 'rgba(244,245,247,0.82)';
+      style['--color-ink-faint'] = 'rgba(244,245,247,0.6)';
+    }
   }
   if (branding?.textColor) {
     // Texte de page (titre, intro). Les nuances « soft / faint » sont dérivées

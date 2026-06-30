@@ -11,17 +11,29 @@ export function MessagesTab() {
     () => apiAuthed.get<NotificationRow[]>(`/admin/events/${eventId}/messages`),
     [eventId],
   );
+  const { data: notif } = useFetch<{ mode: 'live' | 'simulation' }>(
+    () => apiAuthed.get<{ mode: 'live' | 'simulation' }>('/admin/notif-mode'),
+    [],
+  );
+  const isLive = notif?.mode === 'live';
 
   if (loading) return <p className="muted">Chargement…</p>;
   if (error) return <div className="banner banner-error">{error}</div>;
 
   return (
     <div className="stack">
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
-        Mode simulation : ces messages sont journalisés et affichés ici, jamais envoyés. Brevo/Twilio seront branchés
-        ultérieurement sans changer ce flux.
-      </p>
-      {data?.length === 0 && <p className="muted">Aucun message simulé pour l'instant.</p>}
+      {isLive ? (
+        <div className="banner banner-success" style={{ fontSize: 'var(--text-sm)' }}>
+          ✅ <strong>Envoi réel (live)</strong> : ces messages sont <strong>réellement envoyés</strong> aux
+          destinataires (via Brevo/Twilio) et journalisés ici.
+        </div>
+      ) : (
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
+          Mode simulation : ces messages sont journalisés et affichés ici, <strong>jamais envoyés</strong>.
+          Configurez le mode « live » dans Intégrations pour activer l'envoi réel.
+        </p>
+      )}
+      {data?.length === 0 && <p className="muted">Aucun message {isLive ? '' : 'simulé '}pour l'instant.</p>}
       {data?.map((m) => (
         <article key={m.id} className="card" style={{ padding: 'var(--space-3)' }}>
           <div className="section-head" style={{ marginBottom: 'var(--space-1)' }}>

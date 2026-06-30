@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
 import { SkeletonCards } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import { ApiError } from '../../lib/api';
 import type { OrganizationSummary } from '../lib/types';
 
@@ -18,6 +19,7 @@ export function OrganizationsPage() {
   const apiAuthed = useAuthedApi();
   const navigate = useNavigate();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -32,9 +34,12 @@ export function OrganizationsPage() {
 
   async function removeOrg(org: OrganizationSummary) {
     if (
-      !window.confirm(
-        `Supprimer DÉFINITIVEMENT l'organisation « ${org.name} » ?\n\n${org.eventCount} événement(s), ${org.userCount} compte(s) et TOUTES leurs données (journalistes, demandes, médias…) seront effacés. Action irréversible.`,
-      )
+      !(await confirm({
+        title: 'Supprimer l’organisation',
+        message: `Supprimer DÉFINITIVEMENT l'organisation « ${org.name} » ? ${org.eventCount} événement(s), ${org.userCount} compte(s) et TOUTES leurs données (journalistes, demandes, médias…) seront effacés. Action irréversible.`,
+        confirmLabel: 'Tout supprimer',
+        danger: true,
+      }))
     )
       return;
     setBusyId(org.id);
@@ -53,7 +58,14 @@ export function OrganizationsPage() {
     e.preventDefault();
     const email = deleteEmail.trim();
     if (!email) return;
-    if (!window.confirm(`Supprimer le compte « ${email} » ?\n\nSi c'est le seul compte de son organisation, toute l'organisation et ses données seront supprimées. Irréversible.`))
+    if (
+      !(await confirm({
+        title: 'Supprimer le compte',
+        message: `Supprimer le compte « ${email} » ? Si c'est le seul compte de son organisation, toute l'organisation et ses données seront supprimées. Irréversible.`,
+        confirmLabel: 'Supprimer',
+        danger: true,
+      }))
+    )
       return;
     try {
       const r = await apiAuthed.post<{ deletedOrg: boolean }>('/admin/organizations/delete-account', { email });

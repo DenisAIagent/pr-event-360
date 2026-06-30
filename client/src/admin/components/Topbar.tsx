@@ -17,7 +17,10 @@ const PAGE_LABEL: Record<string, string> = {
   preview: 'Aperçu',
   messages: 'Messages',
   team: 'Équipe',
+  organizations: 'Organisations',
   integrations: 'Intégrations',
+  avis: 'Votre avis',
+  'avis-moderation': 'Modération des avis',
   security: 'Sécurité du compte',
   new: 'Nouvel événement',
 };

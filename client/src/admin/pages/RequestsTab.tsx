@@ -126,7 +126,7 @@ export function RequestsTab() {
               </>
             }
           />
-          <Kpi num={dash.data.journalists} label="Journalistes" icon={Users} variant="k-green" />
+          <Kpi num={dash.data.journalists} label="Accréditations" icon={Users} variant="k-green" />
         </div>
       )}
 

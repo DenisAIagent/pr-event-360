@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
 import { SkeletonCards } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 // shell fourni par AdminShell — la page ne rend que son contenu
 import type { EventSummary } from '../lib/types';
 
@@ -62,15 +63,19 @@ export function EventsListPage() {
 function EventCard({ ev, isAdmin, onDeleted }: { ev: EventSummary; isAdmin: boolean; onDeleted: () => void }) {
   const apiAuthed = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   async function remove(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (
-      !window.confirm(
-        `Supprimer définitivement « ${ev.name} » ?\n\nTous les journalistes, demandes, communications, médias et réglages de cet événement seront effacés. Cette action est irréversible.`,
-      )
+      !(await confirm({
+        title: 'Supprimer l’événement',
+        message: `Supprimer définitivement « ${ev.name} » ? Tous les journalistes, demandes, communications, médias et réglages de cet événement seront effacés. Cette action est irréversible.`,
+        confirmLabel: 'Tout supprimer',
+        danger: true,
+      }))
     )
       return;
     setBusy(true);

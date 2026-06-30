@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import { InfoBubble } from '../components/InfoBubble';
 import type { Newsletter, Recipient } from '../lib/types';
 
@@ -20,6 +21,7 @@ export function CommunicationsTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const list = useFetch<Newsletter[]>(
     () => apiAuthed.get<Newsletter[]>(`/admin/events/${eventId}/newsletters`),
     [eventId],
@@ -27,7 +29,7 @@ export function CommunicationsTab() {
   const [draft, setDraft] = useState<Newsletter | 'new' | null>(null);
 
   async function removeDraft(n: Newsletter) {
-    if (!window.confirm(`Supprimer le brouillon « ${n.subject || 'Sans objet'} » ?\n\nCette action est irréversible.`)) {
+    if (!(await confirm({ message: `Supprimer le brouillon « ${n.subject || 'Sans objet'} » ? Cette action est irréversible.`, confirmLabel: 'Supprimer', danger: true }))) {
       return;
     }
     try {

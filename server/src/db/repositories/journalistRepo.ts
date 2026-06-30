@@ -117,6 +117,19 @@ export async function findJournalistByToken(
  * Sert au login email + mot de passe (compte par événement). Insensible à la casse ;
  * en cas de doublons d'accréditation, on prend la plus récente.
  */
+/** Une demande existe-t-elle déjà pour cet email sur cet événement (tout statut) ? */
+export async function existsJournalistByEventEmail(
+  eventId: string,
+  email: string,
+  db: Queryable = pool,
+): Promise<boolean> {
+  const { rows } = await db.query<{ one: number }>(
+    `SELECT 1 AS one FROM journalists WHERE event_id = $1 AND lower(email) = lower($2) LIMIT 1`,
+    [eventId, email],
+  );
+  return rows.length > 0;
+}
+
 export async function findAcceptedJournalistByEmail(
   eventId: string,
   email: string,

@@ -29,6 +29,8 @@ import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
 import { publicReviewsRouter } from './routes/public/reviews';
 import { reviewRouter, reviewAdminRouter } from './routes/admin/reviews';
 import { seoRouter } from './routes/seoRoutes';
+import { requireAuth } from './middleware/auth';
+import { getNotifSettings } from './services/settingsService';
 
 /**
  * Construit le HTML de la SPA pour une requête publique :
@@ -150,6 +152,15 @@ export function createApp(): Express {
   app.use('/api/admin/search', searchRouter);
   app.use('/api/admin/review', reviewRouter); // avis de l'utilisateur courant
   app.use('/api/admin/reviews', reviewAdminRouter); // modération (super-admin)
+  // Mode d'envoi réel des notifications (live/simulation), lisible par tout admin authentifié
+  // (la page Messages affiche la bannière en conséquence — source de vérité unique).
+  app.get(
+    '/api/admin/notif-mode',
+    requireAuth,
+    asyncHandler(async (_req, res) => {
+      sendData(res, { mode: (await getNotifSettings()).mode });
+    }),
+  );
 
   // Surfaces publiques (journalistes).
   app.use('/api/public', publicLimiter, publicAccreditationRouter);

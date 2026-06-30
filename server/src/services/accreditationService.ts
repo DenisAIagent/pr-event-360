@@ -6,6 +6,7 @@ import { generateJournalistToken } from '../lib/token';
 import { getEventOrThrow, isRegistrationClosed } from './eventService';
 import { findMediaType } from '../db/repositories/eventRepo';
 import {
+  existsJournalistByEventEmail,
   findJournalistById,
   insertJournalist,
   listJournalistsByEvent,
@@ -48,6 +49,10 @@ export async function submitAccreditation(input: SubmitAccreditationInput): Prom
   if (input.mediaTypeId) {
     const mt = await findMediaType(input.mediaTypeId, input.eventId);
     if (!mt) throw AppError.badRequest('Type de média inconnu pour cet événement');
+  }
+  // Anti-doublon : une seule demande par email et par événement.
+  if (await existsJournalistByEventEmail(input.eventId, input.email)) {
+    throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.');
   }
 
   const journalist = await withTransaction((db) => insertJournalist({ ...input }, db));

@@ -11,6 +11,7 @@ import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import { fireConfetti } from '../lib/confetti';
 
 const ACC_BADGE: Record<Accreditation['accStatus'], string> = {
@@ -43,6 +44,7 @@ export function AccreditationsTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const { data, loading, error, reload } = useFetch<Accreditation[]>(
     () => apiAuthed.get<Accreditation[]>(`/admin/events/${eventId}/accreditations`),
     [eventId],
@@ -52,7 +54,14 @@ export function AccreditationsTab() {
   const [statusF, setStatusF] = useState<'all' | AccStatus>('all');
 
   async function process(journalistId: string, action: 'accept' | 'reject') {
-    if (action === 'reject' && !window.confirm('Refuser cette accréditation ? Le journaliste en sera informé.')) {
+    if (
+      action === 'reject' &&
+      !(await confirm({
+        message: 'Refuser cette accréditation ? Le journaliste en sera informé.',
+        confirmLabel: 'Refuser',
+        danger: true,
+      }))
+    ) {
       return;
     }
     try {
@@ -80,9 +89,12 @@ export function AccreditationsTab() {
   // Effacement RGPD (art. 17) : suppression définitive du journaliste et de ses demandes.
   async function erase(journalistId: string, name: string) {
     if (
-      !window.confirm(
-        `Supprimer définitivement « ${name} » et toutes ses demandes ? Action irréversible (droit à l'effacement, RGPD).`,
-      )
+      !(await confirm({
+        title: 'Effacement RGPD',
+        message: `Supprimer définitivement « ${name} » et toutes ses demandes ? Action irréversible (droit à l'effacement, RGPD).`,
+        confirmLabel: 'Supprimer définitivement',
+        danger: true,
+      }))
     ) {
       return;
     }

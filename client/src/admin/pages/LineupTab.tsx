@@ -4,6 +4,7 @@ import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import type { ArtistWithSlots, EventSettings, Lineup, Stage } from '../lib/types';
 import {
   ConfigForm,
@@ -423,6 +424,7 @@ export function LineupTab() {
 function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string; onChanged: () => void }) {
   const api = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(stage.name);
   const [busy, setBusy] = useState(false);
@@ -443,7 +445,7 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
   }
 
   async function remove() {
-    if (!window.confirm(`Supprimer la scène « ${stage.name} » ? Les artistes rattachés seront dé-rattachés.`)) return;
+    if (!(await confirm({ message: `Supprimer la scène « ${stage.name} » ? Les artistes rattachés seront dé-rattachés.`, confirmLabel: 'Supprimer', danger: true }))) return;
     setBusy(true);
     try {
       await api.delete(`/admin/events/${eventId}/stages/${stage.id}`);
@@ -497,6 +499,7 @@ function ArtistRow({
 }) {
   const api = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(artist.name);
   const [stageId, setStageId] = useState(artist.stageId ?? '');
@@ -538,7 +541,7 @@ function ArtistRow({
   }
 
   async function remove() {
-    if (!window.confirm(`Supprimer « ${artist.name} » et ses créneaux ?`)) return;
+    if (!(await confirm({ message: `Supprimer « ${artist.name} » et ses créneaux ?`, confirmLabel: 'Supprimer', danger: true }))) return;
     setBusy(true);
     try {
       await api.delete(`/admin/events/${eventId}/artists/${artist.id}`);

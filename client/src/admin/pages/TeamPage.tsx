@@ -3,6 +3,7 @@ import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import type { EventSummary, Invitation, Team, TeamMember, UserRole } from '../lib/types';
 
 const ROLES: { value: UserRole; label: string }[] = [
@@ -75,6 +76,7 @@ export function TeamPage() {
 function InvitationRow({ inv, onChanged }: { inv: Invitation; onChanged: () => void }) {
   const api = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
 
   async function resend() {
@@ -91,7 +93,7 @@ function InvitationRow({ inv, onChanged }: { inv: Invitation; onChanged: () => v
   }
 
   async function cancel() {
-    if (!window.confirm(`Annuler l'invitation de ${inv.email} ?`)) return;
+    if (!(await confirm({ message: `Annuler l'invitation de ${inv.email} ?`, confirmLabel: 'Annuler l’invitation', danger: true }))) return;
     setBusy(true);
     try {
       await api.delete(`/admin/team/invitations/${inv.id}`);
@@ -238,6 +240,7 @@ function MemberRow({
   onChanged: () => void;
 }) {
   const apiAuthed = useAuthedApi();
+  const confirm = useConfirm();
   const [editing, setEditing] = useState(false);
   const [assigned, setAssigned] = useState<string[]>(member.eventIds);
   const [busy, setBusy] = useState(false);
@@ -298,11 +301,14 @@ function MemberRow({
             disabled={busy || isSelf}
             style={{ color: 'var(--color-danger)' }}
             title={isSelf ? 'Impossible de supprimer votre propre compte' : 'Supprimer le compte'}
-            onClick={() => {
+            onClick={async () => {
               if (
-                !window.confirm(
-                  `Supprimer définitivement le compte de ${member.fullName} (${member.email}) ?\n\nSes événements (s'il en possède) vous seront réattribués. Cette action est irréversible.`,
-                )
+                !(await confirm({
+                  title: 'Supprimer le compte',
+                  message: `Supprimer définitivement le compte de ${member.fullName} (${member.email}) ? Ses événements (s'il en possède) vous seront réattribués. Cette action est irréversible.`,
+                  confirmLabel: 'Supprimer',
+                  danger: true,
+                }))
               )
                 return;
               call(() => apiAuthed.delete(`/admin/team/${member.id}`));
