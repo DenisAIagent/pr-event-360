@@ -30,7 +30,7 @@ export function LegalNoticePage() {
             <strong>16466485</strong> (D-U-N-S&nbsp;497089049), dont le siège social est situé{' '}
             <strong>Sepapaja tn&nbsp;6, Lasnamäe, 15551 Tallinn, Harju, Estonie</strong>.
             <br />
-            Numéro de TVA intracommunautaire&nbsp;: <strong>[à compléter]</strong>.
+            Numéro de TVA intracommunautaire&nbsp;: <strong>EE102477612</strong>.
             <br />
             Contact&nbsp;: <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
             <br />
