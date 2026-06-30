@@ -24,9 +24,11 @@ export function LegalNoticePage() {
           <h2>1. Éditeur du site</h2>
           <p>
             Le site et la plateforme <strong>PR&nbsp;Event&nbsp;360</strong> sont édités par{' '}
-            <strong>MDMC&nbsp;OÜ</strong>, société de droit estonien (Union européenne), immatriculée au
-            registre du commerce estonien sous le numéro <strong>16466485</strong>, dont le siège social est
-            situé <strong>Sepapaja tn 6, 15551 Tallinn, Estonie</strong>.
+            <strong>MDMC&nbsp;OÜ</strong>, société à responsabilité limitée de droit estonien
+            (<em>osaühing</em>, Union européenne) au capital social de <strong>2&nbsp;500&nbsp;€</strong>,
+            immatriculée le 23&nbsp;mars&nbsp;2022 au registre du commerce estonien sous le numéro{' '}
+            <strong>16466485</strong> (D-U-N-S&nbsp;497089049), dont le siège social est situé{' '}
+            <strong>Sepapaja tn&nbsp;6, Lasnamäe, 15551 Tallinn, Harju, Estonie</strong>.
             <br />
             Numéro de TVA intracommunautaire&nbsp;: <strong>[à compléter]</strong>.
             <br />
