@@ -34,6 +34,9 @@ export interface NewsroomPressRelease {
   id: string;
   title: string;
   bodyHtml: string;
+  slug: string;
+  seoDescription: string | null;
+  coverImageUrl: string | null;
   publishedAt: string | null;
 }
 export interface NewsroomData {
@@ -47,6 +50,11 @@ export interface NewsroomData {
   };
   assets: NewsroomAsset[];
   pressReleases: NewsroomPressRelease[];
+}
+
+export interface PressReleaseDetail {
+  event: { id: string; name: string; branding: EventBranding | null };
+  pressRelease: NewsroomPressRelease;
 }
 
 export interface PublicEvent {

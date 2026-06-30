@@ -7,6 +7,7 @@ import { JournalistResetPasswordPage } from './public-forms/auth/JournalistReset
 import { SpacePage } from './public-forms/requests/SpacePage';
 import { SpacePreviewPage } from './public-forms/requests/SpacePreviewPage';
 import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
+import { PressReleasePage } from './public-forms/newsroom/PressReleasePage';
 import { LandingPage } from './public-forms/landing/LandingPage';
 import { PrivacyPage } from './public-forms/legal/PrivacyPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
@@ -34,6 +35,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<L><AccreditationPage /></L>} />
           <Route path="/newsroom" element={<NewsroomPage />} />
+          <Route path="/newsroom/:slug" element={<PressReleasePage />} />
           <Route path="/connexion" element={<L><JournalistLoginPage /></L>} />
           <Route path="/mot-de-passe-oublie" element={<L><JournalistForgotPasswordPage /></L>} />
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
@@ -94,6 +96,7 @@ export function App() {
           }
         />
         <Route path="/newsroom/:eventId" element={<NewsroomPage />} />
+        <Route path="/newsroom/:eventId/:slug" element={<PressReleasePage />} />
         <Route
           path="/espace-preview/:eventId"
           element={

@@ -90,6 +90,10 @@ const PressSchema = z.object({
   title: z.string().min(1),
   bodyHtml: z.string().default(''),
   status: z.enum(['draft', 'published']).default('draft'),
+  // SEO : slug d'URL (optionnel, normalisé serveur), description et image de couverture (Open Graph).
+  slug: z.string().max(120).nullish(),
+  seoDescription: z.string().max(500).nullish(),
+  coverImageUrl: z.string().url().max(2000).nullish(),
   // Notifier les accrédités par email à la publication (case à cocher côté UI).
   notifyEmail: z.boolean().default(false),
 });

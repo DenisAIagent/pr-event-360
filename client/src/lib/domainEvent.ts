@@ -34,6 +34,16 @@ export function useEventId(): string {
   return eventId ?? domainEvent?.id ?? '';
 }
 
+/** Chemin de la newsroom selon le mode (domaine : `/newsroom`, sinon `/newsroom/:eventId`). */
+export function newsroomPath(eventId: string): string {
+  return domainEvent ? '/newsroom' : `/newsroom/${eventId}`;
+}
+
+/** Chemin d'un communiqué selon le mode (domaine : `/newsroom/:slug`, sinon `/newsroom/:eventId/:slug`). */
+export function pressReleasePath(eventId: string, slug: string): string {
+  return domainEvent ? `/newsroom/${slug}` : `/newsroom/${eventId}/${slug}`;
+}
+
 export interface EventLinks {
   accreditation: string;
   newsroom: string;

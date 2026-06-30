@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
@@ -7,7 +7,29 @@ import { InfoBubble } from '../components/InfoBubble';
 import { useToast } from '../components/Toast';
 import { FileText } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
-import type { PressRelease } from '../lib/types';
+import { uploadToCloudinary } from '../lib/upload';
+import type { PressRelease, UploadSignature } from '../lib/types';
+
+/** Slug d'URL côté client (sans accents, minuscules, tirets) — miroir de server/src/lib/slug.ts. */
+function toSlug(input: string): string {
+  return (
+    input
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80)
+      .replace(/-+$/g, '') || 'cp'
+  );
+}
+
+/** Texte brut depuis du HTML (pour suggérer la description SEO). */
+function htmlToText(html: string): string {
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  return (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
 
 /** Modèle de départ de communiqué (pour les non-techniciens). */
 const CP_STARTER_HTML = `<h1>Titre du communiqué</h1>
@@ -109,15 +131,53 @@ function PressEditor({
   const [bodyHtml, setBodyHtml] = useState(initial?.bodyHtml ?? '');
   const [status, setStatus] = useState<'draft' | 'published'>(initial?.status ?? 'draft');
   const [notifyEmail, setNotifyEmail] = useState(true);
+  const [slug, setSlug] = useState(initial?.slug ?? '');
+  const [seoDescription, setSeoDescription] = useState(initial?.seoDescription ?? '');
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(initial?.coverImageUrl ?? null);
   const [busy, setBusy] = useState(false);
+  const [uploadBusy, setUploadBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const effectiveSlug = slug.trim() || toSlug(title || 'communique');
+  const publicUrl = `${window.location.origin}/newsroom/${eventId}/${effectiveSlug}`;
+  const descPreview = seoDescription.trim() || htmlToText(bodyHtml).slice(0, 155);
+  const seoChecks = [
+    { ok: title.trim().length >= 25 && title.trim().length <= 70, label: 'Titre de 25 à 70 caractères' },
+    { ok: descPreview.length >= 50, label: 'Description d’au moins 50 caractères' },
+    { ok: Boolean(coverImageUrl), label: 'Image de couverture (aperçu réseaux sociaux)' },
+    { ok: /<h[1-3][\s>]/i.test(bodyHtml), label: 'Au moins un titre (H1/H2) dans le contenu' },
+  ];
+
+  async function onUploadCover(file: File) {
+    setErr(null);
+    setUploadBusy(true);
+    try {
+      const sig = await apiAuthed.post<UploadSignature>(`/admin/events/${eventId}/assets/sign`);
+      const up = await uploadToCloudinary(file, sig);
+      setCoverImageUrl(up.url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Échec de l’upload');
+    } finally {
+      setUploadBusy(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
 
   async function save() {
     setBusy(true);
     setErr(null);
     try {
       const willNotify = status === 'published' && notifyEmail;
-      const payload = { title, bodyHtml, status, notifyEmail: willNotify };
+      const payload = {
+        title,
+        bodyHtml,
+        status,
+        notifyEmail: willNotify,
+        slug: slug.trim() || undefined,
+        seoDescription: seoDescription.trim() || null,
+        coverImageUrl: coverImageUrl || null,
+      };
       const res = initial
         ? await apiAuthed.put<{ email: { sent: number; total: number } | null }>(
             `/admin/events/${eventId}/press-releases/${initial.id}`,
@@ -196,8 +256,88 @@ function PressEditor({
       </div>
       <div className="field">
         <label>Aperçu</label>
+        {coverImageUrl && (
+          <img
+            src={coverImageUrl}
+            alt=""
+            style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
+          />
+        )}
         <div className="card" style={{ background: '#fff' }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
       </div>
+
+      <fieldset className="card stack" style={{ border: '1px solid var(--border, #e3e3e3)' }}>
+        <legend style={{ padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          Référencement & partage (SEO)
+          <InfoBubble title="Pourquoi c’est important">
+            Ces réglages soignent l’apparence du communiqué sur <strong>Google</strong> et dans les
+            <strong> aperçus partagés</strong> (LinkedIn, X, Facebook, WhatsApp). Renseignés par défaut, ils
+            sont modifiables.
+          </InfoBubble>
+        </legend>
+
+        <div className="field">
+          <label>Image de couverture (illustration + aperçu social)</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {coverImageUrl && (
+              <img src={coverImageUrl} alt="" style={{ height: 56, width: 96, objectFit: 'cover', borderRadius: 6 }} />
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onUploadCover(f);
+              }}
+            />
+            {uploadBusy && <span className="muted">Upload…</span>}
+            {coverImageUrl && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCoverImageUrl(null)}>
+                Retirer
+              </button>
+            )}
+          </div>
+          <input
+            style={{ marginTop: 8 }}
+            placeholder="…ou collez une URL d’image (https://)"
+            value={coverImageUrl ?? ''}
+            onChange={(e) => setCoverImageUrl(e.target.value || null)}
+          />
+        </div>
+
+        <div className="field">
+          <label style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <span>Description SEO (extrait affiché sur Google / aperçus)</span>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setSeoDescription(htmlToText(bodyHtml).slice(0, 155))}
+            >
+              Générer depuis le contenu
+            </button>
+          </label>
+          <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={2} />
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            {descPreview.length} caractères {descPreview.length > 160 ? '(idéalement ≤ 160)' : ''}
+          </span>
+        </div>
+
+        <div className="field">
+          <label>Adresse de la page (slug)</label>
+          <input value={slug} placeholder={effectiveSlug} onChange={(e) => setSlug(e.target.value)} />
+          <span className="muted" style={{ fontSize: 'var(--text-sm)', wordBreak: 'break-all' }}>{publicUrl}</span>
+        </div>
+
+        <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 'var(--text-sm)' }}>
+          {seoChecks.map((c) => (
+            <li key={c.label} style={{ color: c.ok ? 'var(--success, #15803d)' : 'var(--muted, #777)' }}>
+              {c.ok ? '✓' : '•'} {c.label}
+            </li>
+          ))}
+        </ul>
+      </fieldset>
+
       <div className="row-between">
         <div className="field" style={{ margin: 0 }}>
           <label>Statut</label>

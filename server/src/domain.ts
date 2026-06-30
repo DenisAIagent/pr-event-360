@@ -194,6 +194,9 @@ export interface PressRelease {
   eventId: string;
   title: string;
   bodyHtml: string;
+  slug: string;
+  seoDescription: string | null;
+  coverImageUrl: string | null;
   publishedAt: string | null;
   status: 'draft' | 'published';
   createdAt: string;

@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useEventId } from '../../lib/domainEvent';
+import { useEventId, pressReleasePath } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
 import { Countdown } from '../../components/Countdown';
 import { Icon } from '../../components/Icon';
 import type { NewsroomAsset, NewsroomAssetKind, NewsroomData } from '../../lib/types';
+
+/** Extrait texte (≈ 160 car.) depuis le HTML d'un CP, pour la carte de la liste. */
+function htmlExcerpt(html: string): string {
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+  return text.length > 160 ? `${text.slice(0, 160)}…` : text;
+}
 
 const GROUPS: { kind: NewsroomAssetKind; label: string }[] = [
   { kind: 'press_kit', label: 'Dossier de presse' },
@@ -78,17 +86,35 @@ export function NewsroomPage() {
           <section style={{ marginBottom: 'var(--space-6)' }}>
             <h2 style={{ fontSize: 'var(--text-xl)' }}>Communiqués de presse</h2>
             <div className="stack">
-              {data.pressReleases.map((pr) => (
-                <article key={pr.id} className="card">
-                  <h3 style={{ fontSize: 'var(--text-lg)' }}>{pr.title}</h3>
-                  {pr.publishedAt && (
-                    <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-                      {new Date(pr.publishedAt).toLocaleDateString('fr-FR')}
-                    </p>
-                  )}
-                  <div dangerouslySetInnerHTML={{ __html: pr.bodyHtml }} />
-                </article>
-              ))}
+              {data.pressReleases.map((pr) => {
+                const href = pressReleasePath(eventId, pr.slug);
+                const excerpt = pr.seoDescription ?? htmlExcerpt(pr.bodyHtml);
+                return (
+                  <article key={pr.id} className="card" style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                    {pr.coverImageUrl && (
+                      <a href={href} style={{ flexShrink: 0 }}>
+                        <img
+                          src={pr.coverImageUrl}
+                          alt=""
+                          style={{ width: 140, height: 90, objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      </a>
+                    )}
+                    <div>
+                      <h3 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>
+                        <a href={href} style={{ color: 'inherit', textDecoration: 'none' }}>{pr.title}</a>
+                      </h3>
+                      {pr.publishedAt && (
+                        <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '2px 0' }}>
+                          {new Date(pr.publishedAt).toLocaleDateString('fr-FR')}
+                        </p>
+                      )}
+                      {excerpt && <p style={{ margin: '6px 0' }}>{excerpt}</p>}
+                      <a href={href} className="btn btn-ghost btn-sm">Lire le communiqué →</a>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         )}
