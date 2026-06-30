@@ -71,5 +71,12 @@ export const REQUEST_TYPE_LABELS: Record<Lang, Record<RequestType, string>> = {
 
 /** Substitue les variables {{clé}} dans un texte ; toute clé inconnue → chaîne vide. */
 export function renderTemplate(text: string, variables: Record<string, string>): string {
-  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => variables[key] ?? '');
+  const rendered = text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => variables[key] ?? '');
+  // Hygiène : une variable vide peut laisser des espaces doubles ou en fin de ligne. On collapse
+  // les espaces multiples et on coupe les espaces de fin — SANS retirer l'espace AVANT la ponctuation
+  // (« : ! ? ; » prennent une espace en typographie française).
+  return rendered
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
 }

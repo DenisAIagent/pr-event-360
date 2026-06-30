@@ -76,9 +76,10 @@ export function SubdomainCard({ eventId }: { eventId: string }) {
         </p>
       )}
       {!base && (
-        <div className="banner" style={{ fontSize: 'var(--text-sm)' }}>
-          Le domaine de base de la plateforme n’est pas encore configuré. L’identifiant est mémorisé et
-          deviendra actif une fois le wildcard en place.
+        <div className="banner banner-warn" style={{ fontSize: 'var(--text-sm)' }}>
+          <strong>Bientôt disponible.</strong> Les adresses par sous-domaine ne sont pas encore activées sur
+          cette plateforme. Vous pouvez réserver votre identifiant dès maintenant&nbsp;: il sera appliqué
+          automatiquement à l’activation. En attendant, votre newsroom reste accessible via son lien standard.
         </div>
       )}
 

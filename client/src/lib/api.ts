@@ -54,8 +54,22 @@ async function request<T>(
   return payload.data as T;
 }
 
+// Dé-duplication des GET « en vol » : quand plusieurs composants demandent la MÊME URL
+// simultanément (ex. barre du haut + page au montage), une seule requête réseau part et la
+// promesse est partagée. Aucune mise en cache dans le temps → zéro risque de données périmées.
+const inflightGets = new Map<string, Promise<unknown>>();
+
+function dedupGet<T>(path: string, token?: string): Promise<T> {
+  const key = `${token ? 'a' : 'p'}:${path}`;
+  const existing = inflightGets.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = request<T>('GET', path, undefined, token).finally(() => inflightGets.delete(key));
+  inflightGets.set(key, p);
+  return p as Promise<T>;
+}
+
 export const api = {
-  get: <T>(path: string, token?: string) => request<T>('GET', path, undefined, token),
+  get: <T>(path: string, token?: string) => dedupGet<T>(path, token),
   post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   del: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),

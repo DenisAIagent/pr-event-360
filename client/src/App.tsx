@@ -10,6 +10,8 @@ import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
 import { PressReleasePage } from './public-forms/newsroom/PressReleasePage';
 import { LandingPage } from './public-forms/landing/LandingPage';
 import { PrivacyPage } from './public-forms/legal/PrivacyPage';
+import { LegalNoticePage } from './public-forms/legal/LegalNoticePage';
+import { TermsPage } from './public-forms/legal/TermsPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
 import type { ReactNode } from 'react';
 import { AdminApp } from './admin/AdminApp';
@@ -41,6 +43,8 @@ export function App() {
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
           <Route path="/espace/:token" element={<L><SpacePage /></L>} />
           <Route path="/confidentialite" element={<PrivacyPage />} />
+          <Route path="/mentions-legales" element={<LegalNoticePage />} />
+          <Route path="/cgv" element={<TermsPage />} />
           <Route path="/admin/*" element={<AdminApp />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -53,6 +57,8 @@ export function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/confidentialite" element={<PrivacyPage />} />
+        <Route path="/mentions-legales" element={<LegalNoticePage />} />
+        <Route path="/cgv" element={<TermsPage />} />
         <Route path="/ressources" element={<ResourcesPage />} />
         <Route path="/admin/*" element={<AdminApp />} />
         <Route

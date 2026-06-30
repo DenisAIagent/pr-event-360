@@ -460,6 +460,12 @@ export function LandingPage() {
             <Link to="/confidentialite" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
               Confidentialité
             </Link>
+            <Link to="/mentions-legales" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
+              Mentions légales
+            </Link>
+            <Link to="/cgv" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
+              CGV
+            </Link>
           </span>
           <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-faint)' }}>© 2026 PR Event 360</span>
         </div>
