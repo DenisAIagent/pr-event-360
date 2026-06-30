@@ -28,7 +28,7 @@ export function LegalNoticePage() {
             registre du commerce estonien sous le numéro <strong>16466485</strong>, dont le siège social est
             situé <strong>Sepapaja tn 6, 15551 Tallinn, Estonie</strong>.
             <br />
-            Numéro de TVA intracommunautaire&nbsp;: <strong>EE102589877</strong> (à confirmer).
+            Numéro de TVA intracommunautaire&nbsp;: <strong>[à compléter]</strong>.
             <br />
             Contact&nbsp;: <a href={`mailto:${CONTACT}`}>{CONTACT}</a>.
             <br />
