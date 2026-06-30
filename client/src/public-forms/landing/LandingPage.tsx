@@ -291,6 +291,41 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section id="testimonial" style={{ background: 'var(--color-surface, var(--color-bg))', borderTop: '1px solid var(--color-line)' }}>
+        <div className="lp-wrap" style={{ padding: '72px 0' }}>
+          <Reveal>
+            <figure
+              style={{
+                maxWidth: 760,
+                margin: '0 auto',
+                textAlign: 'center',
+                padding: '0 var(--space-4)',
+              }}
+            >
+              <span className="eyebrow">Ils l'ont essayé</span>
+              <blockquote
+                style={{
+                  fontSize: 'clamp(1.4rem, 1rem + 1.6vw, 2rem)',
+                  fontWeight: 400,
+                  lineHeight: 1.4,
+                  margin: 'var(--space-4) 0 var(--space-4)',
+                  color: 'var(--color-ink)',
+                }}
+              >
+                <span style={{ color: 'var(--color-accent, #1598d3)' }}>«&nbsp;</span>
+                Si j'avais eu ça pour le Motocultor, le gain de temps et de tableaux Excel évités&nbsp;!
+                C'est un gain de temps fou.
+                <span style={{ color: 'var(--color-accent, #1598d3)' }}>&nbsp;»</span>
+              </blockquote>
+              <figcaption style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
+                <strong style={{ color: 'var(--color-ink)' }}>Yann Landry</strong> · ex-attaché de presse,
+                Motocultor Festival
+              </figcaption>
+            </figure>
+          </Reveal>
+        </div>
+      </section>
+
       <section id="pricing" style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-line)' }}>
         <div className="lp-wrap" style={{ padding: '80px 0' }}>
           <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto var(--space-6)' }}>
