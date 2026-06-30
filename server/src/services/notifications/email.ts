@@ -76,7 +76,7 @@ export function renderBrandedEmail({ innerHtml, branding, eventName, footer }: B
         <tr><td style="padding:6px 28px 24px;font-size:15px;line-height:1.6;color:#1a1a2e;">${innerHtml}</td></tr>
         <tr><td style="padding:16px 28px;background:#fafafa;border-top:1px solid #eeeeee;color:#9aa0a6;font-size:12px;line-height:1.5;">${escapeHtml(footerText)}</td></tr>
       </table>
-      <p style="color:#b0b4ba;font-size:11px;margin:14px 0 0;">PR&nbsp;Event&nbsp;360 — Relations presse événementielles</p>
+      <p style="color:#b0b4ba;font-size:11px;margin:14px 0 0;">PR&nbsp;Event&nbsp;360 — Votre orchestrateur de relations presse</p>
     </td></tr>
   </table>
   </body></html>`;

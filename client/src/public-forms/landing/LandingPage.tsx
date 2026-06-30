@@ -167,7 +167,7 @@ export function LandingPage() {
         <div className="lp-wrap lp-hero-grid">
           <Reveal>
             <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Radar size={15} /> Plateforme SaaS · Relations presse
+              <Radar size={15} /> Votre orchestrateur de relations presse
             </span>
             <h1
               style={{
