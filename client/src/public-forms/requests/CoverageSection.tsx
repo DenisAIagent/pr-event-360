@@ -24,8 +24,17 @@ const CAT_META: Record<string, { icon: LucideIcon; color: string }> = {
 };
 const metaOf = (v: string) => CAT_META[v] ?? CAT_META.autre!;
 
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
 /**
  * Revue de presse — le journaliste dépose ses retombées (liens ou médias uploadés).
+ * Même design que l'onglet « Revue de presse » du back-office (cartes .coverage-card partagées).
  * Pour tout média uploadé, l'autorisation d'archivage + usage promotionnel est obligatoire.
  */
 export function CoverageSection({
@@ -108,16 +117,6 @@ export function CoverageSection({
     onChanged();
   }
 
-  const tile = (color: string): CSSProperties => ({
-    flexShrink: 0,
-    display: 'grid',
-    placeItems: 'center',
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    background: `${color}1a`,
-    color,
-  });
   const segBtn = (active: boolean): CSSProperties => ({
     flex: 1,
     padding: '9px 12px',
@@ -134,7 +133,7 @@ export function CoverageSection({
   });
 
   return (
-    <section className="card stack" aria-labelledby="sec-coverage" style={{ marginBottom: 'var(--space-5)' }}>
+    <section className="card stack" aria-labelledby="sec-coverage" style={{ marginBottom: 'var(--space-5)', gap: 'var(--space-4)' }}>
       <div>
         <h2 id="sec-coverage" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.coverage.title')}</h2>
         <p className="muted" style={{ marginTop: 4 }}>
@@ -142,50 +141,56 @@ export function CoverageSection({
         </p>
       </div>
 
-      {coverage.length > 0 && (
-        <div className="stack" style={{ gap: 10 }}>
-          {coverage.map((c) => {
-            const m = metaOf(c.mediaCategory);
-            const Ic = m.icon;
-            return (
-              <div
-                key={c.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: 10,
-                  border: '1px solid var(--color-line, #e3e3e3)',
-                  borderRadius: 12,
-                }}
-              >
-                {c.isUpload && c.thumbnailUrl ? (
-                  <img src={c.thumbnailUrl} alt="" style={{ ...tile(m.color), width: 56, height: 44, objectFit: 'cover' }} />
-                ) : (
-                  <span style={tile(m.color)}><Ic size={20} /></span>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <a href={c.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    {c.title || c.url} <ExternalLink size={12} />
-                  </a>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-soft, #667)' }}>{catLabel(c.mediaCategory)}</div>
-                </div>
-                {!readOnly && (
-                  <button
-                    onClick={() => remove(c.id)}
-                    aria-label={t('space.coverage.remove')}
-                    title={t('space.coverage.remove')}
-                    style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: '#d4183d', cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+      {/* Retombées déposées — mêmes cartes/sections que le back-office */}
+      {coverage.length > 0 &&
+        MEDIA_CATEGORIES.map((cat) => {
+          const items = coverage.filter((c) => c.mediaCategory === cat.value);
+          if (items.length === 0) return null;
+          const m = metaOf(cat.value);
+          const CatIcon = m.icon;
+          return (
+            <div key={cat.value} className="stack" style={{ gap: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 9, background: `${m.color}1a`, color: m.color }}>
+                  <CatIcon size={18} />
+                </span>
+                <h3 style={{ margin: 0, fontSize: 'var(--text-md)' }}>{catLabel(cat.value)}</h3>
+                <span className="badge" style={{ background: `${m.color}1a`, color: m.color, border: 'none' }}>{items.length}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+                {items.map((i) => (
+                  <article key={i.id} className="coverage-card">
+                    {i.isUpload && i.thumbnailUrl ? (
+                      <a href={i.url} target="_blank" rel="noreferrer" className="coverage-thumb">
+                        <img src={i.thumbnailUrl} alt="" />
+                      </a>
+                    ) : (
+                      <a href={i.url} target="_blank" rel="noreferrer" className="coverage-thumb coverage-thumb--icon" style={{ background: `${m.color}12`, color: m.color }}>
+                        <CatIcon size={26} />
+                        <span className="coverage-domain">{domainOf(i.url)}</span>
+                      </a>
+                    )}
+                    <div className="coverage-body">
+                      <a href={i.url} target="_blank" rel="noreferrer" className="coverage-title">
+                        {i.title || domainOf(i.url)} <ExternalLink size={12} />
+                      </a>
+                      <span className="coverage-meta">
+                        {i.isUpload && i.archiveConsent && i.promoConsent ? '✓ archivage + promo' : domainOf(i.url)}
+                      </span>
+                    </div>
+                    {!readOnly && (
+                      <button className="coverage-remove" onClick={() => remove(i.id)} title={t('space.coverage.remove')} aria-label={t('space.coverage.remove')}>
+                        <X size={15} />
+                      </button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </div>
+          );
+        })}
 
+      {/* Formulaire de dépôt */}
       {!readOnly && (
         <div className="stack" style={{ borderTop: '1px solid var(--color-line, #e3e3e3)', paddingTop: 'var(--space-3)', gap: 'var(--space-3)' }}>
           {err && <div className="banner banner-error">{err}</div>}
@@ -238,10 +243,7 @@ export function CoverageSection({
           </div>
 
           {mode === 'upload' && (
-            <div
-              className="stack"
-              style={{ gap: 8, background: 'var(--color-accent-tint, #f0f7fc)', borderRadius: 10, padding: 'var(--space-3)' }}
-            >
+            <div className="stack" style={{ gap: 8, background: 'var(--color-accent-tint, #f0f7fc)', borderRadius: 10, padding: 'var(--space-3)' }}>
               <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--text-sm)' }}>
                 <input type="checkbox" checked={archive} onChange={(e) => setArchive(e.target.checked)} />
                 <span>{t('space.coverage.consentArchive')}</span>
