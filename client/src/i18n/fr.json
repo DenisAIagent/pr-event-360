@@ -102,5 +102,6 @@
   "space.photo.title": "Règles photo & autorisations",
   "space.photo.rule": "Règles de prise de vue",
   "space.photo.contract": "⚠ Un contrat est à signer sur place.",
-  "space.photo.terms": "Autorisation d'utilisation des photos/vidéos"
+  "space.photo.terms": "Autorisation d'utilisation des photos/vidéos",
+  "acc.coverageRule": "Règlement : en déposant des photos ou vidéos dans la revue de presse après l’événement, vous autorisez l’organisateur à les archiver et à les utiliser à des fins de promotion (autorisation reconfirmée au moment du dépôt)."
 }

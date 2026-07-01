@@ -18,6 +18,7 @@ import {
   Compass,
   Star,
   ShieldCheck,
+  NotebookText,
   LogOut,
   ChevronDown,
   type LucideIcon,
@@ -101,6 +102,7 @@ export function Sidebar() {
     { to: `${base}/media`, label: 'Médiathèque', icon: Image },
     { to: `${base}/newsroom`, label: 'Newsroom', icon: Newspaper },
     { to: `${base}/communications`, label: 'Communications', icon: Megaphone },
+    { to: `${base}/revue-presse`, label: 'Revue de presse', icon: NotebookText },
   ];
   const REGLAGES: NavDef[] = [
     { to: `${base}/settings`, label: 'Paramètres', icon: Settings },

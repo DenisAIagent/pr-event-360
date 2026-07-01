@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { sendRecapsForFrequency } from './services/recapService';
 import { purgeExpiredJournalists } from './services/retentionService';
+import { sendCoverageRequests } from './services/coverageService';
 
 /**
  * Planificateur des récapitulatifs d'inscriptions.
@@ -40,7 +41,16 @@ export function startScheduler(): void {
     { timezone: tz },
   );
 
+  // Revue de presse : email de collecte des retombées J+3 après la fin de l'événement.
+  cron.schedule(
+    '0 9 * * *',
+    () => {
+      void sendCoverageRequests().catch((err) => console.error('[scheduler] revue-presse', err));
+    },
+    { timezone: tz },
+  );
+
   console.log(
-    'Planificateur démarré (récaps 08:00 / lundi 08:00 ; purge rétention 03:30, Europe/Paris)',
+    'Planificateur démarré (récaps 08:00 / lundi 08:00 ; purge rétention 03:30 ; retombées 09:00, Europe/Paris)',
   );
 }

@@ -172,6 +172,40 @@ export interface RequestStatusHistoryEntry {
   note: string | null;
 }
 
+// Catégories de média pour la revue de presse (retombées classées).
+export const MEDIA_CATEGORY_VALUES = [
+  'presse_ecrite', 'web', 'tv', 'radio', 'reseaux_sociaux', 'youtube', 'podcast', 'photo', 'video', 'autre',
+] as const;
+export type MediaCategory = (typeof MEDIA_CATEGORY_VALUES)[number];
+
+export const MEDIA_CATEGORIES: ReadonlyArray<{ value: MediaCategory; label: string }> = [
+  { value: 'presse_ecrite', label: 'Presse écrite' },
+  { value: 'web', label: 'Web / En ligne' },
+  { value: 'tv', label: 'TV' },
+  { value: 'radio', label: 'Radio' },
+  { value: 'reseaux_sociaux', label: 'Réseaux sociaux' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'podcast', label: 'Podcast' },
+  { value: 'photo', label: 'Photo' },
+  { value: 'video', label: 'Vidéo' },
+  { value: 'autre', label: 'Autre' },
+];
+
+/** Une retombée médiatique déposée par un journaliste (lien ou média uploadé). */
+export interface PressCoverage {
+  id: string;
+  eventId: string;
+  journalistId: string;
+  mediaCategory: MediaCategory;
+  isUpload: boolean;
+  url: string;
+  thumbnailUrl: string | null;
+  title: string | null;
+  archiveConsent: boolean;
+  promoConsent: boolean;
+  createdAt: string;
+}
+
 export type AssetKind = 'photo' | 'video' | 'logo' | 'press_kit' | 'other';
 
 export interface EventAsset {

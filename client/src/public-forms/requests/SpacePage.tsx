@@ -8,6 +8,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StatusBadge } from '../../components/StatusBadge';
 import { brandingStyle } from '../../lib/branding';
 import { Icon } from '../../components/Icon';
+import { CoverageSection } from './CoverageSection';
 
 /**
  * Espace journaliste. En mode normal, charge les données via le token de l'URL.
@@ -397,6 +398,14 @@ export function SpacePage({
           </ul>
         )}
       </section>
+
+      <CoverageSection
+        token={token}
+        coverage={data.coverage ?? []}
+        ended={data.event.ended ?? false}
+        readOnly={readOnly}
+        onChanged={load}
+      />
     </main>
     </div>
   );

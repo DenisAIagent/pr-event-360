@@ -102,5 +102,6 @@
   "space.photo.title": "Regras de foto & autorização",
   "space.photo.rule": "Regras de captação",
   "space.photo.contract": "⚠ Um contrato deve ser assinado no local.",
-  "space.photo.terms": "Autorização de utilização das fotos/vídeos"
+  "space.photo.terms": "Autorização de utilização das fotos/vídeos",
+  "acc.coverageRule": "Regulamento: ao enviar fotos ou vídeos para a revista de imprensa após o evento, autoriza o organizador a arquivá-los e utilizá-los para fins de promoção (reconfirmado no momento do envio)."
 }

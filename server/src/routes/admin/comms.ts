@@ -24,6 +24,12 @@ import {
   updateNewsletter,
 } from '../../db/repositories/newsletterRepo';
 import { listJournalistsByEvent } from '../../db/repositories/journalistRepo';
+import {
+  coverageStatsByEvent,
+  deleteCoverage,
+  listCoverageByEvent,
+} from '../../db/repositories/coverageRepo';
+import { remindCoverage } from '../../services/coverageService';
 
 // Monté à /api/admin/events (après eventsRouter) : gère médias, CP, newsletters.
 export const commsRouter = Router();
@@ -223,6 +229,57 @@ commsRouter.get(
       lineup,
       requests: [],
     });
+  }),
+);
+
+// ── Revue de presse (retombées) ─────────────────────────────────────
+commsRouter.get(
+  '/:eventId/coverage',
+  asyncHandler(async (req, res) => {
+    await access(req);
+    const eventId = req.params.eventId!;
+    const [items, stats, journalists] = await Promise.all([
+      listCoverageByEvent(eventId),
+      coverageStatsByEvent(eventId),
+      listJournalistsByEvent(eventId),
+    ]);
+    const statMap = new Map(stats.map((s) => [s.journalistId, s]));
+    // Suivi des envois : chaque accrédité accepté, avec son nombre de retombées et la dernière date.
+    const tracking = journalists
+      .filter((j) => j.accStatus === 'acceptee')
+      .map((j) => ({
+        journalistId: j.id,
+        name: `${j.firstName} ${j.lastName ?? ''}`.trim(),
+        email: j.email,
+        media: j.media,
+        accreditationType: j.accreditationType,
+        count: statMap.get(j.id)?.count ?? 0,
+        lastAt: statMap.get(j.id)?.lastAt ?? null,
+      }));
+    sendData(res, { items, tracking });
+  }),
+);
+
+const RemindSchema = z.object({ journalistId: z.string().uuid().nullish() });
+commsRouter.post(
+  '/:eventId/coverage/remind',
+  requireEventEditor,
+  validateBody(RemindSchema),
+  asyncHandler(async (req, res) => {
+    await access(req);
+    const { journalistId } = req.body as z.infer<typeof RemindSchema>;
+    const sent = await remindCoverage(req.params.eventId!, journalistId ?? undefined);
+    sendData(res, { sent });
+  }),
+);
+
+commsRouter.delete(
+  '/:eventId/coverage/:id',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await access(req);
+    await deleteCoverage(req.params.id!, null);
+    sendData(res, { ok: true });
   }),
 );
 

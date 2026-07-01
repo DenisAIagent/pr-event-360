@@ -10,8 +10,27 @@ import { getEventOrThrow } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
 import { listJournalistRequests, submitRequest } from '../../services/requestService';
 import { setSpacePassword } from '../../services/journalistAuthService';
+import { MEDIA_CATEGORIES, MEDIA_CATEGORY_VALUES } from '../../domain';
+import type { Journalist } from '../../domain';
+import {
+  createCoverage,
+  deleteCoverage,
+  listCoverageByJournalist,
+} from '../../db/repositories/coverageRepo';
+import { signUpload } from '../../services/storageService';
 
 export const publicSpaceRouter = Router();
+
+/** Résout le journaliste depuis son token d'espace (accès accepté requis). */
+async function requireJournalist(token: string): Promise<Journalist> {
+  const journalist = await findJournalistByToken(token);
+  if (!journalist) throw AppError.notFound('Espace introuvable');
+  if (journalist.accStatus !== 'acceptee') throw AppError.forbidden('Accréditation non encore acceptée');
+  return journalist;
+}
+
+const isEventEnded = (endDate: string | null): boolean =>
+  endDate != null && new Date(endDate).getTime() < Date.now();
 
 /**
  * Espace journaliste (accès par token). Renvoie son profil, le lineup pour le
@@ -28,14 +47,15 @@ publicSpaceRouter.get(
       throw AppError.forbidden('Accréditation non encore acceptée');
     }
     const event = await getEventOrThrow(journalist.eventId);
-    const [lineup, requests, branding, config] = await Promise.all([
+    const [lineup, requests, branding, config, coverage] = await Promise.all([
       getPublicLineup(journalist.eventId, journalist.lang),
       listJournalistRequests(token),
       getBranding(journalist.eventId),
       getConfig(journalist.eventId),
+      listCoverageByJournalist(journalist.id),
     ]);
     sendData(res, {
-      event: { id: event.id, name: event.name, languages: event.languages, branding },
+      event: { id: event.id, name: event.name, languages: event.languages, branding, ended: isEventEnded(event.endDate) },
       journalist: {
         firstName: journalist.firstName,
         lastName: journalist.lastName,
@@ -48,6 +68,8 @@ publicSpaceRouter.get(
       photoRules: config
         ? { photoRule: config.photoRule, onsiteContract: config.onsiteContract, photoTerms: config.photoTerms }
         : null,
+      coverage,
+      coverageCategories: MEDIA_CATEGORIES,
     });
   }),
 );
@@ -85,5 +107,61 @@ publicSpaceRouter.post(
     const { password } = req.body as z.infer<typeof PasswordSchema>;
     await setSpacePassword(req.params.token!, password);
     sendData(res, { ok: true });
+  }),
+);
+
+// ── Revue de presse : le journaliste dépose ses retombées ───────────
+const CoverageSchema = z
+  .object({
+    mediaCategory: z.enum(MEDIA_CATEGORY_VALUES),
+    isUpload: z.boolean().default(false),
+    url: z.string().url().max(2000).regex(/^https:\/\//i, 'URL https:// requise'),
+    thumbnailUrl: z.string().url().max(2000).nullish(),
+    title: z.string().max(200).nullish(),
+    archiveConsent: z.boolean().default(false),
+    promoConsent: z.boolean().default(false),
+  })
+  // Pour un média uploadé (photo/vidéo/capture), l'autorisation d'archivage + usage promo est obligatoire.
+  .refine((d) => !d.isUpload || (d.archiveConsent && d.promoConsent), {
+    message: "L'autorisation d'archivage et d'usage promotionnel est obligatoire pour un média déposé.",
+    path: ['archiveConsent'],
+  });
+
+publicSpaceRouter.post(
+  '/:token/coverage',
+  validateBody(CoverageSchema),
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(req.params.token!);
+    const b = req.body as z.infer<typeof CoverageSchema>;
+    const item = await createCoverage({
+      eventId: journalist.eventId,
+      journalistId: journalist.id,
+      mediaCategory: b.mediaCategory,
+      isUpload: b.isUpload,
+      url: b.url,
+      thumbnailUrl: b.thumbnailUrl ?? null,
+      title: b.title ?? null,
+      archiveConsent: b.archiveConsent,
+      promoConsent: b.promoConsent,
+    });
+    sendData(res, item, 201);
+  }),
+);
+
+publicSpaceRouter.delete(
+  '/:token/coverage/:id',
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(req.params.token!);
+    await deleteCoverage(req.params.id!, journalist.id);
+    sendData(res, { ok: true });
+  }),
+);
+
+/** Signature d'upload Cloudinary tokenisée : le dossier est dérivé de l'événement du journaliste. */
+publicSpaceRouter.post(
+  '/:token/assets/sign',
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(req.params.token!);
+    sendData(res, await signUpload(journalist.eventId, Math.floor(Date.now() / 1000)));
   }),
 );

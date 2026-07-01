@@ -1,4 +1,5 @@
 import type { Lang } from '../i18n';
+import type { PressCoverageItem } from './mediaCategories';
 
 export type RequestType = 'interview' | 'photo_report' | 'video_report';
 export type RequestStatus =
@@ -105,7 +106,7 @@ export interface JournalistRequest {
 }
 
 export interface SpaceResponse {
-  event: { id: string; name: string; languages: Lang[]; branding: EventBranding };
+  event: { id: string; name: string; languages: Lang[]; branding: EventBranding; ended?: boolean };
   journalist: {
     firstName: string;
     lastName: string | null;
@@ -116,4 +117,6 @@ export interface SpaceResponse {
   lineup: { stages: PublicStage[]; artists: PublicArtist[] };
   requests: JournalistRequest[];
   photoRules?: { photoRule: string | null; onsiteContract: boolean; photoTerms: string | null } | null;
+  coverage?: PressCoverageItem[];
+  coverageCategories?: { value: string; label: string }[];
 }

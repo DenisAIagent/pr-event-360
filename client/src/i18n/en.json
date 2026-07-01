@@ -102,5 +102,6 @@
   "space.photo.title": "Photo rules & authorisation",
   "space.photo.rule": "Shooting rules",
   "space.photo.contract": "⚠ A contract must be signed on site.",
-  "space.photo.terms": "Photo/video usage authorisation"
+  "space.photo.terms": "Photo/video usage authorisation",
+  "acc.coverageRule": "Rules: by submitting photos or videos to the press review after the event, you authorise the organiser to archive them and use them for promotional purposes (re-confirmed at the time of submission)."
 }

@@ -12,6 +12,7 @@ const PAGE_LABEL: Record<string, string> = {
   media: 'Médiathèque',
   newsroom: 'Newsroom',
   communications: 'Communications',
+  'revue-presse': 'Revue de presse',
   settings: 'Paramètres',
   branding: 'Apparence',
   preview: 'Aperçu',

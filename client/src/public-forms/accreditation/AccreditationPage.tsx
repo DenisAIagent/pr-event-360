@@ -236,6 +236,10 @@ export function AccreditationPage() {
           </span>
         </label>
 
+        <p className="hint" style={{ margin: '0 0 var(--space-2)', fontSize: 'var(--text-sm)' }}>
+          {t('acc.coverageRule')}
+        </p>
+
         <p className="hint" style={{ margin: 'var(--space-2) 0 var(--space-3)' }}>
           {t('acc.required')}
         </p>
