@@ -159,7 +159,7 @@ export function LandingPage() {
     <div className="lp">
       <header className="lp-header">
         <div className="lp-wrap lp-header-inner">
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 44 }} />
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 58 }} />
           <nav className="lp-nav">
             <a href="#features">Fonctionnalités</a>
             <a href="#pricing">Tarifs</a>
