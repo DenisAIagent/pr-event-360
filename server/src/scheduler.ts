@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { sendRecapsForFrequency } from './services/recapService';
+import { purgeExpiredJournalists } from './services/retentionService';
 
 /**
  * Planificateur des récapitulatifs d'inscriptions.
@@ -26,5 +27,20 @@ export function startScheduler(): void {
     { timezone: tz },
   );
 
-  console.log('Planificateur des récapitulatifs démarré (quotidien 08:00, hebdo lundi 08:00, Europe/Paris)');
+  // Rétention RGPD (art. 5.1.e) : purge quotidienne des journalistes 12 mois après l'événement.
+  cron.schedule(
+    '30 3 * * *',
+    () => {
+      void purgeExpiredJournalists()
+        .then((n) => {
+          if (n > 0) console.log(`[rétention] ${n} journaliste(s) supprimé(s) (conservation > 12 mois)`);
+        })
+        .catch((err) => console.error('[scheduler] rétention', err));
+    },
+    { timezone: tz },
+  );
+
+  console.log(
+    'Planificateur démarré (récaps 08:00 / lundi 08:00 ; purge rétention 03:30, Europe/Paris)',
+  );
 }

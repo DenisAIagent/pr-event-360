@@ -2,7 +2,15 @@
 
 > Une **violation de données** = destruction, perte, altération, divulgation ou accès
 > non autorisé à des données personnelles (art. 4.12). **Toute** violation doit être
-> consignée dans le registre interne, même sans notification à la CNIL.
+> consignée dans le registre interne, même sans notification à l'autorité de contrôle.
+
+> ⚠️ **Rôle de MDMC OÜ = SOUS-TRAITANT.** Pour les données traitées **pour le compte d'un Client**
+> (journalistes d'un événement), l'obligation première de MDMC est de **notifier le Client
+> (responsable de traitement) sans délai injustifié** (art. 33.2) — c'est **le Client** qui décide
+> de notifier son autorité de contrôle (72 h) et les personnes (art. 34). MDMC ne notifie
+> directement une autorité (l'estonienne **AKI**, MDMC étant établie en Estonie) que pour ses
+> **propres** données de responsable (ex. comptes back-office, prospects). Voir le template de
+> notification au Client dans `dpa-modele.md`.
 
 ## Chaîne d'alerte
 1. **Détection** — toute personne (équipe, sous-traitant) signale immédiatement à : rgpd@mdmcmusicads.com.
@@ -36,5 +44,5 @@
 |      |             |                                |       |         |         |                 |                       |
 
 ## Spécifique PR Event 360
-- **Vecteurs à surveiller** : fuite de la base PostgreSQL, compromission d'un compte admin (→ déployer le **MFA**), fuite d'un **token d'espace journaliste** (URL), compromission d'une clé API tierce (Brevo/Cloudinary).
+- **Vecteurs à surveiller** : fuite de la base PostgreSQL, compromission d'un compte admin (**MFA disponible** — inciter à l'activer), fuite d'un **token d'espace journaliste** (URL), compromission d'une clé API tierce (Brevo/Cloudinary/Stripe/Twilio).
 - **Réflexe immédiat en cas de doute sur un secret** : régénérer la clé concernée (Intégrations) et faire tourner `JWT_SECRET`.

@@ -19,13 +19,13 @@
 | Finalité | Recueil et traitement des demandes d'accréditation des journalistes pour un événement |
 | Base légale | Mesures précontractuelles / exécution du contrat (art. 6.1.b) |
 | Catégories de personnes | Journalistes (professionnels, adultes) |
-| Catégories de données | Identité (prénom, nom), contact (email, téléphone), données professionnelles (média, audience/tirage, lien publication antérieure), type d'accréditation, consentement horodaté |
+| Catégories de données | Identité (prénom, nom), contact (email, téléphone), données professionnelles (média, audience/tirage, lien publication antérieure), type d'accréditation, **acquittement de l'information horodaté** |
 | Données sensibles | Aucune (art. 9) |
 | Destinataires | Équipe presse de l'organisateur (rôles admin/attaché/assistant) |
-| Sous-traitants | PR Event 360 (plateforme), hébergeur (UE), Brevo (emails, UE) |
-| Transferts hors UE | Aucun (cible : hébergement UE) — sinon DPF/CCT + TIA |
-| Durée de conservation | Événement + 12 mois, puis suppression/anonymisation |
-| Mesures de sécurité | HTTPS, contrôle d'accès par rôle, hachage argon2, journalisation, chiffrement des secrets (AES-256-GCM) |
+| Sous-traitants | PR Event 360 (plateforme), hébergeur, Brevo (emails, UE), Cloudinary (médias) |
+| Transferts hors UE | ⚠️ Hébergeur (Railway) actuellement **US** → **migration UE prioritaire** ; sinon DPF/CCT + TIA (cf. `transferts-tia.md`) |
+| Durée de conservation | Événement + 12 mois, puis suppression — **purge automatique quotidienne déployée** (scheduler) |
+| Mesures de sécurité | HTTPS, contrôle d'accès par rôle, hachage argon2id, journalisation, chiffrement des secrets (AES-256-GCM), MFA disponible, limitation de débit, assainissement des entrées |
 
 ## T2 — Gestion des demandes d'interview / reportage
 
@@ -48,7 +48,8 @@
 | Catégories de personnes | Salariés / collaborateurs de l'organisateur |
 | Catégories de données | Email, nom, rôle, mot de passe (haché argon2), événements assignés |
 | Durée de conservation | Durée de la relation + suppression à la désactivation du compte |
-| Mesures de sécurité | argon2, JWT (12 h), contrôle d'accès par rôle ; **MFA recommandé (à déployer)** |
+| Mesures de sécurité | argon2id, JWT (12 h, HS256 épinglé), contrôle d'accès par rôle, **MFA (2FA) déployé et disponible**, limitation de débit sur le login |
+| Connexion via Google | Option « Continuer avec Google » (OAuth) — sous-traitant **Google** (US, DPF à vérifier) ; seuls email + identifiant Google vérifiés sont utilisés |
 
 ## T4 — Envoi de communications (emails / newsletters)
 
@@ -70,10 +71,36 @@
 | Données personnelles | Possibles (personnes visibles sur des photos) |
 | Transferts hors UE | À encadrer (DPF/CCT + TIA) tant que la région n'est pas UE |
 
+## T6 — Paiement de l'abonnement
+
+| Champ | Valeur |
+|---|---|
+| Finalité | Souscription et facturation de l'abonnement au service |
+| Base légale | Exécution du contrat (art. 6.1.b) + obligation légale (comptabilité) |
+| Catégories de personnes | Client (organisateur) souscripteur |
+| Catégories de données | Email, nom de facturation ; **aucune donnée bancaire stockée par MDMC** |
+| Sous-traitant | **Stripe** (US/Irlande) — DPF à vérifier, DPA à accepter |
+| Transferts hors UE | Encadré DPF/CCT (cf. `transferts-tia.md`) |
+| Durée | Selon obligations comptables/fiscales applicables |
+
+## T7 — Notifications SMS (si activé)
+
+| Champ | Valeur |
+|---|---|
+| Finalité | Envoi de notifications par SMS (canal optionnel) |
+| Base légale | Intérêt légitime / exécution du contrat |
+| Catégories de données | Numéro de téléphone, contenu du message |
+| Sous-traitant | **Twilio** (US) — DPF à vérifier, sinon désactiver le canal |
+| Transferts hors UE | Encadré DPF/CCT + TIA, ou canal désactivé |
+
 ---
 
 ## Points de vigilance (suivi)
 - [ ] Renseigner l'identité du responsable de traitement et le contact DPO.
-- [ ] Confirmer l'**hébergement en région UE** (T1–T3) — cf. plan d'action.
+- [ ] **Migrer l'hébergement Railway en région UE** (supprime le transfert principal — cf. `transferts-tia.md`).
 - [ ] Confirmer **Cloudinary en région UE** + DPF (T5).
+- [ ] Vérifier la certification **DPF** de Stripe, Google (+ Twilio si SMS).
+- [ ] **Accepter et archiver les DPA** des sous-traitants ; DPA client déployé (`dpa-modele.md`).
 - [ ] Réévaluation annuelle du registre.
+
+_Documents liés : `dpa-modele.md`, `sous-traitants-dpa.md`, `procedure-violation.md`, `procedure-droits.md`, `aipd-non-necessite.md`, `transferts-tia.md`._
