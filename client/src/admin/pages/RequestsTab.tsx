@@ -446,6 +446,10 @@ function QueueRow({
           <button className="act reject" onClick={() => onChange(item.id, 'refusee')}>
             Annuler
           </button>
+        ) : item.status === 'refusee' ? (
+          <button className="act reject" onClick={() => onChange(item.id, 'pas_encore_traite')}>
+            Rouvrir
+          </button>
         ) : (
           <>
             <button className="act accept" onClick={() => onChange(item.id, 'acceptee')}>
