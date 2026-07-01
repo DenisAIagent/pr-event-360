@@ -1,10 +1,12 @@
 import { createApp } from './app';
 import { loadEnv } from './config/env';
+import { initSentry } from './lib/sentry';
 import { pool } from './db/pool';
 import { startScheduler } from './scheduler';
 
 async function main(): Promise<void> {
   const env = loadEnv(); // fail-fast si une variable requise manque
+  initSentry(); // dormant sans SENTRY_DSN
 
   // Vérifie la connexion DB au démarrage.
   await pool.query('SELECT 1');

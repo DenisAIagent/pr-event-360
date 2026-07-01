@@ -2,6 +2,15 @@ import cron from 'node-cron';
 import { sendRecapsForFrequency } from './services/recapService';
 import { purgeExpiredJournalists } from './services/retentionService';
 import { sendCoverageRequests } from './services/coverageService';
+import { captureError } from './lib/sentry';
+
+/** Journalise ET remonte à Sentry (si configuré) l'échec d'une tâche planifiée. */
+function jobFailed(job: string): (err: unknown) => void {
+  return (err) => {
+    console.error(`[scheduler] ${job}`, err);
+    captureError(err, { scheduledJob: job });
+  };
+}
 
 /**
  * Planificateur des récapitulatifs d'inscriptions.
@@ -15,7 +24,7 @@ export function startScheduler(): void {
   cron.schedule(
     '0 8 * * *',
     () => {
-      void sendRecapsForFrequency('daily').catch((err) => console.error('[scheduler] daily', err));
+      void sendRecapsForFrequency('daily').catch(jobFailed('daily'));
     },
     { timezone: tz },
   );
@@ -23,7 +32,7 @@ export function startScheduler(): void {
   cron.schedule(
     '0 8 * * 1',
     () => {
-      void sendRecapsForFrequency('weekly').catch((err) => console.error('[scheduler] weekly', err));
+      void sendRecapsForFrequency('weekly').catch(jobFailed('weekly'));
     },
     { timezone: tz },
   );
@@ -36,7 +45,7 @@ export function startScheduler(): void {
         .then((n) => {
           if (n > 0) console.log(`[rétention] ${n} journaliste(s) supprimé(s) (conservation > 12 mois)`);
         })
-        .catch((err) => console.error('[scheduler] rétention', err));
+        .catch(jobFailed('rétention'));
     },
     { timezone: tz },
   );
@@ -45,7 +54,7 @@ export function startScheduler(): void {
   cron.schedule(
     '0 9 * * *',
     () => {
-      void sendCoverageRequests().catch((err) => console.error('[scheduler] revue-presse', err));
+      void sendCoverageRequests().catch(jobFailed('revue-presse'));
     },
     { timezone: tz },
   );

@@ -31,6 +31,9 @@ const EnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_ID: z.string().optional(),
 
+  // Sentry (suivi des erreurs serveur). Optionnel : sans DSN, aucune télémétrie (dormant).
+  SENTRY_DSN: z.string().optional(),
+
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),
   EMAIL_PROVIDER: z.enum(['brevo']).default('brevo'),

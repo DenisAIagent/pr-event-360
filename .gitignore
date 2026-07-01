@@ -31,3 +31,9 @@ pgdata/
 
 # Réglages Claude Code locaux (liste d'autorisation personnelle)
 .claude/settings.local.json
+
+# Playwright
+test-results/
+playwright-report/
+/blob-report/
+.playwright/

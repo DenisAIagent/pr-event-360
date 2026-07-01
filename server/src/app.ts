@@ -99,8 +99,9 @@ export function createApp(): Express {
           fontSrc: ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'], // les RP collent des URLs d'images externes
           // Restreint aux destinations réellement appelées par le navigateur (anti-exfiltration
-          // en cas de XSS) : notre API ('self'), l'upload Cloudinary, et Google Identity.
-          connectSrc: ["'self'", 'https://api.cloudinary.com', 'https://accounts.google.com'],
+          // en cas de XSS) : notre API ('self'), l'upload Cloudinary, Google Identity, et
+          // l'ingestion Sentry (suivi d'erreurs — inactif tant que VITE_SENTRY_DSN est absent).
+          connectSrc: ["'self'", 'https://api.cloudinary.com', 'https://accounts.google.com', 'https://*.sentry.io'],
           frameSrc: ["'self'", 'https://accounts.google.com/gsi/'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],

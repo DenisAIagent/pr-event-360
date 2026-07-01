@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@pr-event-360/core": "*",
+    "@sentry/node": "^10.63.0",
     "@types/sanitize-html": "^2.16.1",
     "argon2": "^0.41.1",
     "cors": "^2.8.5",

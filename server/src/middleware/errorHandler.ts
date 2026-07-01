@@ -3,13 +3,14 @@ import { ZodError } from 'zod';
 import { AppError } from '../http/AppError';
 import { sendError } from '../http/respond';
 import { loadEnv } from '../config/env';
+import { captureError } from '../lib/sentry';
 
 const env = loadEnv();
 
 /** Gestionnaire d'erreurs central. Doit être monté EN DERNIER. */
 export function errorHandler(
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -23,7 +24,9 @@ export function errorHandler(
   }
 
   // Erreur inattendue : on logue le détail côté serveur, on reste sobre côté client.
+  // Remontée à Sentry si configuré (les erreurs métier AppError/Zod ne le sont pas).
   console.error('[unhandled]', err);
+  captureError(err, { method: req.method, path: req.path });
   const message =
     env.NODE_ENV === 'production' ? 'Erreur interne du serveur' : String((err as Error)?.message ?? err);
   sendError(res, 500, message);

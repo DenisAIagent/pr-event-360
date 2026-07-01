@@ -27,6 +27,8 @@ requise manque ou est invalide.
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM` | si Twilio | — | SMS Twilio |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | médias | — | Stockage Cloudinary |
 | `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` | facturation | — | Abonnement Stripe (inscription payante) — dormant si absent |
+| `SENTRY_DSN` | — | — | Suivi des erreurs **serveur** (Sentry) — dormant si absent |
+| `VITE_SENTRY_DSN` | — | — | Suivi des erreurs **client** (Sentry, embarqué au **build**) — dormant si absent |
 
 > Les clés Brevo/Twilio/Cloudinary peuvent aussi être saisies (chiffrées) via l'UI
 > **Intégrations** (admin), qui prime sur le `.env`. Voir [security-rgpd.md](security-rgpd.md).
