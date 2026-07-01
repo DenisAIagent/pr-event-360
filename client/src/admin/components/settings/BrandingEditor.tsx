@@ -80,7 +80,7 @@ export function BrandingEditor({
           backgroundRepeat: 'no-repeat',
         }
       : {}),
-    ['--p-accent' as string]: useAccent ? accent : 'var(--color-accent)',
+    ['--p-accent' as string]: useAccent ? accent : 'var(--brand-accent)',
     ['--p-ink' as string]: useText ? text : 'var(--color-ink)',
   };
 

@@ -379,7 +379,7 @@ export function LineupTab() {
           ) : (
             <p className="muted">Chargement…</p>
           )}
-          <div className="card" style={{ borderColor: 'var(--color-accent)', background: 'var(--color-accent-tint)' }}>
+          <div className="card" style={{ borderColor: 'var(--brand-accent)', background: 'var(--color-accent-tint)' }}>
             <strong>Votre événement est prêt.</strong>{' '}
             <span className="muted">
               Partagez le lien d'inscription (en haut de cette page) avec les journalistes.

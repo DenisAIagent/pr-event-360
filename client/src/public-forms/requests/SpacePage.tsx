@@ -370,7 +370,7 @@ export function SpacePage({
                         style={{
                           fontWeight: 700,
                           fontSize: 'var(--text-lg)',
-                          color: 'var(--p-accent, var(--color-accent))',
+                          color: 'var(--p-accent, var(--brand-accent))',
                           whiteSpace: 'nowrap',
                         }}
                       >
@@ -411,7 +411,7 @@ export function SpacePage({
                   gap: 'var(--space-3)',
                   textDecoration: 'none',
                   color: 'inherit',
-                  borderLeft: '3px solid var(--p-accent, var(--color-accent))',
+                  borderLeft: '3px solid var(--p-accent, var(--brand-accent))',
                 }}
               >
                 <span
@@ -422,7 +422,7 @@ export function SpacePage({
                     height: 42,
                     borderRadius: 'var(--radius-md)',
                     background: 'var(--color-accent-tint, #eaf7fc)',
-                    color: 'var(--p-accent, var(--color-accent))',
+                    color: 'var(--p-accent, var(--brand-accent))',
                     flex: 'none',
                   }}
                 >

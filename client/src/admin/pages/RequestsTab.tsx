@@ -359,7 +359,7 @@ const TYPE_ICON: Record<RequestType, LucideIcon> = {
   video_report: Video,
 };
 const AVA_GRADIENT: Record<RequestType, string> = {
-  interview: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-strong))',
+  interview: 'linear-gradient(135deg, var(--brand-accent), var(--color-accent-strong))',
   photo_report: 'linear-gradient(135deg, var(--navy-600), var(--color-ink))',
   video_report: 'linear-gradient(135deg, #6b3fa0, #4a2b73)',
 };

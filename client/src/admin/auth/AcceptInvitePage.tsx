@@ -73,7 +73,7 @@ export function AcceptInvitePage() {
         <div>
           <span className="eyebrow">Invitation</span>
           <h1 style={{ fontSize: 'var(--text-xl)', marginTop: 'var(--space-1)' }}>
-            Rejoindre PR Event <span style={{ color: 'var(--color-accent)' }}>360</span>
+            Rejoindre PR Event <span style={{ color: 'var(--brand-accent)' }}>360</span>
           </h1>
           {info && (
             <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>

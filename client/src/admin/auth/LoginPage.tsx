@@ -3,6 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../lib/api';
 import { useAuth } from './AuthContext';
 import { GoogleAuth } from './GoogleAuth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function LoginPage() {
   const { login, completeMfa } = useAuth();
@@ -51,78 +55,104 @@ export function LoginPage() {
   }
 
   return (
-    <main className="login-wrap">
-      <div className="card login-card stack">
-        <div>
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 40, display: 'block' }} />
-          <span className="eyebrow" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
+    <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" className="h-10" />
+          <span className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Back-office
           </span>
-        </div>
-        {challenge ? (
-          <form onSubmit={submitMfa} className="stack" noValidate>
-            <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-              Saisissez le code à 6 chiffres de votre application d'authentification.
-            </p>
-            {error && <div className="banner banner-error">{error}</div>}
-            <div className="field">
-              <label>Code de vérification</label>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={busy || code.trim().length < 6}>
-              {busy ? 'Vérification…' : 'Vérifier'}
-            </button>
-            <button
-              type="button"
-              className="auth-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              onClick={() => {
-                setChallenge(null);
-                setCode('');
-                setError(null);
-              }}
-            >
-              ← Revenir
-            </button>
-          </form>
-        ) : (
-          <>
-          <form onSubmit={submit} className="stack" noValidate>
-            {justReset && (
-              <div className="banner banner-success">
-                Mot de passe mis à jour. Connectez-vous avec votre nouveau mot de passe.
+        </CardHeader>
+        <CardContent>
+          {challenge ? (
+            <form onSubmit={submitMfa} className="flex flex-col gap-4" noValidate>
+              <p className="text-sm text-muted-foreground">
+                Saisissez le code à 6 chiffres de votre application d'authentification.
+              </p>
+              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <div className="grid gap-2">
+                <Label htmlFor="mfa-code">Code de vérification</Label>
+                <Input
+                  id="mfa-code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  required
+                  autoFocus
+                />
               </div>
-            )}
-            {error && <div className="banner banner-error">{error}</div>}
-            <div className="field">
-              <label>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+              <Button type="submit" disabled={busy || code.trim().length < 6}>
+                {busy ? 'Vérification…' : 'Vérifier'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="self-start px-0"
+                onClick={() => {
+                  setChallenge(null);
+                  setCode('');
+                  setError(null);
+                }}
+              >
+                ← Revenir
+              </Button>
+            </form>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+                {justReset && (
+                  <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                    Mot de passe mis à jour. Connectez-vous avec votre nouveau mot de passe.
+                  </div>
+                )}
+                {error && <ErrorBanner>{error}</ErrorBanner>}
+                <div className="grid gap-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="login-password">Mot de passe</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={busy || !email || !password}>
+                  {busy ? 'Connexion…' : 'Se connecter'}
+                </Button>
+                <div className="flex flex-col gap-1 text-sm">
+                  <Link to="/admin/forgot-password" className="text-muted-foreground underline-offset-4 hover:underline">
+                    Mot de passe oublié ?
+                  </Link>
+                  <Link to="/admin/abonnement" className="text-muted-foreground underline-offset-4 hover:underline">
+                    Pas encore d'espace ? S'abonner
+                  </Link>
+                </div>
+              </form>
+              <GoogleAuth />
             </div>
-            <div className="field">
-              <label>Mot de passe</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={busy || !email || !password}>
-              {busy ? 'Connexion…' : 'Se connecter'}
-            </button>
-            <Link to="/admin/forgot-password" className="auth-link">
-              Mot de passe oublié ?
-            </Link>
-            <Link to="/admin/abonnement" className="auth-link">
-              Pas encore d'espace ? S'abonner
-            </Link>
-          </form>
-          <GoogleAuth />
-          </>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </main>
+  );
+}
+
+function ErrorBanner({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+      {children}
+    </div>
   );
 }

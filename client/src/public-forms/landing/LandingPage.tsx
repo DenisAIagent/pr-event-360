@@ -195,7 +195,7 @@ export function LandingPage() {
               }}
             >
               Pilotez vos relations presse événementielles à{' '}
-              <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>360°</span>
+              <span style={{ color: 'var(--brand-accent)', fontWeight: 600 }}>360°</span>
             </h1>
             <p
               style={{
@@ -258,7 +258,7 @@ export function LandingPage() {
                   fontFamily: 'var(--font-display)',
                   fontSize: 40,
                   fontWeight: 700,
-                  color: 'var(--color-accent)',
+                  color: 'var(--brand-accent)',
                   letterSpacing: '-0.02em',
                 }}
               />
@@ -343,9 +343,9 @@ export function LandingPage() {
                         color: 'var(--color-ink)',
                       }}
                     >
-                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>«&nbsp;</span>
+                      <span style={{ color: 'var(--brand-accent, #1598d3)' }}>«&nbsp;</span>
                       {r.quote}
-                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>&nbsp;»</span>
+                      <span style={{ color: 'var(--brand-accent, #1598d3)' }}>&nbsp;»</span>
                     </blockquote>
                     <figcaption style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
                       <strong style={{ color: 'var(--color-ink)' }}>{r.authorName}</strong>
@@ -429,7 +429,7 @@ export function LandingPage() {
         <div className="lp-wrap" style={{ padding: '72px 0', position: 'relative', textAlign: 'center' }}>
           <Reveal>
           <h2 style={{ fontSize: 'clamp(1.9rem, 1.2rem + 2.2vw, 2.5rem)', fontWeight: 300, color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>
-            Les RP événementielles, <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>parfaitement orchestrées.</span>
+            Les RP événementielles, <span style={{ color: 'var(--brand-accent)', fontWeight: 600 }}>parfaitement orchestrées.</span>
           </h2>
           <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.72)', maxWidth: 560, margin: 'var(--space-4) auto 0', lineHeight: 1.55 }}>
             Rejoignez les équipes communication qui centralisent et mesurent leurs relations presse avec PR Event 360.
@@ -494,7 +494,7 @@ function HeroPreview() {
               height: 30,
               borderRadius: 8,
               background: 'var(--color-accent-tint)',
-              color: 'var(--color-accent)',
+              color: 'var(--brand-accent)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -527,7 +527,7 @@ function HeroPreview() {
           <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>42/68</span>
         </div>
         <div style={{ height: 7, borderRadius: 99, background: 'var(--color-line)', overflow: 'hidden' }}>
-          <div className="lp-progress-fill" style={{ height: '100%', background: 'var(--color-accent)', borderRadius: 99 }} />
+          <div className="lp-progress-fill" style={{ height: '100%', background: 'var(--brand-accent)', borderRadius: 99 }} />
         </div>
       </div>
     </div>
@@ -537,7 +537,7 @@ function HeroPreview() {
 function MiniKpi({ icon: Ic, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
     <div style={{ border: '1px solid var(--color-line)', borderRadius: 'var(--radius-md)', padding: 14 }}>
-      <span style={{ color: 'var(--color-accent)', display: 'inline-flex' }}>
+      <span style={{ color: 'var(--brand-accent)', display: 'inline-flex' }}>
         <Ic size={16} />
       </span>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1.1, marginTop: 4 }}>

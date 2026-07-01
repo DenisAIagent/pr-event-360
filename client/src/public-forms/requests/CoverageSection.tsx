@@ -122,7 +122,7 @@ export function CoverageSection({
     padding: '9px 12px',
     borderRadius: 9,
     border: '1px solid var(--color-line, #e3e3e3)',
-    background: active ? 'var(--color-accent, #1598d3)' : '#fff',
+    background: active ? 'var(--brand-accent, #1598d3)' : '#fff',
     color: active ? '#fff' : 'inherit',
     fontWeight: active ? 700 : 500,
     cursor: 'pointer',

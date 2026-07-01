@@ -54,7 +54,7 @@
 }
 .admin-nav a.active {
   color: var(--color-bg);
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--brand-accent);
 }
 @media (max-width: 640px) {
   /* On garde la navigation accessible sur mobile : elle passe sur une 2e ligne,
@@ -124,7 +124,7 @@
 }
 .tabs a.active {
   color: var(--color-accent-strong);
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--brand-accent);
 }
 
 /* KPI strip */
@@ -146,7 +146,7 @@
   font-size: 1.8rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--color-accent);
+  color: var(--brand-accent);
 }
 .kpi .lbl {
   font-size: var(--text-xs);
@@ -176,8 +176,8 @@
   transition: all var(--duration-fast) var(--ease-out-expo);
 }
 .chip[aria-pressed='true'] {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: var(--brand-accent);
+  border-color: var(--brand-accent);
   color: white;
 }
 
@@ -189,7 +189,7 @@
   align-items: start;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-left: 3px solid var(--color-accent);
+  border-left: 3px solid var(--brand-accent);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   margin-bottom: var(--space-3);
@@ -259,7 +259,7 @@
 .quota-bar > i {
   display: block;
   height: 100%;
-  background: var(--color-accent);
+  background: var(--brand-accent);
 }
 .quota-bar.full > i {
   background: var(--color-danger);
@@ -320,7 +320,7 @@ select.status-select {
 .auth-link {
   align-self: flex-start;
   font-size: var(--text-sm);
-  color: var(--color-accent);
+  color: var(--brand-accent);
   text-decoration: none;
 }
 .auth-link:hover {
@@ -379,7 +379,7 @@ select.status-select {
 .event-card:hover {
   /* Hover : la carte se soulève et révèle un filet d'accent en haut (motif DS). */
   transform: translateY(-3px);
-  box-shadow: inset 0 3px 0 var(--color-accent), var(--shadow-lg);
+  box-shadow: inset 0 3px 0 var(--brand-accent), var(--shadow-lg);
 }
 
 /* Bandeau navy premium (surface dominante du DS) avec motif « 360 » en anneaux. */
@@ -413,7 +413,7 @@ select.status-select {
   z-index: 1;
 }
 .hero-navy .eyebrow {
-  color: var(--color-accent);
+  color: var(--brand-accent);
 }
 .hero-navy h1 {
   color: #fff;
@@ -458,7 +458,7 @@ select.status-select {
 .event-card-go {
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--brand-accent);
   opacity: 0;
   transform: translateX(-4px);
   transition:
@@ -552,7 +552,7 @@ select.status-select {
 }
 .tour-dots span.on {
   width: 22px;
-  background: var(--color-accent);
+  background: var(--brand-accent);
 }
 .tour-foot {
   display: flex;
@@ -607,10 +607,10 @@ select.status-select {
   color: var(--color-danger);
 }
 .toast-info {
-  border-left-color: var(--color-accent);
+  border-left-color: var(--brand-accent);
 }
 .toast-info > svg {
-  color: var(--color-accent);
+  color: var(--brand-accent);
 }
 .toast-x {
   background: none;
@@ -734,7 +734,7 @@ select.status-select {
 }
 .tab-group-btn.active {
   color: var(--color-accent-strong);
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--brand-accent);
 }
 .tab-group-menu {
   position: absolute;
@@ -781,8 +781,8 @@ select.status-select {
 
 /* ── Navigation clavier de la file de demandes ── */
 .req-card.is-active {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-md);
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px var(--brand-accent), var(--shadow-md);
 }
 .kbd-hint {
   display: flex;
@@ -837,8 +837,8 @@ select.status-select {
   font-weight: 600;
 }
 .wizard-steps li.current .wizard-step-num {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
+  border-color: var(--brand-accent);
+  background: var(--brand-accent);
   color: #fff;
 }
 .wizard-steps li.done {
@@ -1066,7 +1066,7 @@ select.status-select {
 
 /* ═══════════════════════════════════════════════════════════════════
    REFONTE 2026 — Shell rail navy + file en grille
-   (charte appliquée via les tokens : navy --color-ink, blue --color-accent)
+   (charte appliquée via les tokens : navy --color-ink, blue --brand-accent)
    ═══════════════════════════════════════════════════════════════════ */
 
 .app {
@@ -1151,8 +1151,8 @@ select.status-select {
   border-radius: 12px;
 }
 .org-row-current {
-  border-color: var(--color-accent, #2563eb);
-  box-shadow: 0 0 0 1px var(--color-accent, #2563eb) inset;
+  border-color: var(--brand-accent, #2563eb);
+  box-shadow: 0 0 0 1px var(--brand-accent, #2563eb) inset;
 }
 .org-row-icon {
   display: inline-flex;
@@ -1183,8 +1183,8 @@ select.status-select {
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--color-accent, #2563eb) 14%, transparent);
-  color: var(--color-accent, #2563eb);
+  background: color-mix(in oklab, var(--brand-accent, #2563eb) 14%, transparent);
+  color: var(--brand-accent, #2563eb);
 }
 .org-row-meta {
   font-size: var(--text-sm, 13px);
@@ -1355,7 +1355,7 @@ select.status-select {
   bottom: 7px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--color-accent);
+  background: var(--brand-accent);
 }
 .rail-foot {
   padding: 13px;
@@ -1368,7 +1368,7 @@ select.status-select {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
+  background: linear-gradient(135deg, var(--brand-accent), var(--color-accent-strong));
   display: grid;
   place-items: center;
   color: #fff;
@@ -1464,7 +1464,7 @@ select.status-select {
   transition: border-color var(--duration-normal) var(--ease-out-expo), box-shadow var(--duration-normal) var(--ease-out-expo);
 }
 .topbar .search:focus-within {
-  border-color: var(--color-accent);
+  border-color: var(--brand-accent);
   box-shadow: var(--ring-accent);
   background: #fff;
 }
@@ -1755,7 +1755,7 @@ select.status-select {
   );
 }
 .queue .row.is-active {
-  box-shadow: inset 3px 0 0 var(--color-accent), inset 0 0 0 1px rgba(21, 152, 211, 0.3);
+  box-shadow: inset 3px 0 0 var(--brand-accent), inset 0 0 0 1px rgba(21, 152, 211, 0.3);
   background: var(--color-accent-tint);
 }
 
@@ -1776,10 +1776,10 @@ select.status-select {
   right: 0;
   bottom: 0;
   border-radius: 3px 3px 0 0;
-  background: linear-gradient(var(--color-accent), var(--color-accent-strong));
+  background: linear-gradient(var(--brand-accent), var(--color-accent-strong));
 }
 .queue .row.tier-hi .score-bar i {
-  background: linear-gradient(var(--color-accent-soft), var(--color-accent));
+  background: linear-gradient(var(--color-accent-soft), var(--brand-accent));
 }
 .queue .row.tier-lo .score-bar i {
   background: linear-gradient(var(--color-ink-faint), var(--color-ink-soft));
@@ -1954,7 +1954,7 @@ select.status-select {
   white-space: nowrap;
 }
 .act.accept {
-  background: var(--color-accent);
+  background: var(--brand-accent);
   color: #fff;
   box-shadow: var(--shadow-accent);
 }

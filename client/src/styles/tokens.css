@@ -16,7 +16,7 @@
   --color-line: #e6ecf2; /* filets / bordures */
 
   /* Accent : bleu digital — boutons, liens, chiffres clés, le « 360 ». Jamais en aplat dominant. */
-  --color-accent: #1598d3;
+  --brand-accent: #1598d3;
   --color-accent-strong: #0f7cb0;
   --color-accent-tint: #eaf7fc;
   --color-accent-soft: #46b0dd; /* blue 400 — dégradés, accents sur navy */

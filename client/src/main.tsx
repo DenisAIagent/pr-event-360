@@ -6,6 +6,8 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/jetbrains-mono';
 import { App } from './App';
+// Base Tailwind + thème shadcn AVANT le CSS maison : l'existant garde la main pendant la migration.
+import './styles/tailwind.css';
 import './styles/global.css';
 
 const rootEl = document.getElementById('root');
