@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
+import { Separator } from '@/components/ui/separator';
 
 // Contact RGPD (boîte surveillée par l'organisation).
 const PRIVACY_CONTACT = 'rgpd@mdmcmusicads.com';
+
+const linkClass = 'font-medium text-primary underline-offset-4 hover:underline';
 
 /**
  * Politique de confidentialité (RGPD, art. 13). Page publique, française.
@@ -9,43 +12,45 @@ const PRIVACY_CONTACT = 'rgpd@mdmcmusicads.com';
  */
 export function PrivacyPage() {
   return (
-    <main className="page" style={{ maxWidth: 760 }}>
-      <span className="eyebrow">Protection des données</span>
-      <h1 style={{ fontSize: 'var(--text-display)', margin: 'var(--space-2) 0 var(--space-3)' }}>
-        Politique de confidentialité
-      </h1>
-      <p className="muted" style={{ marginBottom: 'var(--space-5)' }}>
+    <main className="mx-auto max-w-3xl p-4 md:p-8">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Protection des données
+      </span>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Politique de confidentialité</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
         Dernière mise à jour : juin 2026. Cette politique décrit comment vos données personnelles sont
         traitées lorsque vous demandez une accréditation presse via PR&nbsp;Event&nbsp;360.
       </p>
 
-      <section className="stack" style={{ gap: 'var(--space-5)' }}>
-        <div>
-          <h2>1. Responsable de traitement</h2>
-          <p>
+      <Separator className="my-6" />
+
+      <div className="space-y-8">
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">1. Responsable de traitement</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Le responsable du traitement est <strong>l'organisateur de l'événement</strong> auquel vous
             demandez votre accréditation. La plateforme PR&nbsp;Event&nbsp;360 est éditée par{' '}
             <strong>MDMC&nbsp;OÜ</strong>, société de droit estonien (Union européenne), immatriculée au
             registre du commerce estonien sous le n°&nbsp;16466485, siège : Sepapaja tn 6, 15551 Tallinn,
             Estonie, qui agit en tant que <strong>sous-traitant technique</strong> (art. 28 RGPD) pour le
             compte de cet organisateur.
-            Pour toute question relative à vos données : <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>.
+            Pour toute question relative à vos données : <a href={`mailto:${PRIVACY_CONTACT}`} className={linkClass}>{PRIVACY_CONTACT}</a>.
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>2. Données collectées</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">2. Données collectées</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Lors de votre demande d'accréditation : prénom, nom, adresse email, téléphone (facultatif), média
             représenté, audience/tirage (facultatif), type d'accréditation, lien vers une publication
             antérieure (facultatif) et le contenu de vos demandes d'interview ou de reportage. Aucune donnée
             sensible (art.&nbsp;9 RGPD) n'est collectée.
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>3. Finalités et base légale</h2>
-          <ul className="stack" style={{ gap: 'var(--space-1)', paddingLeft: '1.1rem' }}>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">3. Finalités et base légale</h2>
+          <ul className="list-disc space-y-2 pl-5 leading-relaxed text-muted-foreground">
             <li>
               <strong>Gestion de votre demande d'accréditation et de vos demandes d'interview/reportage</strong> —
               base légale&nbsp;: exécution de mesures précontractuelles et du contrat (art.&nbsp;6.1.b).
@@ -60,11 +65,11 @@ export function PrivacyPage() {
               (pas de décision exclusivement automatisée au sens de l'art.&nbsp;22).
             </li>
           </ul>
-        </div>
+        </section>
 
-        <div>
-          <h2>4. Destinataires et sous-traitants</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">4. Destinataires et sous-traitants</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Vos données sont accessibles à l'équipe presse de l'organisateur. Nous faisons appel à des
             sous-traitants offrant des garanties appropriées&nbsp;: <strong>Brevo</strong> (envoi d'emails,
             Union européenne), <strong>Cloudinary</strong> (hébergement des médias) et l'hébergeur de la
@@ -72,50 +77,48 @@ export function PrivacyPage() {
             sous-traitant traite des données hors UE, le transfert est encadré par une décision d'adéquation,
             le Data&nbsp;Privacy&nbsp;Framework ou des clauses contractuelles types (art.&nbsp;44-49 RGPD).
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>5. Durée de conservation</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">5. Durée de conservation</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Vos données d'accréditation sont conservées pendant la durée de l'événement, puis pour une durée
             maximale de <strong>12 mois</strong> à des fins de gestion et de suivi, avant suppression ou
             anonymisation.
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>6. Vos droits</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">6. Vos droits</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Conformément aux articles 15 à 22 du RGPD, vous disposez d'un droit d'<strong>accès</strong>, de{' '}
             <strong>rectification</strong>, d'<strong>effacement</strong>, de <strong>limitation</strong>,
             d'<strong>opposition</strong> et de <strong>portabilité</strong> de vos données. Pour les exercer,
-            écrivez à <a href={`mailto:${PRIVACY_CONTACT}`}>{PRIVACY_CONTACT}</a>. Vous pouvez également
-            introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noreferrer">CNIL</a>.
+            écrivez à <a href={`mailto:${PRIVACY_CONTACT}`} className={linkClass}>{PRIVACY_CONTACT}</a>. Vous pouvez également
+            introduire une réclamation auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noreferrer" className={linkClass}>CNIL</a>.
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>7. Cookies et traceurs</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">7. Cookies et traceurs</h2>
+          <p className="leading-relaxed text-muted-foreground">
             La plateforme n'utilise <strong>aucun traceur publicitaire ou analytique</strong>. Seul un stockage
             local strictement nécessaire au fonctionnement (session, préférences) est employé&nbsp;: il est
             exempté de consentement.
           </p>
-        </div>
+        </section>
 
-        <div>
-          <h2>8. Sécurité</h2>
-          <p>
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">8. Sécurité</h2>
+          <p className="leading-relaxed text-muted-foreground">
             Les mots de passe sont hachés (argon2), les clés des outils tiers sont chiffrées (AES-256-GCM),
             les échanges sont chiffrés en transit (HTTPS), et l'accès est restreint aux personnes habilitées.
           </p>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <p style={{ marginTop: 'var(--space-6)' }}>
-        <Link to="/" className="auth-link">
-          ← Retour à l'accueil
-        </Link>
+      <p className="mt-10">
+        <Link to="/" className={linkClass}>← Retour à l'accueil</Link>
       </p>
     </main>
   );

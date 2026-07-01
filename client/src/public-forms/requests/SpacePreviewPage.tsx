@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import type { SpaceResponse } from '../../lib/types';
 import { SpacePage } from './SpacePage';
+import { Card, CardContent } from '@/components/ui/card';
 
 /** Lit le jeton admin stocké par le back-office (même origine → localStorage partagé). */
 function readAdminToken(): string | null {
@@ -38,14 +39,16 @@ export function SpacePreviewPage() {
   if (error) {
     return (
       <main className="page">
-        <div className="card">{error}</div>
+        <Card>
+          <CardContent className="pt-6">{error}</CardContent>
+        </Card>
       </main>
     );
   }
   if (!data) {
     return (
       <main className="page">
-        <p className="muted">Chargement de l’aperçu…</p>
+        <p className="text-muted-foreground">Chargement de l’aperçu…</p>
       </main>
     );
   }

@@ -10,6 +10,14 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { brandingStyle } from '../../lib/branding';
 import { Icon } from '../../components/Icon';
 import { CoverageSection } from './CoverageSection';
+import { cn } from '@/lib/utils';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type SpaceTab = 'requests' | 'planning' | 'coverage' | 'account';
 
@@ -121,14 +129,16 @@ export function SpacePage({
   if (loadError) {
     return (
       <main className="page">
-        <div className="card">{loadError}</div>
+        <Card>
+          <CardContent className="pt-6">{loadError}</CardContent>
+        </Card>
       </main>
     );
   }
   if (!data) {
     return (
       <main className="page">
-        <p className="muted">{t('common.loading')}</p>
+        <p className="text-muted-foreground">{t('common.loading')}</p>
       </main>
     );
   }
@@ -225,115 +235,131 @@ export function SpacePage({
                 <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>
                   {t('space.welcome', { name: firstName })}
                 </h1>
-                <p className="lede" style={{ margin: 0 }}>
+                <p className="m-0 text-muted-foreground">
                   {t('space.lede', { event: data.event.name })}
                 </p>
               </div>
 
               {hasPhotoRules && data.photoRules && (
-                <section className="card stack" aria-labelledby="sec-photo">
-                  <h2 id="sec-photo" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
-                    {t('space.photo.title')}
-                  </h2>
-                  {data.photoRules.photoRule && (
-                    <div>
-                      <strong>{t('space.photo.rule')}</strong>
-                      <p className="muted" style={{ whiteSpace: 'pre-wrap', marginTop: 'var(--space-1)' }}>
-                        {data.photoRules.photoRule}
-                      </p>
-                    </div>
-                  )}
-                  {data.photoRules.onsiteContract && (
-                    <div className="banner banner-warn">{t('space.photo.contract')}</div>
-                  )}
-                  {data.photoRules.photoTerms && (
-                    <div>
-                      <strong>{t('space.photo.terms')}</strong>
-                      <p className="muted" style={{ whiteSpace: 'pre-wrap', marginTop: 'var(--space-1)' }}>
-                        {data.photoRules.photoTerms}
-                      </p>
-                    </div>
-                  )}
-                </section>
+                <Card aria-labelledby="sec-photo">
+                  <CardHeader>
+                    <CardTitle id="sec-photo" className="text-xl">{t('space.photo.title')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-4">
+                    {data.photoRules.photoRule && (
+                      <div>
+                        <strong>{t('space.photo.rule')}</strong>
+                        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                          {data.photoRules.photoRule}
+                        </p>
+                      </div>
+                    )}
+                    {data.photoRules.onsiteContract && (
+                      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                        {t('space.photo.contract')}
+                      </div>
+                    )}
+                    {data.photoRules.photoTerms && (
+                      <div>
+                        <strong>{t('space.photo.terms')}</strong>
+                        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                          {data.photoRules.photoTerms}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
-              <section className="card" aria-labelledby="new-req">
-                <h2 id="new-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>
-                  {t('space.new.title')}
-                </h2>
-                <form onSubmit={handleSubmit}>
-                  {error && <div className="banner banner-error">{error}</div>}
-                  {sent && <div className="banner banner-success">{t('space.sent')}</div>}
+              <Card aria-labelledby="new-req">
+                <CardHeader>
+                  <CardTitle id="new-req" className="text-xl">{t('space.new.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    {sent && (
+                      <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                        {t('space.sent')}
+                      </div>
+                    )}
 
-                  <div className="field">
-                    <label>{t('space.type')}</label>
-                    <select value={type} onChange={(e) => setType(e.target.value as RequestType)}>
-                      <option value="interview">{t('space.type.interview')}</option>
-                      <option value="photo_report">{t('space.type.photo_report')}</option>
-                      <option value="video_report">{t('space.type.video_report')}</option>
-                    </select>
-                  </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="req-type">{t('space.type')}</Label>
+                      <Select value={type} onValueChange={(v) => setType(v as RequestType)}>
+                        <SelectTrigger id="req-type" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="interview">{t('space.type.interview')}</SelectItem>
+                          <SelectItem value="photo_report">{t('space.type.photo_report')}</SelectItem>
+                          <SelectItem value="video_report">{t('space.type.video_report')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="field">
-                    <label>
-                      {t('space.artist')} <span className="req">*</span>
-                    </label>
-                    <select value={artistId} onChange={(e) => setArtistId(e.target.value)} required>
-                      <option value="">{t('space.select')}</option>
-                      {data.lineup.artists.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="req-artist">
+                        {t('space.artist')} <span className="text-destructive">*</span>
+                      </Label>
+                      <Select value={artistId} onValueChange={setArtistId}>
+                        <SelectTrigger id="req-artist" className="w-full">
+                          <SelectValue placeholder={t('space.select')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {data.lineup.artists.map((a) => (
+                            <SelectItem key={a.id} value={a.id}>
+                              {a.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="field">
-                    <label>{t('space.message')}</label>
-                    <textarea value={message} onChange={(e) => setMessage(e.target.value)} />
-                  </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="req-message">{t('space.message')}</Label>
+                      <Textarea id="req-message" value={message} onChange={(e) => setMessage(e.target.value)} />
+                    </div>
 
-                  <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
-                    {submitting ? t('common.loading') : t('space.submit')}
-                  </button>
-                </form>
-              </section>
+                    <Button type="submit" className="self-start" disabled={!canSubmit}>
+                      {submitting ? t('common.loading') : t('space.submit')}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
 
               <section aria-labelledby="my-req">
-                <h2 id="my-req" style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-3)' }}>
+                <h2 id="my-req" className="mb-3 text-xl font-semibold">
                   {t('space.requests.title')}
                 </h2>
                 {data.requests.length === 0 ? (
-                  <p className="muted">{t('space.requests.empty')}</p>
+                  <p className="text-muted-foreground">{t('space.requests.empty')}</p>
                 ) : (
                   <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                     {data.requests.map((r) => {
                       const target = r.artistName ?? r.stageName;
                       const slot = slotText(r);
                       return (
-                        <li
-                          key={r.id}
-                          className="card"
-                          style={{ padding: 'var(--space-3) var(--space-4)', boxShadow: 'var(--shadow-sm)' }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
+                        <li key={r.id} className="rounded-xl border bg-card px-4 py-3 shadow-sm">
+                          <div className="flex items-center justify-between gap-3">
                             <div>
                               <strong>{t(`space.type.${r.type}`)}</strong>
                               {target && (
-                                <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>· {target}</span>
+                                <span className="ml-2 text-sm text-muted-foreground">· {target}</span>
                               )}
                             </div>
                             <StatusBadge status={r.status} />
                           </div>
                           {slot && (
-                            <div
-                              className="muted"
-                              style={{ marginTop: 'var(--space-1)', fontSize: 'var(--text-sm)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                            >
+                            <div className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
                               <Icon name="clock" /> {t('space.requests.slot')} : {slot}
                             </div>
                           )}
-                          {r.message && <p className="muted" style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)' }}>{r.message}</p>}
+                          {r.message && <p className="mt-1 text-sm text-muted-foreground">{r.message}</p>}
                         </li>
                       );
                     })}
@@ -346,39 +372,28 @@ export function SpacePage({
           {tab === 'planning' && (
             <section aria-labelledby="my-plan" className="stack" style={{ gap: 'var(--space-3)' }}>
               <div>
-                <h1 id="my-plan" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
+                <h1 id="my-plan" className="text-xl font-semibold">
                   {t('space.planning.title')}
                 </h1>
               </div>
               {planning.length === 0 ? (
-                <p className="muted">{t('space.planning.empty')}</p>
+                <p className="text-muted-foreground">{t('space.planning.empty')}</p>
               ) : (
                 <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {planning.map((r) => (
                     <li
                       key={r.id}
-                      className="card"
-                      style={{
-                        padding: 'var(--space-3) var(--space-4)',
-                        boxShadow: 'var(--shadow-sm)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-4)',
-                      }}
+                      className="flex items-center gap-4 rounded-xl border bg-card px-4 py-3 shadow-sm"
                     >
                       <span
-                        style={{
-                          fontWeight: 700,
-                          fontSize: 'var(--text-lg)',
-                          color: 'var(--p-accent, var(--brand-accent))',
-                          whiteSpace: 'nowrap',
-                        }}
+                        className="whitespace-nowrap text-lg font-bold"
+                        style={{ color: 'var(--p-accent, var(--brand-accent))' }}
                       >
                         {r.slotStart?.slice(0, 5)}
                       </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="min-w-0 flex-1">
                         <strong>{r.artistName ?? '—'}</strong>
-                        <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>{slotText(r)}</div>
+                        <div className="text-sm text-muted-foreground">{slotText(r)}</div>
                       </div>
                       <StatusBadge status={r.status} />
                     </li>
@@ -404,82 +419,86 @@ export function SpacePage({
                 href={newsroomUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="card"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  borderLeft: '3px solid var(--p-accent, var(--brand-accent))',
-                }}
+                className="flex items-center gap-3 rounded-xl border bg-card p-4 text-inherit no-underline shadow-sm"
+                style={{ borderLeft: '3px solid var(--p-accent, var(--brand-accent))' }}
               >
                 <span
+                  className="grid h-[42px] w-[42px] flex-none place-items-center rounded-md"
                   style={{
-                    display: 'grid',
-                    placeItems: 'center',
-                    width: 42,
-                    height: 42,
-                    borderRadius: 'var(--radius-md)',
                     background: 'var(--color-accent-tint, #eaf7fc)',
                     color: 'var(--p-accent, var(--brand-accent))',
-                    flex: 'none',
                   }}
                 >
                   <Icon name="newspaper" />
                 </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ display: 'block' }}>{t('space.newsroom.title')}</strong>
-                  <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{t('space.newsroom.desc')}</span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block">{t('space.newsroom.title')}</strong>
+                  <span className="text-sm text-muted-foreground">{t('space.newsroom.desc')}</span>
                 </span>
-                <span className="btn btn-primary btn-sm" style={{ flex: 'none', pointerEvents: 'none' }}>
+                <span className={cn(buttonVariants({ size: 'sm' }), 'pointer-events-none flex-none')}>
                   {t('space.newsroom.cta')} →
                 </span>
               </a>
 
               {readOnly ? (
-                <section className="card stack">
-                  <h2 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.password.title')}</h2>
-                  <p className="muted" style={{ margin: 0 }}>{t('space.password.hint')}</p>
-                </section>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl">{t('space.password.title')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{t('space.password.hint')}</p>
+                  </CardContent>
+                </Card>
               ) : (
-                <section className="card stack" aria-labelledby="sec-pwd">
-                  <h2 id="sec-pwd" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.password.title')}</h2>
-                  <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
-                    {data.journalist.hasPassword || pwdSaved ? t('space.password.setHint') : t('space.password.hint')}
-                  </p>
-                  <form className="stack" onSubmit={savePassword} noValidate>
-                    {pwdError && <div className="banner banner-error">{pwdError}</div>}
-                    {pwdSaved && <div className="banner banner-success">{t('space.password.saved')}</div>}
-                    <div className="field">
-                      <label htmlFor="sp-pwd">{t('space.password.field')}</label>
-                      <input
-                        id="sp-pwd"
-                        type="password"
-                        autoComplete="new-password"
-                        value={pwd}
-                        onChange={(e) => setPwd(e.target.value)}
-                      />
-                    </div>
-                    <div className="field">
-                      <label htmlFor="sp-pwd-confirm">{t('space.password.confirm')}</label>
-                      <input
-                        id="sp-pwd-confirm"
-                        type="password"
-                        autoComplete="new-password"
-                        value={pwdConfirm}
-                        onChange={(e) => setPwdConfirm(e.target.value)}
-                      />
-                    </div>
-                    <button type="submit" className="btn btn-primary" disabled={pwdBusy || !pwd || !pwdConfirm}>
-                      {pwdBusy
-                        ? '…'
-                        : data.journalist.hasPassword
-                          ? t('space.password.replace')
-                          : t('space.password.save')}
-                    </button>
-                  </form>
-                </section>
+                <Card aria-labelledby="sec-pwd">
+                  <CardHeader>
+                    <CardTitle id="sec-pwd" className="text-xl">{t('space.password.title')}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      {data.journalist.hasPassword || pwdSaved ? t('space.password.setHint') : t('space.password.hint')}
+                    </p>
+                    <form className="flex flex-col gap-4" onSubmit={savePassword} noValidate>
+                      {pwdError && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{pwdError}</AlertDescription>
+                        </Alert>
+                      )}
+                      {pwdSaved && (
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                          {t('space.password.saved')}
+                        </div>
+                      )}
+                      <div className="grid gap-2">
+                        <Label htmlFor="sp-pwd">{t('space.password.field')}</Label>
+                        <Input
+                          id="sp-pwd"
+                          type="password"
+                          autoComplete="new-password"
+                          value={pwd}
+                          onChange={(e) => setPwd(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sp-pwd-confirm">{t('space.password.confirm')}</Label>
+                        <Input
+                          id="sp-pwd-confirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={pwdConfirm}
+                          onChange={(e) => setPwdConfirm(e.target.value)}
+                        />
+                      </div>
+                      <Button type="submit" className="self-start" disabled={pwdBusy || !pwd || !pwdConfirm}>
+                        {pwdBusy
+                          ? '…'
+                          : data.journalist.hasPassword
+                            ? t('space.password.replace')
+                            : t('space.password.save')}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}

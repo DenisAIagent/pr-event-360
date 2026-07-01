@@ -9,14 +9,19 @@ import {
   UserCheck,
   ShieldCheck,
   ArrowRight,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Guide {
   icon: LucideIcon;
   title: string;
   points: string[];
 }
+
+const linkClass = 'font-medium text-primary underline-offset-4 hover:underline';
 
 const GUIDES: Guide[] = [
   {
@@ -159,95 +164,97 @@ const FAQ: { q: string; a: string }[] = [
 function GuideCard({ guide }: { guide: Guide }) {
   const Icon = guide.icon;
   return (
-    <div className="card">
-      <span
-        style={{
-          display: 'grid',
-          placeItems: 'center',
-          width: 44,
-          height: 44,
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--color-accent-tint)',
-          color: 'var(--color-accent-strong)',
-          marginBottom: 'var(--space-2)',
-        }}
-      >
-        <Icon size={22} strokeWidth={1.7} />
-      </span>
-      <h3 style={{ fontSize: 'var(--text-lg)', margin: '0 0 var(--space-2)' }}>{guide.title}</h3>
-      <ul className="res-list">
-        {guide.points.map((p) => (
-          <li key={p}>{p}</li>
-        ))}
-      </ul>
-    </div>
+    <Card>
+      <CardContent className="space-y-3">
+        <span className="grid size-11 place-items-center rounded-md bg-muted text-foreground">
+          <Icon size={22} strokeWidth={1.7} />
+        </span>
+        <h3 className="text-lg font-semibold">{guide.title}</h3>
+        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">
+          {guide.points.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
 /** Centre de ressources public : guides d'utilisation, bonnes pratiques RP et FAQ. */
 export function ResourcesPage() {
   return (
-    <main className="page" style={{ maxWidth: 880 }}>
-      <span className="eyebrow">Ressources</span>
-      <h1 style={{ fontSize: 'var(--text-display)', margin: 'var(--space-2) 0 var(--space-3)' }}>
-        Centre de ressources
-      </h1>
-      <p className="muted" style={{ marginBottom: 'var(--space-5)', maxWidth: 620 }}>
+    <main className="mx-auto max-w-4xl p-4 md:p-8">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Ressources</span>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">Centre de ressources</h1>
+      <p className="mt-2 max-w-2xl leading-relaxed text-muted-foreground">
         Tout pour prendre en main PR&nbsp;Event&nbsp;360 et orchestrer vos relations presse
         événementielles : guides pas à pas, bonnes pratiques et réponses aux questions fréquentes.
       </p>
 
-      <section className="card stack" style={{ marginBottom: 'var(--space-5)' }}>
-        <h2 style={{ fontSize: 'var(--text-lg)' }}>Démarrage rapide</h2>
-        <ol className="res-steps">
-          <li>
-            <strong>Créez votre événement</strong> — un assistant en 6 étapes (infos, apparence,
-            lineup, règles, clôture).
-          </li>
-          <li>
-            <strong>Partagez le lien d’inscription</strong> aux journalistes (réseaux, email, site presse).
-          </li>
-          <li>
-            <strong>Traitez les demandes</strong> — validez les accréditations, puis gérez les
-            interviews et reportages.
-          </li>
-        </ol>
-        <Link to="/admin/login" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
-          Accéder à la plateforme <ArrowRight size={18} />
-        </Link>
-      </section>
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Démarrage rapide</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <ol className="list-decimal space-y-2 pl-5 leading-relaxed text-muted-foreground">
+            <li>
+              <strong>Créez votre événement</strong> — un assistant en 6 étapes (infos, apparence,
+              lineup, règles, clôture).
+            </li>
+            <li>
+              <strong>Partagez le lien d’inscription</strong> aux journalistes (réseaux, email, site presse).
+            </li>
+            <li>
+              <strong>Traitez les demandes</strong> — validez les accréditations, puis gérez les
+              interviews et reportages.
+            </li>
+          </ol>
+          <Button asChild>
+            <Link to="/admin/login">
+              Accéder à la plateforme <ArrowRight size={18} />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
-      <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>Guides d’utilisation</h2>
-      <div className="res-grid" style={{ marginBottom: 'var(--space-6)' }}>
+      <h2 className="mt-10 mb-4 text-2xl font-semibold">Guides d’utilisation</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {GUIDES.map((g) => (
           <GuideCard key={g.title} guide={g} />
         ))}
       </div>
 
-      <section className="card stack" style={{ marginBottom: 'var(--space-6)' }}>
-        <h2 style={{ fontSize: 'var(--text-lg)' }}>Bonnes pratiques RP</h2>
-        <ul className="res-list">
-          {TIPS.map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-      </section>
+      <Card className="mt-10">
+        <CardHeader>
+          <CardTitle className="text-lg">Bonnes pratiques RP</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">
+            {TIPS.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
 
-      <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: 'var(--space-4)' }}>Questions fréquentes</h2>
-      <div className="faq">
+      <h2 className="mt-10 mb-4 text-2xl font-semibold">Questions fréquentes</h2>
+      <div className="divide-y rounded-lg border">
         {FAQ.map((item) => (
-          <details key={item.q}>
-            <summary>{item.q}</summary>
-            <p>{item.a}</p>
+          <details key={item.q} className="group px-4">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-medium [&::-webkit-details-marker]:hidden">
+              {item.q}
+              <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="pb-4 text-sm leading-relaxed text-muted-foreground">{item.a}</p>
           </details>
         ))}
       </div>
 
-      <p style={{ marginTop: 'var(--space-6)', display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-        <Link to="/" className="auth-link">
+      <p className="mt-10 flex flex-wrap gap-4">
+        <Link to="/" className={linkClass}>
           ← Retour à l’accueil
         </Link>
-        <Link to="/confidentialite" className="auth-link">
+        <Link to="/confidentialite" className={linkClass}>
           Politique de confidentialité
         </Link>
       </p>

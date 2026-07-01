@@ -7,6 +7,19 @@ import type { AccreditationType, PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { brandingStyle } from '../../lib/branding';
 import { DeadlineCountdown } from './DeadlineCountdown';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FormState {
   firstName: string;
@@ -99,15 +112,17 @@ export function AccreditationPage() {
 
   if (loadError) {
     return (
-      <main className="page">
-        <div className="card">{t('common.notFound')}</div>
+      <main className="mx-auto max-w-2xl p-4 md:p-8">
+        <Card>
+          <CardContent>{t('common.notFound')}</CardContent>
+        </Card>
       </main>
     );
   }
   if (!event) {
     return (
-      <main className="page">
-        <p className="muted">{t('common.loading')}</p>
+      <main className="mx-auto max-w-2xl p-4 md:p-8">
+        <p className="text-muted-foreground">{t('common.loading')}</p>
       </main>
     );
   }
@@ -115,13 +130,17 @@ export function AccreditationPage() {
   if (event.registrationClosed || expired) {
     return (
       <div style={brandingStyle(event.branding)}>
-        <main className="page">
-          <div className="card stack">
-            {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
-            <span className="eyebrow">{event.name}</span>
-            <h1>{t('acc.closed.title')}</h1>
-            <p className="lede">{t('acc.closed.body', { event: event.name })}</p>
-          </div>
+        <main className="mx-auto max-w-2xl p-4 md:p-8">
+          <Card>
+            <CardContent className="flex flex-col gap-3">
+              {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {event.name}
+              </span>
+              <h1 className="text-3xl font-semibold tracking-tight">{t('acc.closed.title')}</h1>
+              <p className="text-muted-foreground">{t('acc.closed.body', { event: event.name })}</p>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -130,13 +149,17 @@ export function AccreditationPage() {
   if (done) {
     return (
       <div style={brandingStyle(event.branding)}>
-        <main className="page">
-          <div className="card stack">
-            {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
-            <span className="eyebrow">{event.name}</span>
-            <h1>{t('acc.success.title')}</h1>
-            <p className="lede">{t('acc.success.body', { name: form.firstName })}</p>
-          </div>
+        <main className="mx-auto max-w-2xl p-4 md:p-8">
+          <Card>
+            <CardContent className="flex flex-col gap-3">
+              {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                {event.name}
+              </span>
+              <h1 className="text-3xl font-semibold tracking-tight">{t('acc.success.title')}</h1>
+              <p className="text-muted-foreground">{t('acc.success.body', { name: form.firstName })}</p>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -144,134 +167,213 @@ export function AccreditationPage() {
 
   return (
     <div style={brandingStyle(event.branding)}>
-    <main className="page">
-      <header
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+    <main className="mx-auto max-w-2xl p-4 md:p-8">
+      <header className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
           {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
-          <span className="eyebrow">{t('acc.eyebrow')}</span>
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t('acc.eyebrow')}
+          </span>
         </div>
         <LanguageSwitcher available={event.languages.filter(isLang)} />
       </header>
 
-      <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>{event.name}</h1>
-      <p className="lede" style={{ marginBottom: 'var(--space-2)' }}>
-        {t('acc.lede', { event: event.name })}
-      </p>
-      <p style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-sm)' }}>
-        <Link to={links.login}>{t('acc.haveAccount')}</Link>
+      <h1
+        className="mb-2 text-3xl font-semibold tracking-tight"
+        style={{ fontSize: 'var(--text-display)' }}
+      >
+        {event.name}
+      </h1>
+      <p className="mb-2 text-muted-foreground">{t('acc.lede', { event: event.name })}</p>
+      <p className="mb-4 text-sm">
+        <Link to={links.login} className="underline underline-offset-4">
+          {t('acc.haveAccount')}
+        </Link>
       </p>
 
       {event.deadline && (
         <DeadlineCountdown deadline={event.deadline} onExpired={() => setExpired(true)} />
       )}
 
-      <form className="card" onSubmit={handleSubmit} noValidate>
-        {error && <div className="banner banner-error">{error}</div>}
+      <Card>
+        <CardContent>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <div className="row">
-          <Field label={t('acc.firstName')} required>
-            <input value={form.firstName} onChange={(e) => update('firstName', e.target.value)} required />
-          </Field>
-          <Field label={t('acc.lastName')}>
-            <input value={form.lastName} onChange={(e) => update('lastName', e.target.value)} />
-          </Field>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="firstName" label={t('acc.firstName')} required>
+                <Input
+                  id="firstName"
+                  value={form.firstName}
+                  onChange={(e) => update('firstName', e.target.value)}
+                  required
+                />
+              </Field>
+              <Field id="lastName" label={t('acc.lastName')}>
+                <Input
+                  id="lastName"
+                  value={form.lastName}
+                  onChange={(e) => update('lastName', e.target.value)}
+                />
+              </Field>
+            </div>
 
-        <div className="row">
-          <Field label={t('acc.email')} required>
-            <input type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required />
-          </Field>
-          <Field label={t('acc.phone')}>
-            <input value={form.phone} onChange={(e) => update('phone', e.target.value)} />
-          </Field>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="email" label={t('acc.email')} required>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  required
+                />
+              </Field>
+              <Field id="phone" label={t('acc.phone')}>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => update('phone', e.target.value)}
+                />
+              </Field>
+            </div>
 
-        <div className="row">
-          <Field label={t('acc.media')}>
-            <input value={form.media} onChange={(e) => update('media', e.target.value)} />
-          </Field>
-          <Field label={t('acc.mediaType')}>
-            <select value={form.mediaTypeId} onChange={(e) => update('mediaTypeId', e.target.value)}>
-              <option value="">{t('space.select')}</option>
-              {event.mediaTypes.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="media" label={t('acc.media')}>
+                <Input
+                  id="media"
+                  value={form.media}
+                  onChange={(e) => update('media', e.target.value)}
+                />
+              </Field>
+              <Field id="mediaTypeId" label={t('acc.mediaType')}>
+                <Select value={form.mediaTypeId} onValueChange={(v) => update('mediaTypeId', v)}>
+                  <SelectTrigger id="mediaTypeId" className="w-full">
+                    <SelectValue placeholder={t('space.select')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {event.mediaTypes.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
 
-        <div className="row">
-          <Field label={t('acc.audience')}>
-            <input value={form.audience} onChange={(e) => update('audience', e.target.value)} />
-          </Field>
-          <Field label={t('acc.accType')}>
-            <select
-              value={form.accreditationType}
-              onChange={(e) => update('accreditationType', e.target.value as AccreditationType | '')}
-            >
-              <option value="">{t('space.select')}</option>
-              <option value="presse">{t('acc.accType.presse')}</option>
-              <option value="photo">{t('acc.accType.photo')}</option>
-              <option value="video">{t('acc.accType.video')}</option>
-            </select>
-          </Field>
-        </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="audience" label={t('acc.audience')}>
+                <Input
+                  id="audience"
+                  value={form.audience}
+                  onChange={(e) => update('audience', e.target.value)}
+                />
+              </Field>
+              <Field id="accreditationType" label={t('acc.accType')}>
+                <Select
+                  value={form.accreditationType}
+                  onValueChange={(v) => update('accreditationType', v as AccreditationType | '')}
+                >
+                  <SelectTrigger id="accreditationType" className="w-full">
+                    <SelectValue placeholder={t('space.select')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presse">{t('acc.accType.presse')}</SelectItem>
+                    <SelectItem value="photo">{t('acc.accType.photo')}</SelectItem>
+                    <SelectItem value="video">{t('acc.accType.video')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
 
-        <Field label={t('acc.prevArticle')}>
-          <input value={form.prevArticle} onChange={(e) => update('prevArticle', e.target.value)} />
-        </Field>
+            <Field id="prevArticle" label={t('acc.prevArticle')}>
+              <Input
+                id="prevArticle"
+                value={form.prevArticle}
+                onChange={(e) => update('prevArticle', e.target.value)}
+              />
+            </Field>
 
-        <Field label={t('acc.publishDelay')}>
-          <select
-            value={form.publishDelayDays}
-            onChange={(e) => update('publishDelayDays', Number(e.target.value) as 3 | 8 | 30)}
-          >
-            <option value={3}>{t('acc.publishDelay.3')}</option>
-            <option value={8}>{t('acc.publishDelay.8')}</option>
-            <option value={30}>{t('acc.publishDelay.30')}</option>
-          </select>
-        </Field>
+            <Field id="publishDelayDays" label={t('acc.publishDelay')}>
+              <Select
+                value={String(form.publishDelayDays)}
+                onValueChange={(v) => update('publishDelayDays', Number(v) as 3 | 8 | 30)}
+              >
+                <SelectTrigger id="publishDelayDays" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">{t('acc.publishDelay.3')}</SelectItem>
+                  <SelectItem value="8">{t('acc.publishDelay.8')}</SelectItem>
+                  <SelectItem value="30">{t('acc.publishDelay.30')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
 
-        <label className="checkbox">
-          <input type="checkbox" checked={form.commitPublish} onChange={(e) => update('commitPublish', e.target.checked)} />
-          <span>{t('acc.commitPublish')}</span>
-        </label>
-        <label className="checkbox">
-          <input type="checkbox" checked={form.consent} onChange={(e) => update('consent', e.target.checked)} required />
-          <span>
-            {t('acc.consent')} <span className="req">*</span>{' '}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="auth-link">
-              {t('acc.privacy')}
-            </a>
-          </span>
-        </label>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="commitPublish"
+                checked={form.commitPublish}
+                onCheckedChange={(c) => update('commitPublish', c === true)}
+              />
+              <Label htmlFor="commitPublish" className="font-normal leading-snug">
+                {t('acc.commitPublish')}
+              </Label>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="consent"
+                checked={form.consent}
+                onCheckedChange={(c) => update('consent', c === true)}
+                required
+              />
+              <Label htmlFor="consent" className="font-normal leading-snug">
+                {t('acc.consent')} <span className="text-destructive">*</span>{' '}
+                <a
+                  href="/confidentialite"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  {t('acc.privacy')}
+                </a>
+              </Label>
+            </div>
 
-        <p className="hint" style={{ margin: '0 0 var(--space-2)', fontSize: 'var(--text-sm)' }}>
-          {t('acc.coverageRule')}
-        </p>
+            <p className="text-sm text-muted-foreground">{t('acc.coverageRule')}</p>
 
-        <p className="hint" style={{ margin: 'var(--space-2) 0 var(--space-3)' }}>
-          {t('acc.required')}
-        </p>
-        <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
-          {submitting ? t('common.loading') : t('acc.submit')}
-        </button>
-      </form>
+            <p className="text-sm text-muted-foreground">{t('acc.required')}</p>
+            <Button type="submit" disabled={!canSubmit}>
+              {submitting ? t('common.loading') : t('acc.submit')}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
     </div>
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  id,
+  label,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="field">
-      <label>
-        {label} {required && <span className="req">*</span>}
-      </label>
+    <div className="grid gap-2">
+      <Label htmlFor={id}>
+        {label} {required && <span className="text-destructive">*</span>}
+      </Label>
       {children}
     </div>
   );
