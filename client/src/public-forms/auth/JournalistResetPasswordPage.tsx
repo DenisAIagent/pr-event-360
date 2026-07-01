@@ -6,6 +6,11 @@ import { api, ApiError } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { brandingStyle } from '../../lib/branding';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * Réinitialisation du mot de passe journaliste via le jeton reçu par email.
@@ -59,55 +64,65 @@ export function JournalistResetPasswordPage() {
 
   return (
     <div style={event ? brandingStyle(event.branding) : undefined}>
-      <main className="page">
-        <header
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            {event?.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
-            <span className="eyebrow">{t('login.eyebrow')}</span>
-          </div>
-          {event && <LanguageSwitcher available={event.languages.filter(isLang)} />}
-        </header>
-
-        <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>{t('reset.title')}</h1>
-        <p className="lede" style={{ marginBottom: 'var(--space-4)' }}>{t('reset.lede')}</p>
-
-        {!token ? (
-          <div className="card">
-            <div className="banner banner-error">{t('reset.noToken')}</div>
-            <p style={{ marginTop: 'var(--space-3)' }}>
-              <Link to={links.forgot}>{t('reset.requestAgain')}</Link>
-            </p>
-          </div>
-        ) : (
-          <form className="card stack" onSubmit={submit} noValidate>
-            {error && <div className="banner banner-error">{error}</div>}
-            <div className="field">
-              <label htmlFor="jr-pwd">{t('space.password.field')}</label>
-              <input
-                id="jr-pwd"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {event?.branding.logoUrl && <img src={event.branding.logoUrl} alt="" className="h-10" />}
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  {t('login.eyebrow')}
+                </span>
+              </div>
+              {event && <LanguageSwitcher available={event.languages.filter(isLang)} />}
             </div>
-            <div className="field">
-              <label htmlFor="jr-confirm">{t('space.password.confirm')}</label>
-              <input
-                id="jr-confirm"
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary" disabled={busy || !password || !confirm}>
-              {busy ? '…' : t('reset.submit')}
-            </button>
-          </form>
-        )}
+            <CardTitle className="mt-4 text-2xl">{t('reset.title')}</CardTitle>
+            <CardDescription>{t('reset.lede')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!token ? (
+              <div className="flex flex-col gap-4">
+                <Alert variant="destructive">
+                  <AlertDescription>{t('reset.noToken')}</AlertDescription>
+                </Alert>
+                <Link to={links.forgot} className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+                  {t('reset.requestAgain')}
+                </Link>
+              </div>
+            ) : (
+              <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="grid gap-2">
+                  <Label htmlFor="jr-pwd">{t('space.password.field')}</Label>
+                  <Input
+                    id="jr-pwd"
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="jr-confirm">{t('space.password.confirm')}</Label>
+                  <Input
+                    id="jr-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={busy || !password || !confirm}>
+                  {busy ? '…' : t('reset.submit')}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

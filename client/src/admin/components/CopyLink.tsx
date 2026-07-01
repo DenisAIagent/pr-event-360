@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { Icon } from '../../components/Icon';
+import { Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface CopyLinkProps {
   url: string;
@@ -27,20 +30,28 @@ export function CopyLink({ url, compact }: CopyLinkProps) {
   }
 
   return (
-    <div className={`copy-link${compact ? ' compact' : ''}`}>
-      <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label="Lien à partager" />
-      <button type="button" className="btn btn-primary btn-sm" onClick={copy}>
+    <div className={cn('flex items-center gap-2', compact ? 'max-w-md' : 'w-full')}>
+      <Input
+        readOnly
+        value={url}
+        onFocus={(e) => e.currentTarget.select()}
+        aria-label="Lien à partager"
+        className="font-mono text-xs"
+      />
+      <Button type="button" size="sm" onClick={copy} className="shrink-0">
         {copied ? (
           <>
-            <Icon name="check" /> Copié
+            <Check className="size-4" /> Copié
           </>
         ) : (
           'Copier'
         )}
-      </button>
-      <a className="btn btn-ghost btn-sm" href={url} target="_blank" rel="noreferrer">
-        Ouvrir ↗
-      </a>
+      </Button>
+      <Button asChild size="sm" variant="ghost" className="shrink-0">
+        <a href={url} target="_blank" rel="noreferrer">
+          Ouvrir ↗
+        </a>
+      </Button>
     </div>
   );
 }

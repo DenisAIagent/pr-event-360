@@ -3,6 +3,11 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { useAuth } from './AuthContext';
 import { GoogleButton } from './GoogleAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const MIN_LENGTH = 8;
 
@@ -66,76 +71,99 @@ export function InviteSignupPage() {
   }
 
   return (
-    <main className="login-wrap">
-      <div className="card login-card stack">
-        <div>
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 40, display: 'block' }} />
-          <span className="eyebrow" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
+    <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" className="h-10" />
+          <span className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Créer votre espace
           </span>
-        </div>
-
-        {invalid ? (
-          <>
-            <div className="banner banner-error">Cette invitation est invalide ou expirée.</div>
-            <Link to="/admin/login" className="auth-link">
-              Aller à la connexion
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
-              Vous avez été invité·e. Nommez votre organisation et définissez votre accès — c'est offert,
-              aucun paiement requis.
-            </p>
-            <form onSubmit={submitEmail} className="stack" noValidate>
-              {error && <div className="banner banner-error">{error}</div>}
-              <div className="field">
-                <label>Nom de votre organisation</label>
-                <input
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Ex. Agence Présence / Festival X"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="field">
-                <label>Votre nom complet</label>
-                <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-              </div>
-              <div className="field">
-                <label>Email</label>
-                <input type="email" value={email ?? ''} readOnly disabled />
-              </div>
-              <div className="field">
-                <label>Mot de passe</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={MIN_LENGTH}
-                  required
-                />
-                {password.length > 0 && password.length < MIN_LENGTH && (
-                  <span className="field-hint field-hint-error">{MIN_LENGTH} caractères minimum.</span>
+        </CardHeader>
+        <CardContent>
+          {invalid ? (
+            <div className="flex flex-col gap-4">
+              <Alert variant="destructive">
+                <AlertDescription>Cette invitation est invalide ou expirée.</AlertDescription>
+              </Alert>
+              <Link
+                to="/admin/login"
+                className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Aller à la connexion
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-muted-foreground">
+                Vous avez été invité·e. Nommez votre organisation et définissez votre accès — c'est offert,
+                aucun paiement requis.
+              </p>
+              <form onSubmit={submitEmail} className="flex flex-col gap-4" noValidate>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </div>
-              <div className="field">
-                <label>Confirmer le mot de passe</label>
-                <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-                {confirm.length > 0 && confirm !== password && (
-                  <span className="field-hint field-hint-error">Les mots de passe ne correspondent pas.</span>
-                )}
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
-                {busy ? 'Création…' : 'Créer mon espace'}
-              </button>
-            </form>
-            <GoogleButton onCredential={onGoogle} text="signup_with" />
-          </>
-        )}
-      </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="invite-org">Nom de votre organisation</Label>
+                  <Input
+                    id="invite-org"
+                    value={orgName}
+                    onChange={(e) => setOrgName(e.target.value)}
+                    placeholder="Ex. Agence Présence / Festival X"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="invite-fullname">Votre nom complet</Label>
+                  <Input
+                    id="invite-fullname"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="invite-email">Email</Label>
+                  <Input id="invite-email" type="email" value={email ?? ''} readOnly disabled />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="invite-password">Mot de passe</Label>
+                  <Input
+                    id="invite-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={MIN_LENGTH}
+                    required
+                  />
+                  {password.length > 0 && password.length < MIN_LENGTH && (
+                    <span className="text-sm text-destructive">{MIN_LENGTH} caractères minimum.</span>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="invite-confirm">Confirmer le mot de passe</Label>
+                  <Input
+                    id="invite-confirm"
+                    type="password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    required
+                  />
+                  {confirm.length > 0 && confirm !== password && (
+                    <span className="text-sm text-destructive">Les mots de passe ne correspondent pas.</span>
+                  )}
+                </div>
+                <Button type="submit" disabled={!canSubmit}>
+                  {busy ? 'Création…' : 'Créer mon espace'}
+                </Button>
+              </form>
+              <GoogleButton onCredential={onGoogle} text="signup_with" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </main>
   );
 }

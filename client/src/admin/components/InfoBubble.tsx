@@ -1,42 +1,22 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-/** Petite bulle d'aide : icône ⓘ → popover détaillé (fermeture au clic extérieur / Échap). */
+/** Petite bulle d'aide : icône ⓘ → popover détaillé (shadcn Popover : clic extérieur / Échap gérés). */
 export function InfoBubble({ title, children }: { title?: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
   return (
-    <span className="info-bubble" ref={ref}>
-      <button
+    <Popover>
+      <PopoverTrigger
         type="button"
-        className="info-bubble-btn"
-        onClick={() => setOpen((o) => !o)}
         aria-label={title ?? 'Aide'}
-        aria-expanded={open}
+        className="inline-grid size-5 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Info size={15} />
-      </button>
-      {open && (
-        <span className="info-bubble-pop" role="dialog">
-          {title && <strong className="info-bubble-title">{title}</strong>}
-          <span className="info-bubble-body">{children}</span>
-        </span>
-      )}
-    </span>
+        <Info size={14} />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 text-sm">
+        {title && <p className="mb-1 font-semibold">{title}</p>}
+        <div className="text-muted-foreground">{children}</div>
+      </PopoverContent>
+    </Popover>
   );
 }
