@@ -154,7 +154,7 @@ export function LandingPage() {
     <div className="bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-[70px] max-w-6xl items-center justify-between gap-4 px-4">
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" className="h-[30px]" />
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" className="h-11" />
           <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
             <a href="#features" className="text-muted-foreground transition-colors hover:text-foreground">
               Fonctionnalités
