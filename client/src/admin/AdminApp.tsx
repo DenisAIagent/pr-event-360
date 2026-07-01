@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { I18nProvider } from '../i18n';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
@@ -51,6 +52,7 @@ function PlatformRoute() {
 /** Sous-application back-office, montée sous /admin/* par le routeur principal. */
 export function AdminApp() {
   return (
+    <I18nProvider initialLang="fr">
     <AuthProvider>
       <TooltipProvider delayDuration={200}>
       <ToastProvider>
@@ -99,5 +101,6 @@ export function AdminApp() {
       </ToastProvider>
       </TooltipProvider>
     </AuthProvider>
+    </I18nProvider>
   );
 }
