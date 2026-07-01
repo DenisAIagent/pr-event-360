@@ -1093,8 +1093,9 @@ select.status-select {
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .rail .brand .brand-mark {
-  height: 26px;
+  height: 38px;
   width: auto;
+  max-width: 100%;
 }
 .rail .org-name {
   padding: 0 18px;
