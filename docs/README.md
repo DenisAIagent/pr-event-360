@@ -1,7 +1,10 @@
 # Documentation technique — PR Event 360
 
 Plateforme de gestion des accréditations presse en festival : accréditations, demandes
-d'interviews et de reportages, newsroom, communications, gestion d'équipe.
+d'interviews et de reportages, newsroom (communiqués optimisés SEO), communications,
+**revue de presse** (collecte des retombées médiatiques), gestion d'équipe multi-locataire.
+
+> Signature produit : **« Votre orchestrateur de relations presse ».**
 
 > L'**événement** est l'entité racine. Isolation totale entre festivals : chaque donnée
 > (journalistes, demandes, médias, communiqués…) appartient à un événement.
@@ -16,9 +19,10 @@ d'interviews et de reportages, newsroom, communications, gestion d'équipe.
 | [business-logic.md](business-logic.md) | Score de priorité, quotas, liste d'attente, notifications, parcours journaliste |
 | [roles-permissions.md](roles-permissions.md) | Rôles, appartenance aux événements, contrôle d'accès |
 | [security-rgpd.md](security-rgpd.md) | Authentification, secrets chiffrés, RGPD, en-têtes, rate limiting |
-| [deployment.md](deployment.md) | Variables d'environnement, build, migrations, déploiement Railway |
-| [features.md](features.md) | Tour des surfaces (formulaire public, espace journaliste, newsroom, back-office…) |
+| [deployment.md](deployment.md) | Variables d'environnement, build, migrations, déploiement Railway, sauvegardes |
+| [features.md](features.md) | Tour des surfaces (formulaire public, espace journaliste, newsroom, revue de presse, back-office…) |
 | [custom-domains.md](custom-domains.md) | Domaine personnalisé par événement (white-label) : résolution par Host, mode domaine, TLS |
+| [rgpd/](rgpd/) | Dossier de conformité : registre des traitements, DPA, procédures droits/violation, AIPD, TIA |
 
 ## Démarrage rapide
 
@@ -48,5 +52,5 @@ npm --workspace client run dev    # Front sur http://localhost:5173
                               └──────────┬───────────┘
                                          │ I/O externes (mode « live »)
                                          ▼
-                        Brevo (email/SMS) · Twilio (SMS) · Cloudinary (médias)
+              Brevo (email/SMS) · Twilio (SMS) · Cloudinary (médias) · Stripe (facturation)
 ```

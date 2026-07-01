@@ -18,12 +18,14 @@ source par le serveur et le client.
 |---|---|
 | Frontend | React 18 · Vite 6 · TypeScript · React Router |
 | Backend | Node ≥ 20 · Express 4 · TypeScript · `tsx` (dev) |
-| Base de données | PostgreSQL 16 · SQL brut (`pg`) · migrations `node-pg-migrate` |
-| Auth back-office | JWT (`jsonwebtoken`) · hash de mot de passe `argon2` |
+| Base de données | PostgreSQL (16 local / **18 prod Railway**) · SQL brut (`pg`) · migrations `node-pg-migrate` |
+| Auth back-office | JWT (`jsonwebtoken`) · hash `argon2` · 2FA TOTP · Google Identity (optionnel) |
 | Validation | `zod` (entrées HTTP, variables d'environnement) |
 | Sécurité HTTP | `helmet` · `express-rate-limit` · CORS |
 | Email / SMS | Brevo · Twilio — démarrage en **mode simulation** |
 | Stockage médias | Cloudinary (upload direct signé) |
+| Facturation | Stripe (abonnement, webhook) — dormant si non configuré |
+| Planification | `node-cron` (récaps, purge RGPD, collecte des retombées) |
 | Tests | Vitest (`packages/core`, `server`) |
 
 ## Découpage en couches (serveur)
@@ -86,6 +88,7 @@ typée (status + message) en cas d'échec.
 | `/evenement/:eventId/mot-de-passe-oublie` · `/reinitialiser` | Réinitialisation du mot de passe journaliste | Libre / jeton |
 | `/espace-preview/:eventId` | Aperçu de l'espace (back-office) | JWT (lu depuis localStorage) |
 | `/newsroom/:eventId` | Espace presse public | Libre |
+| `/newsroom/:eventId/:slug` | Communiqué (URL dédiée SEO, `<head>` rendu serveur) | Libre |
 
 ### Domaines personnalisés (white-label)
 

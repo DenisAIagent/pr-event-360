@@ -1,6 +1,6 @@
 # PR Event 360
 
-Plateforme de gestion des accréditations presse en festival : accréditations, interviews, captations photo/vidéo. L'**événement** est l'entité racine — isolation totale entre festivals.
+**Votre orchestrateur de relations presse.** Plateforme de gestion des accréditations presse en festival : accréditations, interviews, captations photo/vidéo, newsroom et revue de presse. L'**événement** est l'entité racine — isolation totale entre festivals.
 
 📚 **Documentation technique complète : [`docs/`](docs/README.md)** — architecture, modèle de données, API, logique métier, rôles, sécurité/RGPD, déploiement, fonctionnalités.
 
@@ -58,9 +58,12 @@ npm test
 6. **Comptes journalistes** ✅ — accès par lien magique **ou** email + mot de passe (par événement),
    mot de passe oublié, planning personnel, ressources presse
 7. **Multi-locataire** ✅ — chaque client = une **organisation** isolée (events/équipe/données),
-   inscription self-service, super-admin plateforme. White-label : domaine perso + sous-domaine par event
+   inscription **payante** (Stripe) ou sur invitation, super-admin plateforme. White-label : domaine perso + sous-domaine par event
+8. **Newsroom SEO** ✅ — communiqués à URL dédiée, balises meta/Open Graph rendues serveur, `sitemap.xml`/`robots.txt`, image de couverture, export PDF
+9. **Revue de presse** ✅ — collecte automatique des retombées après l'événement (délai J+3/8/30 choisi à l'inscription), dépôt liens/médias avec autorisation, classement par média + suivi des envois
+10. **Avis produit** ✅ — notation de l'app en back-office + modération super-admin + témoignages dynamiques sur la landing
 
-> Détails et endpoints : [`docs/`](docs/README.md).
+> Détails et endpoints : [`docs/`](docs/README.md). Notifications : nom d'expéditeur = « *{Événement}* Press Team » ; langue détectée du navigateur.
 
 ## Sécurité & RGPD
 

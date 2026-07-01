@@ -3,18 +3,27 @@
 ## Surfaces publiques (journalistes)
 
 ### Formulaire d'accréditation — `/accreditation/:eventId`
-Multilingue (FR/EN/PT/ES), brandé (logo + couleurs de l'événement). Champs minimaux
-(prénom, email, consentement RGPD) + média, type d'accréditation, audience, lien d'article.
+Multilingue (FR/EN/PT/ES, **langue détectée** depuis le navigateur puis alignée sur les langues
+de l'événement), brandé (logo + couleurs de l'événement). Champs minimaux (prénom, email,
+consentement RGPD) + média, type d'accréditation, audience, lien d'article. Deux champs propres
+au suivi post-événement : **délai de publication** prévu (J+3 / J+8 / J+30, qui pilote l'envoi
+de la demande de retombées) et un **engagement à publier**. Le consentement couvre aussi le
+**règlement photo/vidéo** (autorisation d'archivage et d'usage promotionnel — voir revue de presse).
 Si une **date de clôture** est définie : bannière + **compte à rebours** live ; à échéance,
 bascule en « inscriptions closes ».
 
 ### Espace journaliste — `/espace/:token`
-Accessible par token unique après acceptation de l'accréditation. Affiche le lineup, un
-formulaire de **demande** (interview ou reportage photo/vidéo, toujours ↔ un artiste — le
-créneau est attribué par le système, pas choisi), le **suivi des demandes** (statut + cible
-+ créneau attribué), **« Mon planning »** (interviews confirmées avec leur créneau, triées),
-une carte **« Ressources presse »** vers la newsroom, et **« Sécuriser mon accès »** pour
-définir un mot de passe.
+Accessible par token unique après acceptation de l'accréditation. Mise en page **« app-shell »**
+identique au back-office : **rail sombre à gauche** (logo/nom de l'événement, avatar + prénom,
+sélecteur de langue) avec une navigation propre au journaliste, et une zone de contenu par onglet :
+
+| Onglet | Contenu |
+|---|---|
+| **Mes demandes** | Règles photo (si définies), formulaire de **demande** (interview ou reportage photo/vidéo, toujours ↔ un artiste — le créneau est attribué par le système, pas choisi) et **suivi des demandes** (statut + cible + créneau attribué) |
+| **Mon planning** | Interviews confirmées avec leur créneau, triées (état vide explicite sinon) |
+| **Ma revue de presse** | Dépôt et suivi de ses **retombées** (liens ou médias uploadés), classées par média — voir plus bas |
+| **Mon compte** | Carte **« Ressources presse »** vers la newsroom + **« Sécuriser mon accès »** (mot de passe) |
+| **Newsroom** ↗ | Lien externe vers la newsroom publique de l'événement |
 
 ### Connexion & mot de passe journaliste
 Compte **par événement**, en complément du lien magique (les deux coexistent) :
@@ -26,6 +35,11 @@ Compte **par événement**, en complément du lien magique (les deux coexistent)
 Espace presse public brandé : communiqués publiés (HTML), médias téléchargeables groupés
 (dossier de presse, photos, vidéos, logos), et — si pertinent — un bandeau d'accréditation
 avec compte à rebours.
+
+Chaque **communiqué a son URL dédiée** (`/newsroom/:eventId/:slug`, ou `/newsroom/:slug` en mode
+domaine) **optimisée SEO** : balises meta + Open Graph injectées **côté serveur** (rendu SPA),
+image de couverture, description. Un **`sitemap.xml`** et un **`robots.txt`** sont servis à la
+racine (par hôte : la newsroom de l'événement en mode domaine, les pages plateforme sinon).
 
 ## Back-office — coquille de navigation
 
@@ -42,7 +56,8 @@ basculer rapidement, navigation contextuelle selon l'événement actif, utilisat
 |---|---|---|
 | **Événements** | tous | Liste des événements accessibles ; bouton « Nouvel événement » (wizard) ; suppression (admin) |
 | **Équipe** | admin | Comptes + invitations, rôles, activation, assignation d'événements |
-| **Intégrations** | admin | Clés API (Brevo, Twilio, Cloudinary, mode d'envoi) — chiffrées, masquées |
+| **Intégrations** | super-admin | Clés API **partagées** (Brevo, Twilio, Cloudinary, mode d'envoi) — chiffrées, masquées ; réservées à l'opérateur plateforme |
+| **Organisations / Avis** | super-admin | Onboarding des clients (invitations, suppression) + modération des avis produit |
 | **Sécurité** | tous | Mot de passe & double authentification (2FA TOTP) du compte |
 
 ### Wizard de création d'événement — `/admin/events/new`
@@ -58,8 +73,9 @@ la 1ʳᵉ étape ; les suivantes le configurent via les endpoints existants et s
 | **Accréditations** | accès événement | Accepter/refuser, **exporter** (PDF, filtrable presse/photo/vidéo), supprimer (RGPD) |
 | **Configuration** | éditeur | Assistant guidé : scènes → artistes (quotas itw/photo/vidéo) → règles & quotas → apparence → **sous-domaine** (slug plateforme et/ou domaine perso) → clôture → récap |
 | **Médiathèque** | éditeur | Upload Cloudinary (photos/vidéos/logos/dossier de presse) |
-| **Newsroom** | éditeur | Communiqués (brouillon/publié) + lien de la newsroom publique |
+| **Newsroom** | éditeur | Communiqués (brouillon/publié) — **champs SEO** (slug, description, image) + lien de la newsroom publique |
 | **Communications** | éditeur | Composer une newsletter HTML (aperçu live brandé) + envoi ciblé |
+| **Revue de presse** | accès événement | Retombées déposées par les journalistes, **classées par média** + **suivi des envois** (qui a contribué / en attente) + relance |
 | **Paramètres** | éditeur | Règles/quotas, poids média, gabarits, clôture, récap, **domaine personnalisé** (white-label) |
 | **Apparence** | éditeur | Branding (logo, couleurs) |
 | **Aperçu** | éditeur | Prévisualisation des vues journaliste (desktop/mobile) |
@@ -92,7 +108,27 @@ Charge les vraies pages journaliste dans une iframe avec bascule **desktop / mob
 (rendu mobile fidèle). Trois surfaces : formulaire d'accréditation, espace journaliste
 (données d'exemple + vrai lineup), newsroom.
 
+### Onglet « Revue de presse »
+Après l'événement, chaque accrédité accepté reçoit **automatiquement** une invitation à
+partager ses **retombées** (liens d'articles/réseaux/YouTube, photos et captures uploadées),
+à l'échéance du **délai de publication** qu'il a choisi à l'inscription (J+3 / J+8 / J+30).
+Pour tout média **uploadé**, l'**autorisation d'archivage + usage promotionnel** est obligatoire
+(re-confirmée au dépôt, en écho au règlement accepté à l'accréditation). L'attaché voit les
+retombées **classées par catégorie de média**, des **KPIs** (retombées, catégories, contributeurs,
+en attente) et un **suivi des envois** avec bouton **« Relancer »** (individuel ou tous les
+non-contributeurs). Le journaliste dépose et retire ses retombées depuis l'onglet **« Ma revue
+de presse »** de son espace — mêmes composants que le back-office.
+
+## Landing & avis produit
+La page d'accueil publique porte la signature **« Votre orchestrateur de relations presse »** et
+affiche des **témoignages dynamiques** issus des avis internes. Depuis le back-office, un attaché
+peut **noter l'application** (1–5 + citation, consentement à l'affichage public) ; le **super-admin
+plateforme modère** (en attente → approuvé/rejeté) ; seuls les avis approuvés **et** consentis
+alimentent la landing.
+
 ## Notifications & récapitulatifs
-Emails/SMS transactionnels (accréditation, demandes), newsletters, et récapitulatifs
-périodiques (quotidien/hebdo). En **simulation** par défaut : tout est journalisé, rien
-n'est envoyé. Voir [business-logic.md](business-logic.md#notifications).
+Emails/SMS transactionnels (accréditation, demandes, **collecte des retombées**), newsletters, et
+récapitulatifs périodiques (quotidien/hebdo). Le **nom d'expéditeur** est celui de l'événement
+(« *{Événement}* Press Team »), l'adresse d'envoi restant l'expéditeur Brevo vérifié. En
+**simulation** par défaut : tout est journalisé, rien n'est envoyé. Voir
+[business-logic.md](business-logic.md#notifications).

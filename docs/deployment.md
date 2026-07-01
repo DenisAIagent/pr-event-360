@@ -21,11 +21,12 @@ requise manque ou est invalide.
 | `EMAIL_PROVIDER` | — | `brevo` | Fournisseur email |
 | `SMS_PROVIDER` | — | `twilio` | `twilio` / `brevo` |
 | `BREVO_API_KEY` | live | — | Clé API Brevo (email/SMS) |
-| `BREVO_SENDER_EMAIL` | live | — | Expéditeur **vérifié** dans Brevo |
-| `BREVO_SENDER_NAME` | — | `PR Event 360` | Nom d'expéditeur |
+| `BREVO_SENDER_EMAIL` | live | — | Adresse expéditeur **vérifiée** dans Brevo (l'adresse ne change jamais) |
+| `BREVO_SENDER_NAME` | — | `PR Event 360` | Nom d'expéditeur **de repli** — le nom affiché des emails d'événement est « *{Événement}* Press Team » |
 | `BREVO_SMS_SENDER` | — | `PREvent` | Émetteur SMS (≤ 11 car.) |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM` | si Twilio | — | SMS Twilio |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | médias | — | Stockage Cloudinary |
+| `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` | facturation | — | Abonnement Stripe (inscription payante) — dormant si absent |
 
 > Les clés Brevo/Twilio/Cloudinary peuvent aussi être saisies (chiffrées) via l'UI
 > **Intégrations** (admin), qui prime sur le `.env`. Voir [security-rgpd.md](security-rgpd.md).

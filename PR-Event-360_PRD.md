@@ -420,7 +420,21 @@ Le produit livré reprend l'intégralité du périmètre v1.0 ci-dessus, avec ce
 - **Back-office redessiné** — coquille rail navy + topbar, **recherche globale** (journalistes /
   événements, scopée aux droits), file de demandes en **grille** triée par score, raccourcis clavier.
 - **Sécurité** — **2FA (TOTP)** optionnelle sur les comptes back-office ; suppression d'événement
-  et d'accréditation (droit à l'effacement) ; export PDF des accrédités.
+  et d'accréditation (droit à l'effacement) ; export PDF des accrédités ; **« Continuer avec Google »**.
+- **Multi-locataire & facturation** — chaque client est une **organisation** isolée ; inscription
+  **payante** (Stripe) ou sur **invitation** du super-admin ; white-label (domaine perso + sous-domaine).
+- **Newsroom SEO** — communiqués à **URL dédiée**, balises meta/Open Graph **rendues côté serveur**,
+  `sitemap.xml`/`robots.txt`, image de couverture, export PDF.
+- **Revue de presse (v2 anticipée)** — collecte **automatique** des retombées après l'événement (délai
+  **J+3/8/30** choisi à l'inscription), dépôt de liens/médias avec **autorisation d'exploitation**,
+  classement par média et **suivi des envois** côté attaché. Répond au « Dashboard des retombées » du §9 (v2).
+- **Règles photo & autorisation** — texte de prise de vue + autorisation d'archivage/promo par événement,
+  affichés dans l'espace et joints à l'email d'acceptation de reportage.
+- **Espace journaliste redessiné** — mise en page **« app-shell »** (rail + onglets) identique au back-office.
+- **Avis produit** — notation en back-office + modération super-admin + **témoignages dynamiques** sur la landing.
+- **Notifications** — nom d'expéditeur = « *{Événement}* Press Team » ; **langue détectée** du navigateur ;
+  mise en page email unifiée ; planificateur (récaps, **purge de rétention RGPD**, collecte des retombées).
+- **Signature produit** — « **Votre orchestrateur de relations presse** ».
 - **v1.5 anticipée (partiel)** — le **planning des créneaux** est généré et consultable ; le badge
   PDF/QR et le check-in jour-J restent planifiés.
 

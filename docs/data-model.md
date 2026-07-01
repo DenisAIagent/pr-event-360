@@ -1,7 +1,8 @@
 # Modèle de données
 
-PostgreSQL 16. Schéma géré par migrations versionnées (`server/migrations/`), appliquées
-avec `node-pg-migrate`. Clés primaires en `uuid` (`gen_random_uuid()`, extension `pgcrypto`).
+PostgreSQL (16 en local via docker, **18 en production Railway**). Schéma géré par migrations
+versionnées (`server/migrations/`), appliquées avec `node-pg-migrate`. Clés primaires en `uuid`
+(`gen_random_uuid()`, extension `pgcrypto`).
 
 ## Types ENUM
 
@@ -19,20 +20,25 @@ avec `node-pg-migrate`. Clés primaires en `uuid` (`gen_random_uuid()`, extensio
 ```
 users ──┐ (owner)
         ▼
-      events ─┬─ event_configs (1-1)
+      events ─┬─ event_configs (1-1)  (+ règles photo : photo_rule, onsite_contract, photo_terms)
               ├─ request_type_weights (1-N)
               ├─ media_types (1-N)
               ├─ stages ─── artists ─── artist_windows ─── interview_slots
               ├─ journalists ─┬─ requests ─── request_status_history
-              │               └─ journalist_password_resets
+              │               ├─ journalist_password_resets
+              │               └─ press_coverage (retombées / revue de presse)
               ├─ email_templates · notifications
               ├─ event_branding (1-1) · event_recap (1-1)
               ├─ event_members (N-N users↔events)
-              ├─ event_assets · press_releases · newsletters
+              ├─ event_assets · press_releases (SEO) · newsletters · press_coverage
               └─ (accreditation_deadline : colonne de events)
+
+organizations ─┬─ users ─── events        (multi-locataire ; + Stripe : subscription_status…)
+               └─ org_invites · pending_signups (onboarding : invitation / inscription payante)
 
 users ── password_reset_tokens
 users ── invitations (invited_by)
+app_reviews (avis produit ; user_id / organization_id nullable, modéré)
 app_secrets (global, non lié à un événement)
 ```
 
@@ -44,14 +50,29 @@ app_secrets (global, non lié à un événement)
 
 ### Comptes & accès
 
-**`organizations`** — **locataire** (un client = une organisation isolée). `id, name, slug (unique), created_at`.
+**`organizations`** — **locataire** (un client = une organisation isolée). `id, name, slug (unique),
+stripe_customer_id, stripe_subscription_id, subscription_status (défaut `active`), current_period_end, created_at`.
+> Les colonnes Stripe portent l'état d'abonnement : un `subscription_status` inactif bloque la connexion des comptes de l'org.
 > Multi-locataire : `users` et `events` portent un `organization_id`. Un admin ne voit que SON
 > organisation. `users.is_platform_admin` = super-admin opérateur (intégrations partagées + supervision).
 > Voir [roles-permissions.md](roles-permissions.md).
 
 **`users`** — comptes back-office.
-`id, organization_id → organizations, email (unique), password_hash (argon2), full_name,
+`id, organization_id → organizations, email (unique), password_hash (argon2, **nullable** si Google),
+google_id (unique, nullable), auth_provider (`password`|`google`, défaut `password`), full_name,
 role (user_role), active (bool), is_platform_admin (bool), mfa_secret (TOTP, chiffré), mfa_enabled (bool), created_at`
+> `auth_provider='google'` ⇒ pas de mot de passe (connexion par mot de passe refusée). Voir [security-rgpd.md](security-rgpd.md#authentification).
+
+**`org_invites`** — invitation d'un client à s'inscrire (accès offert, sans paiement), émise par le super-admin.
+`id, email, token_hash (unique), invited_by → users (SET NULL), expires_at, accepted_at, created_at` (14 j, usage unique).
+
+**`pending_signups`** — inscription payante en attente de validation Stripe (matérialisée en organisation + compte au webhook).
+`id, email, org_name, full_name, password_hash (nullable), google_id (nullable), auth_provider, stripe_session_id, created_at, expires_at`
+
+**`app_reviews`** — avis produit (notation de l'app par un attaché), modéré avant affichage public.
+`id, user_id → users (SET NULL), organization_id → organizations (SET NULL), author_name, author_role, author_org,
+rating (int 1–5, CHECK), quote, consent_public (bool), status (`pending`|`approved`|`rejected`), created_at, reviewed_at`
+> Un avis unique par utilisateur (index partiel). Seuls les avis `approved` **et** `consent_public` alimentent les témoignages de la landing.
 
 **`event_members`** — assignation collaborateur ↔ événement (PK composite `event_id,user_id`).
 Un admin accède à tout sans ligne ici ; les autres rôles n'accèdent qu'aux événements où
@@ -76,9 +97,12 @@ subdomain_slug (unique, nullable), created_at`
 > voir [custom-domains.md](custom-domains.md).
 
 **`event_configs`** — paramètres de calcul (1 par événement).
-`itw_duration_min, itw_buffer_min, default_itw_quota, photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap`
+`itw_duration_min, itw_buffer_min, default_itw_quota, photo_quota_per_stage, age_bonus_per_hour, age_bonus_cap,
+photo_rule (text), onsite_contract (bool, défaut false), photo_terms (text)`
 > `photo_quota_per_stage` est **legacy** : depuis la migration 021, les quotas photo/vidéo
 > sont portés par l'**artiste** (`artists.photo_quota` / `video_quota`), plus par la scène.
+> `photo_rule` / `onsite_contract` / `photo_terms` (migration 031) : **règles photo & autorisation**
+> affichées dans l'espace journaliste et jointes à l'email d'acceptation de reportage (variable `{{reportage}}`).
 
 **`request_type_weights`** — multiplicateur de score par type de demande.
 **`media_types`** — types de média + poids (TV nationale, presse, web…), utilisés dans le score.
@@ -100,7 +124,8 @@ défaut (interview).
 **`journalists`** — un journaliste accrédité (ou en attente) pour un événement.
 `id, event_id, token (unique, accès à l'espace), first_name, last_name, email, phone, media,
 media_type_id → media_types, audience, prev_article, lang, accreditation_type, acc_status,
-commit_publish (bool), consent (bool, RGPD), password_hash (argon2, nullable), created_at`
+commit_publish (bool), consent (bool, RGPD), password_hash (argon2, nullable),
+publish_delay_days (int, défaut 8 — J+3/8/30 choisi à l'inscription), coverage_request_sent_at (idempotence de la collecte), created_at`
 > Email **non unique** (un journaliste = une ligne par événement). `password_hash` est défini
 > après acceptation pour permettre la connexion email + mot de passe (voir `journalist_password_resets`).
 
@@ -122,8 +147,14 @@ message, status (request_status), created_at`
 **`notifications`** — journal des envois (email/SMS), y compris en simulation.
 `event_id, journalist_id, channel, trigger_key, lang, to_address, subject, body, provider, status, created_at`
 **`event_assets`** — médiathèque. `kind (photo|video|logo|press_kit|other), title, url, thumbnail_url, mime, bytes, source (upload|link), sort`
-**`press_releases`** — communiqués. `title, body_html, published_at, status (draft|published)`
+**`press_releases`** — communiqués. `title, body_html, published_at, status (draft|published),
+slug, seo_description, cover_image_url` — le triplet SEO (migration 033) : `(event_id, slug)` **unique**,
+sert l'URL dédiée + les balises meta/OG injectées côté serveur (voir [features.md](features.md), [api.md](api.md#seo-rendu-serveur-hors-api)).
 **`newsletters`** — communications HTML. `subject, body_html, status (draft|sent), recipient_count, sent_at`
+**`press_coverage`** — **retombées** déposées par un journaliste (revue de presse, migration 035).
+`id, event_id → events (CASCADE), journalist_id → journalists (CASCADE), media_category,
+is_upload (bool), url, thumbnail_url, title, archive_consent (bool), promo_consent (bool), created_at`
+> `is_upload=true` (photo/vidéo hébergée sur Cloudinary) ⇒ `archive_consent` **et** `promo_consent` requis.
 
 ## Migrations
 
@@ -146,6 +177,17 @@ Ordre chronologique (`server/migrations/1700000000NNN_*.ts`) :
                                025 event-subdomain        (events.subdomain_slug)
                                026 organizations          (multi-locataire : organizations +
                                    organization_id sur users/events/invitations + backfill + super-admin)
+                               027 google-auth            (users.google_id/auth_provider ; password_hash nullable)
+                               028 billing                (organizations.stripe_* + table pending_signups)
+                               029 org-invites            (invitations d'inscription super-admin)
+                               030 request-notif-detail   (données : templates demande + {{type}}/{{artist}})
+                               031 photo-rules            (event_configs.photo_rule/onsite_contract/photo_terms)
+                               032 request-received-detail(données : template accusé de réception)
+                               033 press-release-seo      (press_releases.slug/seo_description/cover_image_url)
+                               034 app-reviews            (avis produit + modération)
+                               035 press-coverage         (retombées + events.coverage_request_sent_at)
+                               036 coverage-per-journalist(journalists.publish_delay_days/coverage_request_sent_at ;
+                                   DROP events.coverage_request_sent_at → idempotence par journaliste)
 ```
 
 ```bash

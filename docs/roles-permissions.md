@@ -4,13 +4,15 @@
 
 L'application est **multi-locataire** : chaque client est une **organisation** (`organizations`)
 isolée. `users` et `events` portent un `organization_id` ; toutes les listes sont scopées à
-l'organisation de l'utilisateur. Un client s'inscrit en **self-service** (`POST /api/admin/auth/signup`)
-→ création de l'organisation + son compte **admin**.
+l'organisation de l'utilisateur. Un client rejoint la plateforme par **inscription payante**
+(Stripe Checkout → org + compte **admin** matérialisés au webhook) **ou** sur **invitation du
+super-admin** (`org_invites`, accès offert). Voir [api.md](api.md#facturation--apiadminbilling--webhook-stripe).
 
 - **Isolation étanche** : un utilisateur ne voit/atteint que les données de SON organisation. Tenter
   d'accéder à un événement d'une autre organisation renvoie **404** (sans révéler son existence).
 - **Super-admin plateforme** (`users.is_platform_admin`) : l'opérateur. Seul à gérer les **intégrations
-  partagées** (clés Brevo/Twilio/Cloudinary, `/api/admin/settings`), non bloqué par le scoping.
+  partagées** (clés Brevo/Twilio/Cloudinary, `/api/admin/settings`), l'**onboarding des organisations**
+  (invitations, suppression) et la **modération des avis produit** (`/api/admin/reviews`), non bloqué par le scoping.
 - Les rôles ci-dessous (`admin/attache/assistant`) s'entendent **au sein d'une organisation**
   (« admin » = admin de SON organisation).
 
@@ -48,7 +50,7 @@ autre rôle       → exige une ligne event_members (sinon 403)
 | Gérer l'équipe (inviter, rôles, désactiver) | ✅ | — | — |
 | Gérer les clés API (Intégrations) | ✅ | — | — |
 
-Application côté serveur (le JWT porte `organizationId` + `isPlatformAdmin`) :
+Application côté serveur (le JWT porte `organizationId` ; `isPlatformAdmin` est relu en base à chaque requête) :
 - `requireAuth` → JWT valide.
 - `requireRole('admin')` → `/api/admin/team` (scopé à l'organisation de l'admin).
 - `requirePlatformAdmin` → `/api/admin/settings` (intégrations partagées, super-admin uniquement).

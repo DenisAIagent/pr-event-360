@@ -4,7 +4,8 @@
 
 - **Mots de passe** hachés avec **argon2** (jamais en clair, jamais loggés) — back-office **et**
   comptes journalistes.
-- **JWT** (`HS256`, expiration 12 h) signé avec `JWT_SECRET`, porte `{ sub, email, role }`.
+- **JWT** (`HS256`, expiration 12 h) signé avec `JWT_SECRET`, porte `{ sub, email, role, organizationId }`
+  (le statut super-admin est relu en base à chaque requête, pas porté par le jeton).
 - À la connexion, un compte **désactivé** (`users.active = false`) est refusé même avec le
   bon mot de passe (message générique). Message d'échec identique « email ou mot de passe
   incorrect » + hachage factice pour ne pas révéler l'existence d'un compte (anti-timing).
@@ -82,10 +83,17 @@ le back-end) ; le navigateur téléverse en direct avec une signature à durée 
 - **Accès tokenisé** : l'espace journaliste est accessible par un **token unique non
   devinable** (256 bits), propre à chaque journaliste.
 - **Droit à l'effacement** : suppression en cascade. Supprimer un journaliste retire ses
-  demandes/historique ; supprimer un événement purge l'ensemble de ses données
-  (`ON DELETE CASCADE` sur toutes les tables rattachées).
+  demandes/historique **et ses retombées** (`press_coverage`) ; supprimer un événement ou une
+  organisation purge l'ensemble de ses données (`ON DELETE CASCADE` sur toutes les tables rattachées).
+- **Limitation de conservation** : purge de rétention automatique (planificateur, 03:30) des
+  journalistes > 12 mois après la fin de leur événement.
+- **Autorisation d'exploitation des médias** : le dépôt d'une photo/vidéo dans la revue de presse
+  exige une **double autorisation** (archivage + usage promotionnel), horodatée, en écho au règlement
+  accepté à l'accréditation.
 - **Minimisation** : seules les données nécessaires au traitement de l'accréditation sont
   demandées.
+- **Dossier de conformité** : registre des traitements, DPA, procédures droits/violation, AIPD, TIA
+  dans [`docs/rgpd/`](rgpd/). Éditeur : **MDMC OÜ** (Estonie, UE).
 - **Identifiants de services externes** : uniquement en variables d'environnement ou
   chiffrés en base, jamais en clair dans le code ni en base.
 - **Pas de fuite** : les messages d'erreur côté client restent génériques ; le détail

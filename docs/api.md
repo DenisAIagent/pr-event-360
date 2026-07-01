@@ -12,7 +12,9 @@ Base : `/api`. Réponses au format enveloppe `{ success, data }` / `{ success, e
 | **éditeur** | accès événement **et** rôle `admin` ou `attache` (l'`assistant` est en lecture/traitement) |
 | **admin** | auth + rôle `admin` |
 
-Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/login`.
+Le JWT (12 h, HS256) porte `{ sub, email, role, organizationId }`. Obtenu via
+`POST /api/admin/auth/login`. Le statut super-admin (`is_platform_admin`) est relu en base
+à chaque requête, pas porté par le jeton.
 
 ## Santé
 
@@ -103,6 +105,23 @@ Le JWT (12 h) porte `{ sub, email, role }`. Obtenu via `POST /api/admin/auth/log
 | GET | `/:eventId/recipients` | accès événement | Journalistes (pour la sélection d'envoi) |
 | GET | `/:eventId/space-preview` | accès événement | Données d'aperçu de l'espace journaliste |
 
+## Revue de presse (retombées) — `/api/admin/events`
+
+| Méthode | Chemin | Accès | Description |
+|---|---|---|---|
+| GET | `/:eventId/coverage` | accès événement | `{ items, tracking }` — retombées + suivi par journaliste (contribué / en attente) |
+| POST | `/:eventId/coverage/remind` | éditeur | `{journalistId?}` — relance (un journaliste, sinon tous les non-contributeurs) → `{sent}` |
+| DELETE | `/:eventId/coverage/:id` | éditeur | Modération : retirer une retombée |
+
+## Avis produit — `/api/admin/review` et `/api/admin/reviews`
+
+| Méthode | Chemin | Accès | Description |
+|---|---|---|---|
+| GET | `/api/admin/review/` | auth | Avis de l'utilisateur courant (s'il en a laissé un) |
+| POST | `/api/admin/review/` | auth | Laisser/mettre à jour son avis `{rating 1–5, quote, authorRole?, consentPublic}` |
+| GET | `/api/admin/reviews/` | super-admin | Modération : tous les avis |
+| POST | `/api/admin/reviews/:id/status` | super-admin | `{status: pending\|approved\|rejected}` |
+
 ## Équipe — `/api/admin/team` (admin)
 
 | Méthode | Chemin | Description |
@@ -164,15 +183,18 @@ Suppression (super-admin) :
 | Méthode | Chemin | Description |
 |---|---|---|
 | GET | `/events/:eventId` | Données du formulaire (branding, types de média, deadline, `registrationClosed`) |
-| POST | `/events/:eventId/accreditations` | Soumettre une demande (consentement RGPD obligatoire) |
+| POST | `/events/:eventId/accreditations` | Soumettre une demande (consentement RGPD obligatoire, `lang`, `publishDelayDays` 3/8/30, `commitPublish`) |
 
 ### Espace journaliste — `/api/public/space`
 
 | Méthode | Chemin | Description |
 |---|---|---|
-| GET | `/:token` | Profil + lineup + demandes (avec cible & créneau attribué) + `hasPassword` (token unique ; accréditation acceptée requise) |
+| GET | `/:token` | Profil + lineup + demandes (cible & créneau) + `hasPassword` + `photoRules` + `coverage` + `coverageCategories` + `event.ended` (token unique ; accréditation acceptée requise) |
 | POST | `/:token/requests` | Soumettre une demande d'interview/reportage |
 | POST | `/:token/password` | Définir/remplacer le mot de passe d'espace (authentifié par le token, min. 8 car.) |
+| POST | `/:token/coverage` | Déposer une retombée `{mediaCategory, isUpload, url, thumbnailUrl?, title?, archiveConsent, promoConsent}` (upload ⇒ consentements requis, sinon 400) |
+| DELETE | `/:token/coverage/:id` | Retirer une de ses retombées |
+| POST | `/:token/assets/sign` | Signature d'upload Cloudinary (dossier dérivé du token) |
 
 ### Compte journaliste (email + mot de passe) — `/api/public/journalist`
 
@@ -192,3 +214,22 @@ Accès **par événement**. Le login renvoie le token d'espace ; le client redir
 | Méthode | Chemin | Description |
 |---|---|---|
 | GET | `/:eventId` | Communiqués publiés + médias + branding + deadline |
+
+### Avis publics (témoignages) — `/api/public/reviews`
+
+| Méthode | Chemin | Description |
+|---|---|---|
+| GET | `/` | Avis **approuvés et consentis** (id, authorName, authorRole, authorOrg, rating, quote) — alimente la landing |
+
+## SEO (rendu serveur, hors `/api`)
+
+Servi à la racine du domaine (sans authentification) :
+
+| Méthode | Chemin | Description |
+|---|---|---|
+| GET | `/robots.txt` | Autorise l'indexation + lien vers le sitemap |
+| GET | `/sitemap.xml` | Par hôte : newsroom + communiqués publiés de l'événement (mode domaine), ou pages plateforme + communiqués canoniques. Caché 300 s |
+
+Les pages de communiqué (`/newsroom/:eventId/:slug` ou `/newsroom/:slug` en mode domaine) sont
+rendues par le **catch-all SPA** avec injection des balises `<head>` (meta + Open Graph, image de
+couverture) via `services/seo.ts` quand le communiqué est publié. Aucune route API dédiée.

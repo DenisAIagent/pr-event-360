@@ -20,6 +20,9 @@ fournit les comptages SQL et orchestre les effets de bord.
 5. File / traitement L'attaché traite les demandes (file triée par score, par artiste,
                      ou planning par créneau) et déclenche la génération du planning.
                      Notifications à chaque étape.
+6. Revue de presse   Après l'événement (fin + délai de publication choisi à l'inscription :
+                     J+3 / J+8 / J+30), le journaliste reçoit un email l'invitant à déposer ses
+                     retombées (liens/photos/vidéos) dans son espace → lignes `press_coverage`.
 ```
 
 ## Score de priorité
@@ -85,20 +88,51 @@ son créneau dans son espace (« Mon planning ») ; le back-office l'affiche dan
 
 ## Notifications
 
-Déclencheurs (`trigger_key`) : réception/acceptation/refus d'accréditation,
-réception/acceptation/refus de demande, récapitulatifs (`daily_recap`/`weekly_recap`),
-`newsletter`, plus réinitialisation de mot de passe et invitation (hors gabarits
-d'événement).
+Déclencheurs (`trigger_key`, gabarits d'événement) : `accreditation_received` /
+`accreditation_accepted` / `accreditation_rejected`, `request_received` / `request_accepted` /
+`request_rejected`, et `coverage_request` (collecte des retombées). Les récapitulatifs
+(`daily_recap`/`weekly_recap`), `newsletter`, la réinitialisation de mot de passe et l'invitation
+sont hors gabarits d'événement.
 
 - **Gabarits** : `email_templates` par (événement × langue × déclencheur × canal),
-  avec valeurs par défaut multilingues semées à la création.
-- **Variables** : `{{firstName}}`, `{{event}}`, etc.
+  avec valeurs par défaut multilingues (fr/en/pt/es) semées à la création.
+- **Variables** (`{{clé}}`) : `{{firstName}}`, `{{event}}`, `{{link}}`, `{{type}}` (libellé du type
+  de demande), `{{artist}}`, `{{slot}}` (créneau attribué), `{{reportage}}` (règles/autorisation
+  photo), `{{delay}}` (délai de publication, revue de presse). Une variable inconnue → chaîne vide,
+  avec nettoyage typographique (espaces français préservés).
+- **Nom d'expéditeur** : dérivé de l'événement — `eventSenderName(name)` = « *{name}* Press Team ».
+  L'**adresse** d'envoi reste l'expéditeur Brevo vérifié (`BREVO_SENDER_EMAIL`) ; seul le nom affiché change.
 - **Best-effort** : `sendNotification` ne lève jamais — une panne fournisseur ne casse
   pas le flux métier ; l'échec est journalisé et la notification persistée en `failed`
   (visible dans l'onglet Messages).
 - **Mode simulation** (défaut) : rien n'est envoyé, tout est persisté pour visualisation.
-- **Récapitulatifs** : un planificateur (`node-cron`, fuseau Europe/Paris) envoie les
-  récaps quotidiens (08:00) et hebdomadaires (lundi 08:00) aux destinataires configurés.
+
+### Tâches planifiées (`node-cron`, fuseau Europe/Paris)
+
+| Cron | Tâche |
+|---|---|
+| `0 8 * * *` | Récapitulatifs **quotidiens** aux destinataires configurés |
+| `0 8 * * 1` | Récapitulatifs **hebdomadaires** (lundi) |
+| `30 3 * * *` | **Purge de rétention RGPD** : suppression des journalistes > 12 mois après l'événement |
+| `0 9 * * *` | **Collecte des retombées** : email `coverage_request` aux accrédités dont `fin + délai de publication` est atteint |
+
+## Revue de presse (collecte des retombées)
+
+Après l'événement, la plateforme sollicite les accrédités acceptés pour constituer une **revue de
+presse classée par catégorie de média**.
+
+- **Envoi par journaliste, idempotent** : `listJournalistsForCoverageRequest()` sélectionne les
+  accrédités `acceptee` dont `coverage_request_sent_at IS NULL` **et** `end_date + publish_delay_days`
+  est dépassé ; après envoi, `touchJournalistCoverageSent(id)` horodate `journalists.coverage_request_sent_at`
+  (pas de renvoi). Le **délai** (`publish_delay_days`, défaut 8) est choisi à l'inscription (3/8/30 j).
+- **Dépôt** (espace journaliste) : lien externe **ou** média uploadé (Cloudinary, signature tokenisée
+  `POST /:token/assets/sign`). Pour un **upload**, l'**autorisation d'archivage + usage promotionnel**
+  est obligatoire (`archive_consent` **et** `promo_consent`, sinon 400) — écho au règlement accepté à
+  l'accréditation. Catégories : presse écrite, web, TV, radio, réseaux sociaux, YouTube, podcast,
+  photo, vidéo, autre.
+- **Relance manuelle** (back-office) : `remindCoverage(eventId, journalistId?)` — un journaliste précis,
+  ou par défaut tous les accrédités acceptés qui n'ont encore rien déposé.
+- **Suivi** : `coverageStatsByEvent(eventId)` alimente le tableau « qui a contribué / en attente ».
 
 ## Clôture des inscriptions
 
