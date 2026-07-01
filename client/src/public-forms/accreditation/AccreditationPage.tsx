@@ -18,6 +18,7 @@ interface FormState {
   audience: string;
   prevArticle: string;
   accreditationType: AccreditationType | '';
+  publishDelayDays: 3 | 8 | 30;
   commitPublish: boolean;
   consent: boolean;
 }
@@ -32,6 +33,7 @@ const EMPTY: FormState = {
   audience: '',
   prevArticle: '',
   accreditationType: '',
+  publishDelayDays: 8,
   commitPublish: false,
   consent: false,
 };
@@ -83,6 +85,7 @@ export function AccreditationPage() {
         prevArticle: form.prevArticle || null,
         lang,
         accreditationType: form.accreditationType || null,
+        publishDelayDays: form.publishDelayDays,
         commitPublish: form.commitPublish,
         consent: form.consent,
       });
@@ -220,6 +223,17 @@ export function AccreditationPage() {
 
         <Field label={t('acc.prevArticle')}>
           <input value={form.prevArticle} onChange={(e) => update('prevArticle', e.target.value)} />
+        </Field>
+
+        <Field label={t('acc.publishDelay')}>
+          <select
+            value={form.publishDelayDays}
+            onChange={(e) => update('publishDelayDays', Number(e.target.value) as 3 | 8 | 30)}
+          >
+            <option value={3}>{t('acc.publishDelay.3')}</option>
+            <option value={8}>{t('acc.publishDelay.8')}</option>
+            <option value={30}>{t('acc.publishDelay.30')}</option>
+          </select>
         </Field>
 
         <label className="checkbox">

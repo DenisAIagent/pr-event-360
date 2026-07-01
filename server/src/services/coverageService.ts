@@ -1,6 +1,9 @@
 import { loadEnv } from '../config/env';
-import { listEventsForCoverageRequest, touchCoverageSent } from '../db/repositories/eventRepo';
-import { listJournalistsByEvent } from '../db/repositories/journalistRepo';
+import {
+  listJournalistsByEvent,
+  listJournalistsForCoverageRequest,
+  touchJournalistCoverageSent,
+} from '../db/repositories/journalistRepo';
 import { coverageStatsByEvent } from '../db/repositories/coverageRepo';
 import { getEventOrThrow } from './eventService';
 import { sendNotification } from './notifications/notificationService';
@@ -9,27 +12,24 @@ import { TRIGGERS } from './notifications/templates';
 const env = loadEnv();
 
 /**
- * Email automatique J+3 : pour chaque événement terminé depuis ≥ 3 jours et non encore relancé,
- * invite les journalistes accrédités acceptés à déposer leurs retombées (revue de presse).
- * Idempotent via `events.coverage_request_sent_at`.
+ * Email automatique de collecte des retombées : envoyé à chaque journaliste accrédité accepté
+ * quand `fin de l'événement + son délai de publication choisi (3/8/30 j)` est atteint.
+ * Idempotent via `journalists.coverage_request_sent_at`.
  */
 export async function sendCoverageRequests(): Promise<void> {
-  const events = await listEventsForCoverageRequest();
-  for (const event of events) {
-    const journalists = (await listJournalistsByEvent(event.id)).filter(
-      (j) => j.accStatus === 'acceptee' && j.email && j.token,
-    );
-    for (const j of journalists) {
-      await sendNotification({
-        eventId: event.id,
-        eventName: event.name,
-        journalist: j,
-        triggerKey: TRIGGERS.COVERAGE_REQUEST,
-        variables: { link: `${env.CLIENT_URL}/espace/${j.token}` },
-      });
-    }
-    await touchCoverageSent(event.id);
-    console.log(`[revue-presse] demande de retombées envoyée à ${journalists.length} journaliste(s) — ${event.name}`);
+  const journalists = await listJournalistsForCoverageRequest();
+  for (const j of journalists) {
+    await sendNotification({
+      eventId: j.eventId,
+      eventName: j.eventName,
+      journalist: j,
+      triggerKey: TRIGGERS.COVERAGE_REQUEST,
+      variables: { link: `${env.CLIENT_URL}/espace/${j.token}`, delay: String(j.publishDelayDays) },
+    });
+    await touchJournalistCoverageSent(j.id);
+  }
+  if (journalists.length > 0) {
+    console.log(`[revue-presse] ${journalists.length} demande(s) de retombées envoyée(s)`);
   }
 }
 
@@ -54,7 +54,7 @@ export async function remindCoverage(eventId: string, journalistId?: string): Pr
       eventName: event.name,
       journalist: j,
       triggerKey: TRIGGERS.COVERAGE_REQUEST,
-      variables: { link: `${env.CLIENT_URL}/espace/${j.token}` },
+      variables: { link: `${env.CLIENT_URL}/espace/${j.token}`, delay: String(j.publishDelayDays) },
     });
   }
   return journalists.length;

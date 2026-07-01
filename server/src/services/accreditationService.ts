@@ -31,6 +31,7 @@ export interface SubmitAccreditationInput {
   lang: Lang;
   accreditationType?: AccreditationType | null;
   commitPublish: boolean;
+  publishDelayDays?: number;
   consent: boolean;
 }
 

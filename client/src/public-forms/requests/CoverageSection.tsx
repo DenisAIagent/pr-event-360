@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
+import { useI18n } from '../../i18n';
 import { api, ApiError } from '../../lib/api';
 import { uploadToCloudinary } from '../../admin/lib/upload';
 import type { UploadSignature } from '../../admin/lib/types';
-import { MEDIA_CATEGORIES, MEDIA_CATEGORY_LABEL, type PressCoverageItem } from '../../lib/mediaCategories';
+import { MEDIA_CATEGORIES, type PressCoverageItem } from '../../lib/mediaCategories';
 
 /**
  * Revue de presse — le journaliste dépose ses retombées (liens ou médias uploadés).
- * Pour tout média uploadé (photo/vidéo/capture), l'autorisation d'archivage + usage
- * promotionnel est obligatoire (double consentement horodaté).
+ * Pour tout média uploadé, l'autorisation d'archivage + usage promotionnel est obligatoire.
  */
 export function CoverageSection({
   token,
@@ -22,6 +22,8 @@ export function CoverageSection({
   readOnly: boolean;
   onChanged: () => void;
 }) {
+  const { t } = useI18n();
+  const catLabel = (v: string) => t(`space.coverage.cat.${v}`);
   const [mode, setMode] = useState<'link' | 'upload'>('link');
   const [mediaCategory, setMediaCategory] = useState<string>('web');
   const [url, setUrl] = useState('');
@@ -52,7 +54,7 @@ export function CoverageSection({
       setUrl(up.url);
       setThumbnailUrl(up.thumbnailUrl);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Échec de l’upload');
+      setErr(e instanceof Error ? e.message : t('space.coverage.errUpload'));
     } finally {
       setUploadBusy(false);
     }
@@ -60,10 +62,8 @@ export function CoverageSection({
 
   async function submit() {
     setErr(null);
-    if (!url) return setErr(mode === 'link' ? 'Collez un lien.' : 'Ajoutez un fichier.');
-    if (mode === 'upload' && (!archive || !promo)) {
-      return setErr('Pour un média, cochez les deux autorisations (archivage + promotion).');
-    }
+    if (!url) return setErr(mode === 'link' ? t('space.coverage.errLink') : t('space.coverage.errFile'));
+    if (mode === 'upload' && (!archive || !promo)) return setErr(t('space.coverage.errConsent'));
     setBusy(true);
     try {
       await api.post(`/public/space/${token}/coverage`, {
@@ -78,7 +78,7 @@ export function CoverageSection({
       reset();
       onChanged();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : 'Erreur');
+      setErr(e instanceof ApiError ? e.message : t('common.error'));
     } finally {
       setBusy(false);
     }
@@ -92,11 +92,9 @@ export function CoverageSection({
   return (
     <section className="card stack" aria-labelledby="sec-coverage" style={{ marginBottom: 'var(--space-5)' }}>
       <div>
-        <h2 id="sec-coverage" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Vos retombées presse</h2>
+        <h2 id="sec-coverage" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.coverage.title')}</h2>
         <p className="muted" style={{ marginTop: 4 }}>
-          {ended
-            ? 'L’événement est terminé — partagez vos publications (articles, réseaux, vidéos) et vos photos pour la revue de presse.'
-            : 'Vous pourrez déposer ici vos publications et photos après l’événement.'}
+          {ended ? t('space.coverage.ledeEnded') : t('space.coverage.ledeUpcoming')}
         </p>
       </div>
 
@@ -108,13 +106,13 @@ export function CoverageSection({
                 <img src={c.thumbnailUrl} alt="" style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 6 }} />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span className="badge" style={{ marginRight: 6 }}>{MEDIA_CATEGORY_LABEL[c.mediaCategory] ?? c.mediaCategory}</span>
+                <span className="badge" style={{ marginRight: 6 }}>{catLabel(c.mediaCategory)}</span>
                 <a href={c.url} target="_blank" rel="noreferrer" style={{ wordBreak: 'break-all' }}>
                   {c.title || c.url}
                 </a>
               </div>
               {!readOnly && (
-                <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)} aria-label="Retirer">Retirer</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => remove(c.id)}>{t('space.coverage.remove')}</button>
               )}
             </li>
           ))}
@@ -125,32 +123,32 @@ export function CoverageSection({
         <div className="stack" style={{ borderTop: '1px solid var(--color-line, #e3e3e3)', paddingTop: 'var(--space-3)' }}>
           {err && <div className="banner banner-error">{err}</div>}
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn-sm" aria-pressed={mode === 'link'} onClick={() => { setMode('link'); reset(); }} style={{ fontWeight: mode === 'link' ? 700 : 400 }}>
-              Un lien (article, réseau, YouTube…)
+              {t('space.coverage.modeLink')}
             </button>
             <button className="btn btn-sm" aria-pressed={mode === 'upload'} onClick={() => { setMode('upload'); reset(); }} style={{ fontWeight: mode === 'upload' ? 700 : 400 }}>
-              Une photo / capture (fichier)
+              {t('space.coverage.modeUpload')}
             </button>
           </div>
 
           <div className="field">
-            <label>Catégorie de média</label>
+            <label>{t('space.coverage.category')}</label>
             <select value={mediaCategory} onChange={(e) => setMediaCategory(e.target.value)}>
               {MEDIA_CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+                <option key={c.value} value={c.value}>{catLabel(c.value)}</option>
               ))}
             </select>
           </div>
 
           {mode === 'link' ? (
             <div className="field">
-              <label>Lien (https)</label>
+              <label>{t('space.coverage.linkLabel')}</label>
               <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
             </div>
           ) : (
             <div className="field">
-              <label>Fichier (photo ou capture d’écran)</label>
+              <label>{t('space.coverage.fileLabel')}</label>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                 {thumbnailUrl && <img src={thumbnailUrl} alt="" style={{ height: 48, width: 64, objectFit: 'cover', borderRadius: 6 }} />}
                 <input
@@ -162,31 +160,31 @@ export function CoverageSection({
                     if (f) onUpload(f);
                   }}
                 />
-                {uploadBusy && <span className="muted">Upload…</span>}
+                {uploadBusy && <span className="muted">{t('space.coverage.uploading')}</span>}
               </div>
             </div>
           )}
 
           <div className="field">
-            <label>Titre / description (optionnel)</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="Ex. Article Rock&Folk, reportage TF1…" />
+            <label>{t('space.coverage.titleLabel')}</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={t('space.coverage.titlePlaceholder')} />
           </div>
 
           {mode === 'upload' && (
             <div className="stack" style={{ gap: 6 }}>
               <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--text-sm)' }}>
                 <input type="checkbox" checked={archive} onChange={(e) => setArchive(e.target.checked)} />
-                <span>J’autorise l’organisateur à <strong>conserver ce média dans ses archives</strong>.</span>
+                <span>{t('space.coverage.consentArchive')}</span>
               </label>
               <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--text-sm)' }}>
                 <input type="checkbox" checked={promo} onChange={(e) => setPromo(e.target.checked)} />
-                <span>J’autorise son <strong>utilisation à des fins de promotion</strong> de l’événement.</span>
+                <span>{t('space.coverage.consentPromo')}</span>
               </label>
             </div>
           )}
 
           <button className="btn btn-primary" onClick={submit} disabled={busy || uploadBusy} style={{ alignSelf: 'flex-start' }}>
-            {busy ? 'Ajout…' : 'Ajouter à la revue de presse'}
+            {busy ? t('space.coverage.adding') : t('space.coverage.add')}
           </button>
         </div>
       )}

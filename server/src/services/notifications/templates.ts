@@ -61,10 +61,10 @@ export const DEFAULT_TEMPLATE_TEXT: Record<TriggerKey, Record<Lang, TemplateText
     es: { subject: '{{type}} – {{artist}}: solicitud no aprobada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) no pudo ser aprobada.' },
   },
   coverage_request: {
-    fr: { subject: '{{event}} — partagez vos retombées presse', body: 'Bonjour {{firstName}}, {{event}} est terminé — merci ! Partagez vos publications (articles, réseaux, YouTube…) et vos photos dans votre espace pour constituer la revue de presse : {{link}}' },
-    en: { subject: '{{event}} — share your press coverage', body: 'Hello {{firstName}}, {{event}} is over — thank you! Share your publications (articles, social media, YouTube…) and photos in your space to build the press review: {{link}}' },
-    pt: { subject: '{{event}} — partilhe a sua cobertura', body: 'Olá {{firstName}}, {{event}} terminou — obrigado! Partilhe as suas publicações (artigos, redes sociais, YouTube…) e fotos no seu espaço para a revista de imprensa: {{link}}' },
-    es: { subject: '{{event}} — comparte tu cobertura', body: 'Hola {{firstName}}, {{event}} ha terminado — ¡gracias! Comparte tus publicaciones (artículos, redes, YouTube…) y fotos en tu espacio para el dossier de prensa: {{link}}' },
+    fr: { subject: '{{event}} — partagez vos retombées presse', body: 'Bonjour {{firstName}}, {{event}} est terminé et le délai de publication que vous aviez indiqué ({{delay}} jours) est écoulé — merci ! Partagez vos publications (articles, réseaux, YouTube…) et vos photos dans votre espace pour constituer la revue de presse : {{link}}' },
+    en: { subject: '{{event}} — share your press coverage', body: 'Hello {{firstName}}, {{event}} is over and the publication timeframe you indicated ({{delay}} days) has passed — thank you! Share your publications (articles, social media, YouTube…) and photos in your space to build the press review: {{link}}' },
+    pt: { subject: '{{event}} — partilhe a sua cobertura', body: 'Olá {{firstName}}, {{event}} terminou e o prazo de publicação que indicou ({{delay}} dias) já passou — obrigado! Partilhe as suas publicações (artigos, redes sociais, YouTube…) e fotos no seu espaço para a revista de imprensa: {{link}}' },
+    es: { subject: '{{event}} — comparte tu cobertura', body: 'Hola {{firstName}}, {{event}} ha terminado y el plazo de publicación que indicaste ({{delay}} días) ya pasó — ¡gracias! Comparte tus publicaciones (artículos, redes, YouTube…) y fotos en tu espacio para el dossier de prensa: {{link}}' },
   },
 };
 

@@ -45,6 +45,8 @@ const AccreditationSchema = z.object({
   prevArticle: z.string().max(2000).nullish(),
   lang: LANG.default('fr'),
   accreditationType: z.enum(['presse', 'photo', 'video']).nullish(),
+  // Délai de publication annoncé (jours après la fin) : adapte l'envoi de l'email de collecte des retombées.
+  publishDelayDays: z.union([z.literal(3), z.literal(8), z.literal(30)]).default(8),
   commitPublish: z.boolean().default(false),
   consent: z.literal(true, { errorMap: () => ({ message: 'Le consentement RGPD est obligatoire' }) }),
 });

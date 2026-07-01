@@ -144,6 +144,8 @@ export interface Journalist {
   accreditationType: AccreditationType | null;
   accStatus: AccreditationStatus;
   commitPublish: boolean;
+  /** Délai de publication annoncé à l'inscription (jours après la fin) : 3, 8 ou 30. */
+  publishDelayDays: number;
   consent: boolean;
   /** Hash argon2 du mot de passe d'espace (null = aucun mot de passe défini). Jamais sérialisé tel quel. */
   passwordHash: string | null;

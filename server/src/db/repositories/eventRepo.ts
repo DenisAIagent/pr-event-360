@@ -352,22 +352,6 @@ export async function touchRecapSent(eventId: string, db: Queryable = pool): Pro
   await db.query('UPDATE event_recap SET last_sent_at = now() WHERE event_id = $1', [eventId]);
 }
 
-/** Événements terminés depuis ≥ 3 jours dont l'email de collecte des retombées n'a pas encore été envoyé. */
-export async function listEventsForCoverageRequest(
-  db: Queryable = pool,
-): Promise<Array<{ id: string; name: string }>> {
-  const { rows } = await db.query<{ id: string; name: string }>(
-    `SELECT id, name FROM events
-     WHERE end_date IS NOT NULL
-       AND end_date <= (CURRENT_DATE - 3)
-       AND coverage_request_sent_at IS NULL`,
-  );
-  return rows;
-}
-
-export async function touchCoverageSent(eventId: string, db: Queryable = pool): Promise<void> {
-  await db.query('UPDATE events SET coverage_request_sent_at = now() WHERE id = $1', [eventId]);
-}
 
 /** IDs des événements configurés avec une fréquence de récap donnée. */
 export async function listEventIdsByRecapFrequency(

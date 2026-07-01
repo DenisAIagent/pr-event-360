@@ -19,6 +19,7 @@ interface JournalistRow {
   accreditation_type: AccreditationType | null;
   acc_status: AccreditationStatus;
   commit_publish: boolean;
+  publish_delay_days: number;
   consent: boolean;
   password_hash: string | null;
   created_at: string;
@@ -40,6 +41,7 @@ const map = (r: JournalistRow): Journalist => ({
   accreditationType: r.accreditation_type,
   accStatus: r.acc_status,
   commitPublish: r.commit_publish,
+  publishDelayDays: r.publish_delay_days,
   consent: r.consent,
   passwordHash: r.password_hash,
   createdAt: r.created_at,
@@ -47,7 +49,7 @@ const map = (r: JournalistRow): Journalist => ({
 
 const COLS = `id, event_id, token, first_name, last_name, email, phone, media,
   media_type_id, audience, prev_article, lang, accreditation_type, acc_status,
-  commit_publish, consent, password_hash, created_at`;
+  commit_publish, publish_delay_days, consent, password_hash, created_at`;
 
 export interface CreateJournalistInput {
   eventId: string;
@@ -62,6 +64,7 @@ export interface CreateJournalistInput {
   lang: Lang;
   accreditationType?: AccreditationType | null;
   commitPublish: boolean;
+  publishDelayDays?: number;
   consent: boolean;
 }
 
@@ -72,8 +75,8 @@ export async function insertJournalist(
   const { rows } = await db.query<JournalistRow>(
     `INSERT INTO journalists
       (event_id, first_name, last_name, email, phone, media, media_type_id,
-       audience, prev_article, lang, accreditation_type, commit_publish, consent, consent_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, CASE WHEN $13 THEN now() ELSE NULL END)
+       audience, prev_article, lang, accreditation_type, commit_publish, publish_delay_days, consent, consent_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, CASE WHEN $14 THEN now() ELSE NULL END)
      RETURNING ${COLS}`,
     [
       input.eventId,
@@ -88,10 +91,31 @@ export async function insertJournalist(
       input.lang,
       input.accreditationType ?? null,
       input.commitPublish,
+      input.publishDelayDays ?? 8,
       input.consent,
     ],
   );
   return map(rows[0]!);
+}
+
+/** Journalistes à relancer : accrédités acceptés dont (fin d'événement + délai) est atteint, non encore relancés. */
+export async function listJournalistsForCoverageRequest(
+  db: Queryable = pool,
+): Promise<Array<Journalist & { eventName: string }>> {
+  const { rows } = await db.query<JournalistRow & { event_name: string }>(
+    `SELECT ${COLS.split(',').map((c) => 'j.' + c.trim()).join(', ')}, e.name AS event_name
+     FROM journalists j
+     JOIN events e ON e.id = j.event_id
+     WHERE j.acc_status = 'acceptee' AND j.email <> '' AND j.token IS NOT NULL
+       AND j.coverage_request_sent_at IS NULL
+       AND e.end_date IS NOT NULL
+       AND (e.end_date + (j.publish_delay_days || ' days')::interval) <= now()`,
+  );
+  return rows.map((r) => ({ ...map(r), eventName: r.event_name }));
+}
+
+export async function touchJournalistCoverageSent(journalistId: string, db: Queryable = pool): Promise<void> {
+  await db.query('UPDATE journalists SET coverage_request_sent_at = now() WHERE id = $1', [journalistId]);
 }
 
 export async function findJournalistById(
