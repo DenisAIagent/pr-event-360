@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
+import { AppError } from '../../http/AppError';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireEventEditor } from '../../middleware/auth';
@@ -278,7 +279,9 @@ commsRouter.delete(
   requireEventEditor,
   asyncHandler(async (req, res) => {
     await access(req);
-    await deleteCoverage(req.params.id!, null);
+    // Restreint à l'événement courant : empêche de supprimer une retombée d'un autre événement/tenant par UUID.
+    const deleted = await deleteCoverage(req.params.id!, { eventId: req.params.eventId! });
+    if (!deleted) throw AppError.notFound('Retombée introuvable');
     sendData(res, { ok: true });
   }),
 );

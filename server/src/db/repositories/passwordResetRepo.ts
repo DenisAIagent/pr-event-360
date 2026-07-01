@@ -54,3 +54,23 @@ export async function findValidByHash(
 export async function markUsed(id: string, db: Queryable = pool): Promise<void> {
   await db.query('UPDATE password_reset_tokens SET used_at = now() WHERE id = $1', [id]);
 }
+
+/**
+ * Consomme **atomiquement** un jeton : le marque utilisé et renvoie son `userId` uniquement
+ * s'il était encore valide (non utilisé, non expiré) au moment de l'UPDATE. Empêche la
+ * consommation concurrente du même jeton (le second appel ne touche aucune ligne → null).
+ */
+export async function consumeResetToken(
+  tokenHash: string,
+  db: Queryable = pool,
+): Promise<{ userId: string } | null> {
+  const { rows } = await db.query<{ user_id: string }>(
+    `UPDATE password_reset_tokens
+        SET used_at = now()
+      WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+      RETURNING user_id`,
+    [tokenHash],
+  );
+  const r = rows[0];
+  return r ? { userId: r.user_id } : null;
+}

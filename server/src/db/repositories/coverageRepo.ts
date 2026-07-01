@@ -85,16 +85,24 @@ export async function listCoverageByEvent(eventId: string, db: Queryable = pool)
   return rows.map(map);
 }
 
-/** Suppression d'une retombée. Si `journalistId` fourni, restreint à son propre dépôt. */
+/**
+ * Suppression d'une retombée, **toujours** restreinte à un périmètre (événement côté back-office,
+ * ou journaliste côté espace) afin d'empêcher toute suppression cross-tenant par simple UUID.
+ * Retourne `true` si une ligne a bien été supprimée dans ce périmètre, `false` sinon.
+ */
 export async function deleteCoverage(
   id: string,
-  journalistId: string | null,
+  scope: { eventId?: string; journalistId?: string },
   db: Queryable = pool,
-): Promise<void> {
-  await db.query(
-    `DELETE FROM press_coverage WHERE id = $1 AND ($2::uuid IS NULL OR journalist_id = $2)`,
-    [id, journalistId],
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `DELETE FROM press_coverage
+     WHERE id = $1
+       AND ($2::uuid IS NULL OR event_id = $2)
+       AND ($3::uuid IS NULL OR journalist_id = $3)`,
+    [id, scope.eventId ?? null, scope.journalistId ?? null],
   );
+  return (rowCount ?? 0) > 0;
 }
 
 export interface CoverageStat {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
-import { buildBrandedEmail } from '../src/services/newsletterService';
+import { renderBrandedEmail } from '../src/services/notifications/email';
 
 vi.mock('../src/services/settingsService', () => ({
   getStorageSettings: vi.fn(),
@@ -11,18 +11,41 @@ import { AppError } from '../src/http/AppError';
 
 afterEach(() => vi.clearAllMocks());
 
-describe('buildBrandedEmail', () => {
+describe('renderBrandedEmail', () => {
   it('habille le contenu et applique la couleur d’accent', () => {
-    const html = buildBrandedEmail('<p>Salut</p>', { accentColor: '#ff0000', logoUrl: null } as never, 'Festival X');
+    const html = renderBrandedEmail({
+      innerHtml: '<p>Salut</p>',
+      branding: { accentColor: '#ff0000', logoUrl: null } as never,
+      eventName: 'Festival X',
+    });
     expect(html).toContain('<p>Salut</p>');
     expect(html).toContain('#ff0000');
     expect(html).toContain('Festival X');
   });
 
   it('échappe le nom de l’événement (anti-injection dans le gabarit)', () => {
-    const html = buildBrandedEmail('<p>x</p>', null, '<script>alert(1)</script>');
+    const html = renderBrandedEmail({ innerHtml: '<p>x</p>', eventName: '<script>alert(1)</script>' });
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('rejette un logo à schéma dangereux et retombe sur le nom (anti-injection d’attribut)', () => {
+    const html = renderBrandedEmail({
+      innerHtml: '<p>x</p>',
+      branding: { logoUrl: '" onerror="alert(1)' } as never,
+      eventName: 'Festival X',
+    });
+    expect(html).not.toContain('onerror');
+    expect(html).toContain('Festival X'); // en-tête textuel de repli
+  });
+
+  it('accepte une URL de logo https et l’échappe dans src', () => {
+    const html = renderBrandedEmail({
+      innerHtml: '<p>x</p>',
+      branding: { logoUrl: 'https://cdn.example.com/logo.png' } as never,
+      eventName: 'Festival X',
+    });
+    expect(html).toContain('src="https://cdn.example.com/logo.png"');
   });
 });
 

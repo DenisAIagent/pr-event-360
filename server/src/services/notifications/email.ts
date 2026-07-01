@@ -15,6 +15,17 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * URL d'image sûre pour un attribut `src` d'email : n'autorise que `http(s)://` ou une data URL
+ * d'image bitmap (jamais SVG, jamais `javascript:`/`data:text/html`), et échappe l'attribut.
+ * Renvoie `null` si le schéma n'est pas autorisé → l'appelant retombe sur un libellé texte.
+ */
+export function safeImageSrc(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const allowed = /^https?:\/\//i.test(url) || /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(url);
+  return allowed ? escapeHtml(url) : null;
+}
+
 /** HTML → texte (aperçu / version texte). */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
@@ -60,9 +71,10 @@ export interface BrandedEmail {
 export function renderBrandedEmail({ innerHtml, branding, eventName, footer }: BrandedEmail): string {
   const accent = branding?.accentColor ?? PLATFORM_ACCENT;
   const isEvent = Boolean(eventName);
+  const logoSrc = safeImageSrc(branding?.logoUrl);
   const header = isEvent
-    ? branding?.logoUrl
-      ? `<img src="${branding.logoUrl}" alt="${escapeHtml(eventName!)}" style="max-height:48px;max-width:220px;" />`
+    ? logoSrc
+      ? `<img src="${logoSrc}" alt="${escapeHtml(eventName!)}" style="max-height:48px;max-width:220px;" />`
       : `<strong style="font-size:19px;color:#111;">${escapeHtml(eventName!)}</strong>`
     : `<img src="${PLATFORM_LOGO}" alt="${PLATFORM_NAME}" style="max-height:40px;max-width:200px;" />`;
   const footerText = footer ?? (isEvent ? `Vous recevez cet email dans le cadre de ${eventName}.` : `Envoyé par ${PLATFORM_NAME}.`);

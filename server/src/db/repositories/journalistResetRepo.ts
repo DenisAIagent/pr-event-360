@@ -51,3 +51,22 @@ export async function findValidJournalistResetByHash(
 export async function markJournalistResetUsed(id: string, db: Queryable = pool): Promise<void> {
   await db.query('UPDATE journalist_password_resets SET used_at = now() WHERE id = $1', [id]);
 }
+
+/**
+ * Consomme **atomiquement** un jeton journaliste : le marque utilisé et renvoie son
+ * `journalistId` seulement s'il était encore valide au moment de l'UPDATE (anti double-consommation).
+ */
+export async function consumeJournalistReset(
+  tokenHash: string,
+  db: Queryable = pool,
+): Promise<{ journalistId: string } | null> {
+  const { rows } = await db.query<{ journalist_id: string }>(
+    `UPDATE journalist_password_resets
+        SET used_at = now()
+      WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+      RETURNING journalist_id`,
+    [tokenHash],
+  );
+  const r = rows[0];
+  return r ? { journalistId: r.journalist_id } : null;
+}

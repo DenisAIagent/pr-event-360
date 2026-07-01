@@ -7,7 +7,7 @@ vi.mock('../src/db/repositories/userRepo', () => ({
   listUsers: vi.fn(),
   updateUserRole: vi.fn(),
   setUserActive: vi.fn(),
-  countActiveAdmins: vi.fn(),
+  countActiveAdminsInOrg: vi.fn(),
 }));
 vi.mock('../src/db/repositories/eventRepo', () => ({
   addEventMember: vi.fn(),
@@ -34,30 +34,30 @@ import { hashResetToken } from '../src/lib/token';
 import { AppError } from '../src/http/AppError';
 import argon2 from 'argon2';
 
-const admin = { id: 'a1', email: 'a@x.fr', fullName: 'Admin', role: 'admin' as const, active: true, createdAt: 'now' };
+const admin = { id: 'a1', email: 'a@x.fr', fullName: 'Admin', role: 'admin' as const, active: true, organizationId: 'org1', createdAt: 'now' };
 
 afterEach(() => vi.clearAllMocks());
 
 describe('teamService — protection du dernier admin', () => {
   it('refuse de rétrograder le dernier admin actif', async () => {
     vi.mocked(userRepo.findUserById).mockResolvedValue(admin);
-    vi.mocked(userRepo.countActiveAdmins).mockResolvedValue(1);
-    await expect(changeUserRole('a1', 'attache')).rejects.toBeInstanceOf(AppError);
+    vi.mocked(userRepo.countActiveAdminsInOrg).mockResolvedValue(1);
+    await expect(changeUserRole('org1', 'a1', 'attache')).rejects.toBeInstanceOf(AppError);
     expect(userRepo.updateUserRole).not.toHaveBeenCalled();
   });
 
   it('refuse de désactiver le dernier admin actif', async () => {
     vi.mocked(userRepo.findUserById).mockResolvedValue(admin);
-    vi.mocked(userRepo.countActiveAdmins).mockResolvedValue(1);
-    await expect(changeUserActive('a1', false)).rejects.toBeInstanceOf(AppError);
+    vi.mocked(userRepo.countActiveAdminsInOrg).mockResolvedValue(1);
+    await expect(changeUserActive('org1', 'a1', false)).rejects.toBeInstanceOf(AppError);
     expect(userRepo.setUserActive).not.toHaveBeenCalled();
   });
 
   it('autorise la rétrogradation s’il reste d’autres admins', async () => {
     vi.mocked(userRepo.findUserById).mockResolvedValue(admin);
-    vi.mocked(userRepo.countActiveAdmins).mockResolvedValue(2);
+    vi.mocked(userRepo.countActiveAdminsInOrg).mockResolvedValue(2);
     vi.mocked(userRepo.updateUserRole).mockResolvedValue({ ...admin, role: 'attache' });
-    const res = await changeUserRole('a1', 'attache');
+    const res = await changeUserRole('org1', 'a1', 'attache');
     expect(res.role).toBe('attache');
   });
 });

@@ -11,8 +11,7 @@ import {
 import {
   createJournalistReset,
   deletePendingForJournalist,
-  findValidJournalistResetByHash,
-  markJournalistResetUsed,
+  consumeJournalistReset,
 } from '../db/repositories/journalistResetRepo';
 import { getBranding, findEventById } from '../db/repositories/eventRepo';
 import { ctaButton, eventSenderName, sendBrandedEmail } from './notifications/email';
@@ -80,14 +79,15 @@ export async function requestJournalistPasswordReset(eventId: string, email: str
 
 /** Consomme un jeton de réinitialisation et pose le nouveau mot de passe. */
 export async function resetJournalistPassword(rawToken: string, newPassword: string): Promise<void> {
-  const found = await findValidJournalistResetByHash(hashResetToken(rawToken));
-  if (!found) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');
+  // Valide la longueur AVANT de consommer le jeton (un refus ne doit pas brûler le lien).
   if (newPassword.length < MIN_PASSWORD_LENGTH) {
     throw AppError.badRequest(`Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères`);
   }
+  // Consommation atomique : anti double-consommation concurrente du même jeton.
+  const consumed = await consumeJournalistReset(hashResetToken(rawToken));
+  if (!consumed) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');
   const passwordHash = await argon2.hash(newPassword);
-  await setJournalistPassword(found.journalistId, passwordHash);
-  await markJournalistResetUsed(found.id);
+  await setJournalistPassword(consumed.journalistId, passwordHash);
 }
 
 /** Compose et envoie le lien de réinitialisation via le fournisseur email actif. */

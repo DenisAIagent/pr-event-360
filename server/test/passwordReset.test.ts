@@ -9,8 +9,7 @@ vi.mock('../src/db/repositories/userRepo', () => ({
 vi.mock('../src/db/repositories/passwordResetRepo', () => ({
   deletePendingForUser: vi.fn(),
   createResetToken: vi.fn(),
-  findValidByHash: vi.fn(),
-  markUsed: vi.fn(),
+  consumeResetToken: vi.fn(),
 }));
 vi.mock('../src/services/notifications/providers', () => ({
   getEmailProvider: vi.fn(() => ({
@@ -60,24 +59,22 @@ describe('requestPasswordReset', () => {
 });
 
 describe('resetPassword', () => {
-  it('met à jour le mot de passe et consomme le jeton valide', async () => {
-    vi.mocked(resetRepo.findValidByHash).mockResolvedValue({ id: 't1', userId: 'u1', expiresAt: 'later' });
+  it('met à jour le mot de passe en consommant atomiquement le jeton valide', async () => {
+    vi.mocked(resetRepo.consumeResetToken).mockResolvedValue({ userId: 'u1' });
 
     await resetPassword('le-jeton-brut', 'nouveauMotDePasse');
 
-    // Le service cherche par HASH, jamais par jeton en clair.
-    expect(resetRepo.findValidByHash).toHaveBeenCalledWith(hashResetToken('le-jeton-brut'));
+    // Le service consomme par HASH (marquage + récupération du compte en une requête), jamais par jeton en clair.
+    expect(resetRepo.consumeResetToken).toHaveBeenCalledWith(hashResetToken('le-jeton-brut'));
     const [userId, hash] = vi.mocked(userRepo.updatePasswordHash).mock.calls[0]!;
     expect(userId).toBe('u1');
     await expect(argon2.verify(hash, 'nouveauMotDePasse')).resolves.toBe(true);
-    expect(resetRepo.markUsed).toHaveBeenCalledWith('t1');
   });
 
-  it('rejette un jeton inconnu/expiré sans toucher au mot de passe', async () => {
-    vi.mocked(resetRepo.findValidByHash).mockResolvedValue(null);
+  it('rejette un jeton inconnu/expiré/déjà consommé sans toucher au mot de passe', async () => {
+    vi.mocked(resetRepo.consumeResetToken).mockResolvedValue(null);
 
     await expect(resetPassword('mauvais-jeton', 'peu-importe')).rejects.toBeInstanceOf(AppError);
     expect(userRepo.updatePasswordHash).not.toHaveBeenCalled();
-    expect(resetRepo.markUsed).not.toHaveBeenCalled();
   });
 });

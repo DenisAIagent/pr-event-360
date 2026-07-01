@@ -306,12 +306,23 @@ const HEX = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Couleur attendue au format #RRGGBB')
   .nullish();
+// Une image de branding = URL http(s) OU data URL d'image bitmap (jamais SVG ni javascript:/data:text).
+// Bloque les schémas dangereux à la source (défense en profondeur, en plus de l'échappement à l'usage).
+const isSafeImageUrl = (v: string): boolean =>
+  /^https?:\/\//i.test(v) || /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(v);
+const IMAGE_URL = (maxBytes: number, tooBig: string) =>
+  z
+    .string()
+    .max(maxBytes, tooBig)
+    .refine(isSafeImageUrl, "URL d'image non autorisée (attendu : https ou data:image bitmap)")
+    .nullish();
+
 const BrandingSchema = z.object({
-  logoUrl: z.string().max(1_500_000, 'Logo trop volumineux').nullish(), // URL ou data URL
+  logoUrl: IMAGE_URL(1_500_000, 'Logo trop volumineux'),
   accentColor: HEX,
   bgColor: HEX,
   textColor: HEX,
-  bgImageUrl: z.string().max(3_000_000, "Image de fond trop volumineuse").nullish(),
+  bgImageUrl: IMAGE_URL(3_000_000, 'Image de fond trop volumineuse'),
 });
 eventsRouter.put(
   '/:eventId/branding',

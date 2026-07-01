@@ -5,8 +5,7 @@ import { generateResetToken, hashResetToken } from '../lib/token';
 import {
   createResetToken,
   deletePendingForUser,
-  findValidByHash,
-  markUsed,
+  consumeResetToken,
 } from '../db/repositories/passwordResetRepo';
 import { findUserByEmail, updatePasswordHash } from '../db/repositories/userRepo';
 import { ctaButton, sendBrandedEmail } from './notifications/email';
@@ -39,12 +38,13 @@ export async function requestPasswordReset(email: string): Promise<void> {
  * si le jeton est inconnu, déjà utilisé ou expiré (pas de fuite d'information).
  */
 export async function resetPassword(rawToken: string, newPassword: string): Promise<void> {
-  const found = await findValidByHash(hashResetToken(rawToken));
-  if (!found) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');
+  // Consommation atomique : marque le jeton utilisé ET renvoie le compte en une seule requête.
+  // Une seconde requête concurrente avec le même jeton ne consomme rien → échec générique.
+  const consumed = await consumeResetToken(hashResetToken(rawToken));
+  if (!consumed) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');
 
   const passwordHash = await argon2.hash(newPassword);
-  await updatePasswordHash(found.userId, passwordHash);
-  await markUsed(found.id);
+  await updatePasswordHash(consumed.userId, passwordHash);
 }
 
 /**

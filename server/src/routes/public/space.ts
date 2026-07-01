@@ -152,7 +152,7 @@ publicSpaceRouter.delete(
   '/:token/coverage/:id',
   asyncHandler(async (req, res) => {
     const journalist = await requireJournalist(req.params.token!);
-    await deleteCoverage(req.params.id!, journalist.id);
+    await deleteCoverage(req.params.id!, { journalistId: journalist.id });
     sendData(res, { ok: true });
   }),
 );
