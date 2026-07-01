@@ -1,17 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { CopyLink } from '../components/CopyLink';
 import { PageHero } from '../components/PageHero';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { Icon } from '../../components/Icon';
 import type { EventSummary, Lang, Stage } from '../lib/types';
 
 const ALL_LANGS: Lang[] = ['fr', 'en', 'pt', 'es'];
@@ -56,65 +48,45 @@ export function EventWizard() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHero
-        eyebrow="Nouvel événement"
-        title="Créons votre événement"
-        subtitle="Quelques étapes pour tout configurer — vous pourrez ajuster ensuite."
-      />
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-3">
-        {STEPS.map((label, i) => {
-          const done = i < step;
-          const current = i === step;
-          return (
-            <li key={label} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'grid size-7 shrink-0 place-items-center rounded-full text-xs font-medium',
-                  done || current ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {done ? <Check size={14} /> : i + 1}
-              </span>
-              <span className={cn('text-sm', current ? 'font-medium text-foreground' : 'text-muted-foreground')}>
-                {label}
-              </span>
-              {i < STEPS.length - 1 && <span className="mx-1 hidden h-px w-6 bg-border sm:inline-block" />}
+    <div className="stack">
+        <PageHero
+          eyebrow="Nouvel événement"
+          title="Créons votre événement"
+          subtitle="Quelques étapes pour tout configurer — vous pourrez ajuster ensuite."
+        />
+        <ol className="wizard-steps">
+          {STEPS.map((label, i) => (
+            <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>
+              <span className="wizard-step-num">{i < step ? <Icon name="check" size={14} /> : i + 1}</span>
+              <span className="wizard-step-label">{label}</span>
             </li>
-          );
-        })}
-      </ol>
+          ))}
+        </ol>
 
-      {error && (
-        <Alert variant="destructive" className="max-w-2xl">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        {error && <div className="banner banner-error" style={{ maxWidth: 680 }}>{error}</div>}
 
-      {step === 0 && <InfosStep busy={busy} onNext={(fn) => run(fn, 1)} setEventId={setEventId} />}
-      {step === 1 && eventId && (
-        <BrandingStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 2)} onSkip={() => go(2)} onBack={() => go(0)} />
-      )}
-      {step === 2 && eventId && <LineupStep eventId={eventId} onContinue={() => go(3)} onBack={() => go(1)} />}
-      {step === 3 && eventId && (
-        <ConfigStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 4)} onSkip={() => go(4)} onBack={() => go(2)} />
-      )}
-      {step === 4 && eventId && (
-        <DeadlineStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 5)} onSkip={() => go(5)} onBack={() => go(3)} />
-      )}
-      {step === 5 && eventId && <DoneStep eventId={eventId} onOpen={() => navigate(`/admin/events/${eventId}`)} />}
+        {step === 0 && <InfosStep busy={busy} onNext={(fn) => run(fn, 1)} setEventId={setEventId} />}
+        {step === 1 && eventId && (
+          <BrandingStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 2)} onSkip={() => go(2)} onBack={() => go(0)} />
+        )}
+        {step === 2 && eventId && <LineupStep eventId={eventId} onContinue={() => go(3)} onBack={() => go(1)} />}
+        {step === 3 && eventId && (
+          <ConfigStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 4)} onSkip={() => go(4)} onBack={() => go(2)} />
+        )}
+        {step === 4 && eventId && (
+          <DeadlineStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 5)} onSkip={() => go(5)} onBack={() => go(3)} />
+        )}
+        {step === 5 && eventId && <DoneStep eventId={eventId} onOpen={() => navigate(`/admin/events/${eventId}`)} />}
     </div>
   );
 }
 
 function StepCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">{children}</CardContent>
-    </Card>
+    <section className="card stack" style={{ maxWidth: 680 }}>
+      <h2 style={{ fontSize: 'var(--text-lg)' }}>{title}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -136,26 +108,27 @@ function NavButtons({
   submit?: boolean;
 }) {
   return (
-    <div className="mt-2 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
+    <div className="row-between" style={{ marginTop: 'var(--space-2)' }}>
+      <div className="inline-actions">
         {onBack && (
-          <Button type="button" variant="ghost" size="sm" onClick={onBack} disabled={busy}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onBack} disabled={busy}>
             ← Retour
-          </Button>
+          </button>
         )}
         {onSkip && (
-          <Button type="button" variant="ghost" size="sm" onClick={onSkip} disabled={busy}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onSkip} disabled={busy}>
             Passer
-          </Button>
+          </button>
         )}
       </div>
-      <Button
+      <button
         type={submit ? 'submit' : 'button'}
+        className="btn btn-primary"
         onClick={submit ? undefined : onPrimary}
         disabled={busy || !canNext}
       >
         {busy ? 'Enregistrement…' : nextLabel}
-      </Button>
+      </button>
     </div>
   );
 }
@@ -197,37 +170,30 @@ function InfosStep({
   return (
     <form onSubmit={submit}>
       <StepCard title="Informations de l'événement">
-        <div className="grid gap-2">
-          <Label htmlFor="ev-name">Nom de l'événement *</Label>
-          <Input id="ev-name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+        <div className="field">
+          <label>Nom de l'événement *</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="ev-location">Lieu</Label>
-            <Input id="ev-location" value={location} onChange={(e) => setLocation(e.target.value)} />
+        <div className="grid-2">
+          <div className="field">
+            <label>Lieu</label>
+            <input value={location} onChange={(e) => setLocation(e.target.value)} />
           </div>
-          <div className="grid gap-2">
-            <Label>Dates</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} />
-              <Input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} />
+          <div className="field">
+            <label>Dates</label>
+            <div className="grid-2">
+              <input type="date" value={startDate} onChange={(e) => setStart(e.target.value)} />
+              <input type="date" value={endDate} onChange={(e) => setEnd(e.target.value)} />
             </div>
           </div>
         </div>
-        <div className="grid gap-2">
-          <Label>Langues du formulaire public *</Label>
-          <div className="flex flex-wrap gap-2">
+        <div className="field">
+          <label>Langues du formulaire public *</label>
+          <div className="inline-actions">
             {ALL_LANGS.map((l) => (
-              <Button
-                type="button"
-                key={l}
-                size="sm"
-                variant={langs.includes(l) ? 'default' : 'outline'}
-                aria-pressed={langs.includes(l)}
-                onClick={() => toggleLang(l)}
-              >
+              <button type="button" key={l} className="chip" aria-pressed={langs.includes(l)} onClick={() => toggleLang(l)}>
                 {LANG_LABEL[l]}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
@@ -268,23 +234,21 @@ function BrandingStep({
 
   return (
     <StepCard title="Apparence des pages publiques">
-      <p className="text-sm text-muted-foreground">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Logo et couleur appliqués au formulaire d'accréditation, à la newsroom et aux emails.
       </p>
-      <div className="grid gap-2">
-        <Label htmlFor="ev-accent">Couleur d'accent</Label>
+      <div className="field">
+        <label>Couleur d'accent</label>
         <input
-          id="ev-accent"
           type="color"
           value={accentColor}
           onChange={(e) => setAccent(e.target.value)}
-          className="h-10 w-16 cursor-pointer rounded-md border p-1"
+          style={{ width: 64, height: 40, padding: 2 }}
         />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="ev-logo">Logo</Label>
-        <Input
-          id="ev-logo"
+      <div className="field">
+        <label>Logo</label>
+        <input
           type="file"
           accept="image/*"
           onChange={(e) => {
@@ -292,7 +256,7 @@ function BrandingStep({
             if (f) onFile(f);
           }}
         />
-        {logoUrl && <img src={logoUrl} alt="" className="mt-2 max-h-14" />}
+        {logoUrl && <img src={logoUrl} alt="" style={{ maxHeight: 56, marginTop: 8 }} />}
       </div>
       <NavButtons onBack={onBack} onSkip={onSkip} onPrimary={save} busy={busy} nextLabel="Enregistrer & continuer" />
     </StepCard>
@@ -347,75 +311,56 @@ function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContin
 
   return (
     <StepCard title="Scènes & artistes">
-      <p className="text-sm text-muted-foreground">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Optionnel ici — vous pourrez compléter le lineup et les créneaux d'interview plus tard dans l'onglet dédié.
       </p>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {error && <div className="banner banner-error">{error}</div>}
 
-      <div className="grid gap-2">
-        <Label>Scènes ({stages.length})</Label>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            value={stageName}
-            onChange={(e) => setStageName(e.target.value)}
-            placeholder="Nom de la scène"
-            className="w-auto flex-1"
-          />
-          <Button variant="ghost" size="sm" onClick={addStage} disabled={busy || !stageName.trim()}>
+      <div className="field">
+        <label>Scènes ({stages.length})</label>
+        <div className="inline-actions">
+          <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Nom de la scène" />
+          <button className="btn btn-ghost btn-sm" onClick={addStage} disabled={busy || !stageName.trim()}>
             Ajouter
-          </Button>
+          </button>
         </div>
         {stages.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="inline-actions" style={{ marginTop: 8 }}>
             {stages.map((s) => (
-              <Badge key={s.id} variant="secondary">
-                {s.name}
-              </Badge>
+              <span key={s.id} className="badge badge-progress">{s.name}</span>
             ))}
           </div>
         )}
       </div>
 
-      <div className="grid gap-2">
-        <Label>Artistes ({artists.length})</Label>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input value={artistName} onChange={(e) => setArtistName(e.target.value)} placeholder="Nom de l'artiste" />
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={artistStage} onValueChange={setArtistStage}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Scène (optionnel)" />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
+      <div className="field">
+        <label>Artistes ({artists.length})</label>
+        <div className="grid-2">
+          <input value={artistName} onChange={(e) => setArtistName(e.target.value)} placeholder="Nom de l'artiste" />
+          <div className="inline-actions">
+            <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
+              <option value="">Scène (optionnel)</option>
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <input
               type="number"
               min={0}
               value={artistQuota}
               onChange={(e) => setArtistQuota(e.target.value)}
               placeholder="Quota itw"
-              className="w-24"
+              style={{ width: 100 }}
             />
-            <Button variant="ghost" size="sm" onClick={addArtist} disabled={busy || !artistName.trim()}>
+            <button className="btn btn-ghost btn-sm" onClick={addArtist} disabled={busy || !artistName.trim()}>
               Ajouter
-            </Button>
+            </button>
           </div>
         </div>
         {artists.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="inline-actions" style={{ marginTop: 8 }}>
             {artists.map((a, i) => (
-              <Badge key={i} className="border-transparent bg-emerald-100 text-emerald-800">
-                {a}
-              </Badge>
+              <span key={i} className="badge badge-success">{a}</span>
             ))}
           </div>
         )}
@@ -462,20 +407,14 @@ function ConfigStep({
 
   return (
     <StepCard title="Règles & quotas">
-      <p className="text-sm text-muted-foreground">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Valeurs par défaut déjà appliquées à la création. Ajustez si besoin (modifiable à tout moment).
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid-2">
         {fields.map((f) => (
-          <div className="grid gap-2" key={f.key}>
-            <Label htmlFor={`cfg-${f.key}`}>{f.label}</Label>
-            <Input
-              id={`cfg-${f.key}`}
-              type="number"
-              min={0}
-              value={cfg[f.key]}
-              onChange={(e) => set(f.key, Number(e.target.value))}
-            />
+          <div className="field" key={f.key}>
+            <label>{f.label}</label>
+            <input type="number" min={0} value={cfg[f.key]} onChange={(e) => set(f.key, Number(e.target.value))} />
           </div>
         ))}
       </div>
@@ -509,13 +448,13 @@ function DeadlineStep({
 
   return (
     <StepCard title="Clôture des inscriptions">
-      <p className="text-sm text-muted-foreground">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Au-delà de cette date, le formulaire d'accréditation affiche un compte à rebours puis se ferme.
         Laissez vide pour ne pas fixer de limite.
       </p>
-      <div className="grid gap-2">
-        <Label htmlFor="ev-deadline">Date & heure de clôture</Label>
-        <Input id="ev-deadline" type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} />
+      <div className="field">
+        <label>Date & heure de clôture</label>
+        <input type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} />
       </div>
       <NavButtons onBack={onBack} onSkip={onSkip} onPrimary={save} busy={busy} nextLabel="Enregistrer & continuer" />
     </StepCard>
@@ -525,13 +464,13 @@ function DeadlineStep({
 function DoneStep({ eventId, onOpen }: { eventId: string; onOpen: () => void }) {
   return (
     <StepCard title="Votre événement est prêt">
-      <p className="text-sm text-muted-foreground">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Partagez ce lien aux journalistes pour qu'ils demandent leur accréditation :
       </p>
       <CopyLink url={`${window.location.origin}/accreditation/${eventId}`} />
-      <Button className="mt-2 self-start" onClick={onOpen}>
+      <button className="btn btn-primary" onClick={onOpen} style={{ marginTop: 'var(--space-3)' }}>
         Ouvrir le tableau de bord →
-      </Button>
+      </button>
     </StepCard>
   );
 }

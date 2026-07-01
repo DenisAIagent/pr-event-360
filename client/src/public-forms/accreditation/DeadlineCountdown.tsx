@@ -22,19 +22,14 @@ export function DeadlineCountdown({
   });
 
   return (
-    <div className="mb-6 flex flex-col gap-4 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <span
-          className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground"
-          aria-hidden="true"
-        >
+    <div className="deadline-card">
+      <div className="deadline-head">
+        <span className="deadline-icon" aria-hidden="true">
           <Icon name="clock" />
         </span>
-        <div className="flex flex-col">
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {t('acc.deadline.label')}
-          </span>
-          <strong className="font-semibold">{dateStr}</strong>
+        <div>
+          <span className="deadline-label">{t('acc.deadline.label')}</span>
+          <strong className="deadline-date">{dateStr}</strong>
         </div>
       </div>
       <Countdown

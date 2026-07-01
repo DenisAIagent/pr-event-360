@@ -6,10 +6,6 @@ import { api } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { brandingStyle } from '../../lib/branding';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 /**
  * « Mot de passe oublié » journaliste : saisie de l'email → envoi d'un lien de
@@ -50,54 +46,46 @@ export function JournalistForgotPasswordPage() {
 
   return (
     <div style={event ? brandingStyle(event.branding) : undefined}>
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {event?.branding.logoUrl && <img src={event.branding.logoUrl} alt="" className="h-10" />}
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t('login.eyebrow')}
-                </span>
-              </div>
-              {event && <LanguageSwitcher available={event.languages.filter(isLang)} />}
+      <main className="page">
+        <header
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            {event?.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
+            <span className="eyebrow">{t('login.eyebrow')}</span>
+          </div>
+          {event && <LanguageSwitcher available={event.languages.filter(isLang)} />}
+        </header>
+
+        <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>{t('forgot.title')}</h1>
+        <p className="lede" style={{ marginBottom: 'var(--space-4)' }}>{t('forgot.lede')}</p>
+
+        {done ? (
+          <div className="card stack">
+            <div className="banner banner-success">{t('forgot.done')}</div>
+            <Link to={links.login}>{t('forgot.back')}</Link>
+          </div>
+        ) : (
+          <form className="card stack" onSubmit={submit} noValidate>
+            <div className="field">
+              <label htmlFor="jf-email">{t('login.email')}</label>
+              <input
+                id="jf-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-            <CardTitle className="mt-4 text-2xl">{t('forgot.title')}</CardTitle>
-            <CardDescription>{t('forgot.lede')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {done ? (
-              <div className="flex flex-col gap-4">
-                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                  {t('forgot.done')}
-                </div>
-                <Link to={links.login} className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-                  {t('forgot.back')}
-                </Link>
-              </div>
-            ) : (
-              <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-                <div className="grid gap-2">
-                  <Label htmlFor="jf-email">{t('login.email')}</Label>
-                  <Input
-                    id="jf-email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={busy || !email}>
-                  {busy ? '…' : t('forgot.submit')}
-                </Button>
-                <Link to={links.login} className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-                  {t('forgot.back')}
-                </Link>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+            <button type="submit" className="btn btn-primary" disabled={busy || !email}>
+              {busy ? '…' : t('forgot.submit')}
+            </button>
+            <Link to={links.login} style={{ fontSize: 'var(--text-sm)' }}>
+              {t('forgot.back')}
+            </Link>
+          </form>
+        )}
       </main>
     </div>
   );

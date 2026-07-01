@@ -1,12 +1,6 @@
 import { useRef, useState } from 'react';
 import { useAuthedApi } from '../../auth/AuthContext';
 import type { EventBranding } from '../../lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const DEFAULT_ACCENT = '#5b4bdb';
 const DEFAULT_BG = '#f7f4ef';
@@ -86,167 +80,126 @@ export function BrandingEditor({
           backgroundRepeat: 'no-repeat',
         }
       : {}),
-    ['--p-accent' as string]: useAccent ? accent : 'var(--brand-accent)',
+    ['--p-accent' as string]: useAccent ? accent : 'var(--color-accent)',
     ['--p-ink' as string]: useText ? text : 'var(--color-ink)',
   };
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Apparence de la page publique</CardTitle>
-          <CardDescription>
-            Personnalisez le formulaire d'accréditation et l'espace journaliste aux couleurs de l'événement.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {saved && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              Apparence enregistrée.
-            </div>
-          )}
+    <div className="grid-2" style={{ alignItems: 'start' }}>
+      <div className="card stack">
+        <h3 style={{ fontSize: 'var(--text-lg)' }}>Apparence de la page publique</h3>
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
+          Personnalisez le formulaire d'accréditation et l'espace journaliste aux couleurs de l'événement.
+        </p>
+        {error && <div className="banner banner-error">{error}</div>}
+        {saved && <div className="banner banner-success">Apparence enregistrée.</div>}
 
-          <div className="grid gap-2">
-            <Label>Logo</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
-                Choisir un fichier…
-              </Button>
-              {logoUrl && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setLogoUrl(null)}>
-                  Retirer
-                </Button>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => readFileToState(e, MAX_LOGO_BYTES, setLogoUrl)}
-                style={{ display: 'none' }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground">
-              PNG, JPG ou SVG · 250 ko max. Ou collez une URL ci-dessous.
-            </span>
-            <Input
-              type="url"
-              placeholder="https://… (URL du logo, optionnel)"
-              value={logoUrl && !logoUrl.startsWith('data:') ? logoUrl : ''}
-              onChange={(e) => setLogoUrl(e.target.value || null)}
+        <div className="field">
+          <label>Logo</label>
+          <div className="inline-actions">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileRef.current?.click()}>
+              Choisir un fichier…
+            </button>
+            {logoUrl && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setLogoUrl(null)}>
+                Retirer
+              </button>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => readFileToState(e, MAX_LOGO_BYTES, setLogoUrl)}
+              style={{ display: 'none' }}
             />
           </div>
+          <span className="hint">PNG, JPG ou SVG · 250 ko max. Ou collez une URL ci-dessous.</span>
+          <input
+            type="url"
+            placeholder="https://… (URL du logo, optionnel)"
+            value={logoUrl && !logoUrl.startsWith('data:') ? logoUrl : ''}
+            onChange={(e) => setLogoUrl(e.target.value || null)}
+          />
+        </div>
 
-          <div className="grid gap-2">
-            <Label>Image de fond</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => bgFileRef.current?.click()}>
-                Choisir un fichier…
-              </Button>
-              {bgImageUrl && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setBgImageUrl(null)}>
-                  Retirer
-                </Button>
-              )}
-              <input
-                ref={bgFileRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => readFileToState(e, MAX_BG_BYTES, setBgImageUrl)}
-                style={{ display: 'none' }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground">
-              1,5 Mo max. Conseil : choisissez une couleur de texte contrastée par-dessus.
-            </span>
-            <Input
-              type="url"
-              placeholder="https://… (URL de l'image, optionnel)"
-              value={bgImageUrl && !bgImageUrl.startsWith('data:') ? bgImageUrl : ''}
-              onChange={(e) => setBgImageUrl(e.target.value || null)}
+        <div className="field">
+          <label>Image de fond</label>
+          <div className="inline-actions">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => bgFileRef.current?.click()}>
+              Choisir un fichier…
+            </button>
+            {bgImageUrl && (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBgImageUrl(null)}>
+                Retirer
+              </button>
+            )}
+            <input
+              ref={bgFileRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => readFileToState(e, MAX_BG_BYTES, setBgImageUrl)}
+              style={{ display: 'none' }}
             />
           </div>
+          <span className="hint">1,5 Mo max. Conseil : choisissez une couleur de texte contrastée par-dessus.</span>
+          <input
+            type="url"
+            placeholder="https://… (URL de l'image, optionnel)"
+            value={bgImageUrl && !bgImageUrl.startsWith('data:') ? bgImageUrl : ''}
+            onChange={(e) => setBgImageUrl(e.target.value || null)}
+          />
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="use-accent"
-                checked={useAccent}
-                onCheckedChange={(v) => setUseAccent(v === true)}
-              />
-              <Label htmlFor="use-accent" className="font-normal">
-                Couleur d'accent personnalisée
-              </Label>
+        <div className="field">
+          <label className="checkbox" style={{ padding: 0 }}>
+            <input type="checkbox" checked={useAccent} onChange={(e) => setUseAccent(e.target.checked)} />
+            <span>Couleur d'accent personnalisée</span>
+          </label>
+          {useAccent && (
+            <div className="inline-actions" style={{ marginTop: 'var(--space-1)' }}>
+              <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} style={{ width: 56, padding: 2 }} />
+              <input value={accent} onChange={(e) => setAccent(e.target.value)} style={{ width: 120 }} />
             </div>
-            {useAccent && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={accent}
-                  onChange={(e) => setAccent(e.target.value)}
-                  className="h-9 w-14 cursor-pointer rounded-md border p-1"
-                />
-                <Input value={accent} onChange={(e) => setAccent(e.target.value)} className="w-32" />
-              </div>
-            )}
-          </div>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Checkbox id="use-bg" checked={useBg} onCheckedChange={(v) => setUseBg(v === true)} />
-              <Label htmlFor="use-bg" className="font-normal">
-                Couleur de fond personnalisée
-              </Label>
+        <div className="field">
+          <label className="checkbox" style={{ padding: 0 }}>
+            <input type="checkbox" checked={useBg} onChange={(e) => setUseBg(e.target.checked)} />
+            <span>Couleur de fond personnalisée</span>
+          </label>
+          {useBg && (
+            <div className="inline-actions" style={{ marginTop: 'var(--space-1)' }}>
+              <input type="color" value={bg} onChange={(e) => setBg(e.target.value)} style={{ width: 56, padding: 2 }} />
+              <input value={bg} onChange={(e) => setBg(e.target.value)} style={{ width: 120 }} />
             </div>
-            {useBg && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={bg}
-                  onChange={(e) => setBg(e.target.value)}
-                  className="h-9 w-14 cursor-pointer rounded-md border p-1"
-                />
-                <Input value={bg} onChange={(e) => setBg(e.target.value)} className="w-32" />
-              </div>
-            )}
-          </div>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Checkbox id="use-text" checked={useText} onCheckedChange={(v) => setUseText(v === true)} />
-              <Label htmlFor="use-text" className="font-normal">
-                Couleur du texte personnalisée
-              </Label>
+        <div className="field">
+          <label className="checkbox" style={{ padding: 0 }}>
+            <input type="checkbox" checked={useText} onChange={(e) => setUseText(e.target.checked)} />
+            <span>Couleur du texte personnalisée</span>
+          </label>
+          <span className="hint">Recommandé si vous choisissez un fond foncé.</span>
+          {useText && (
+            <div className="inline-actions" style={{ marginTop: 'var(--space-1)' }}>
+              <input type="color" value={text} onChange={(e) => setText(e.target.value)} style={{ width: 56, padding: 2 }} />
+              <input value={text} onChange={(e) => setText(e.target.value)} style={{ width: 120 }} />
             </div>
-            <span className="text-xs text-muted-foreground">Recommandé si vous choisissez un fond foncé.</span>
-            {useText && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  className="h-9 w-14 cursor-pointer rounded-md border p-1"
-                />
-                <Input value={text} onChange={(e) => setText(e.target.value)} className="w-32" />
-              </div>
-            )}
-          </div>
+          )}
+        </div>
 
-          <div>
-            <Button onClick={save} disabled={busy}>
-              {busy ? 'Enregistrement…' : "Enregistrer l'apparence"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <button className="btn btn-primary" onClick={save} disabled={busy}>
+          {busy ? 'Enregistrement…' : "Enregistrer l'apparence"}
+        </button>
+      </div>
 
       {/* Aperçu en direct */}
       <div>
-        <span className="mb-2 block text-sm text-muted-foreground">Aperçu</span>
+        <span className="lbl" style={{ display: 'block', marginBottom: 'var(--space-2)', color: 'var(--color-ink-faint)' }}>
+          Aperçu
+        </span>
         <div className="brand-preview" style={previewStyle}>
           {logoUrl && <img src={logoUrl} alt="" className="brand-logo" style={{ marginBottom: 'var(--space-3)' }} />}
           <div className="bp-eyebrow">Accréditation presse</div>

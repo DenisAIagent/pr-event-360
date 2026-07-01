@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const MIN_LENGTH = 8;
 
@@ -41,91 +36,69 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <h1 className="text-xl font-semibold">Lien invalide</h1>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4">
-              <Alert variant="destructive">
-                <AlertDescription>
-                  Le lien de réinitialisation est incomplet ou a expiré.
-                </AlertDescription>
-              </Alert>
-              <Link
-                to="/admin/forgot-password"
-                className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-              >
-                Demander un nouveau lien
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+      <main className="login-wrap">
+        <div className="card login-card stack">
+          <h1 style={{ fontSize: 'var(--text-xl)' }}>Lien invalide</h1>
+          <div className="banner banner-error">
+            Le lien de réinitialisation est incomplet ou a expiré.
+          </div>
+          <Link to="/admin/forgot-password" className="auth-link">
+            Demander un nouveau lien
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Back-office
-          </span>
-          <h1 className="mt-1 text-xl font-semibold">Nouveau mot de passe</h1>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+    <main className="login-wrap">
+      <div className="card login-card stack">
+        <div>
+          <span className="eyebrow">Back-office</span>
+          <h1 style={{ fontSize: 'var(--text-xl)', marginTop: 'var(--space-1)' }}>
+            Nouveau mot de passe
+          </h1>
+        </div>
+        <form onSubmit={submit} className="stack" noValidate>
+          {error && <div className="banner banner-error">{error}</div>}
+          <div className="field">
+            <label>Nouveau mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={MIN_LENGTH}
+              required
+              autoFocus
+            />
+            {tooShort && (
+              <span className="field-hint field-hint-error">
+                {MIN_LENGTH} caractères minimum.
+              </span>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="reset-password">Nouveau mot de passe</Label>
-              <Input
-                id="reset-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={MIN_LENGTH}
-                required
-                autoFocus
-              />
-              {tooShort && (
-                <span className="text-sm text-destructive">
-                  {MIN_LENGTH} caractères minimum.
-                </span>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="reset-confirm">Confirmer le mot de passe</Label>
-              <Input
-                id="reset-confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-              />
-              {mismatch && (
-                <span className="text-sm text-destructive">
-                  Les mots de passe ne correspondent pas.
-                </span>
-              )}
-            </div>
-            <Button type="submit" disabled={!canSubmit}>
-              {busy ? 'Mise à jour…' : 'Réinitialiser'}
-            </Button>
-            <Link
-              to="/admin/login"
-              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-            >
-              ← Retour à la connexion
-            </Link>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+          <div className="field">
+            <label>Confirmer le mot de passe</label>
+            <input
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+            />
+            {mismatch && (
+              <span className="field-hint field-hint-error">
+                Les mots de passe ne correspondent pas.
+              </span>
+            )}
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+            {busy ? 'Mise à jour…' : 'Réinitialiser'}
+          </button>
+          <Link to="/admin/login" className="auth-link">
+            ← Retour à la connexion
+          </Link>
+        </form>
+      </div>
     </main>
   );
 }

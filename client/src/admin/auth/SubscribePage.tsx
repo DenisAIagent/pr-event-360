@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { GoogleButton } from './GoogleAuth';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const MIN_LENGTH = 8;
 
@@ -67,115 +62,83 @@ export function SubscribePage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" className="h-10" />
-          <span className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+    <main className="login-wrap">
+      <div className="card login-card stack">
+        <div>
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 40, display: 'block' }} />
+          <span className="eyebrow" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
             Créer votre espace
           </span>
-        </CardHeader>
-        <CardContent>
-          {config && !config.billingEnabled ? (
-            <div className="flex flex-col gap-4">
-              <div className="rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-                L'inscription en ligne sera bientôt disponible. Contactez-nous pour ouvrir votre espace.
+        </div>
+
+        {config && !config.billingEnabled ? (
+          <>
+            <div className="banner banner-info">
+              L'inscription en ligne sera bientôt disponible. Contactez-nous pour ouvrir votre espace.
+            </div>
+            <Link to="/admin/login" className="auth-link">
+              Déjà un compte ? Se connecter
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="price-badge">
+              <strong>{config?.priceLabel ?? '…'}</strong>
+              <span>Abonnement annuel · accès complet à votre espace</span>
+            </div>
+
+            <form onSubmit={submitEmail} className="stack" noValidate>
+              {error && <div className="banner banner-error">{error}</div>}
+              <div className="field">
+                <label>Nom de votre organisation</label>
+                <input
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  placeholder="Ex. Agence Présence / Festival X"
+                  required
+                  autoFocus
+                />
               </div>
-              <Link
-                to="/admin/login"
-                className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-              >
+              <div className="field">
+                <label>Votre nom complet</label>
+                <input value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              </div>
+              <div className="field">
+                <label>Email</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div className="field">
+                <label>Mot de passe</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={MIN_LENGTH}
+                  required
+                />
+                {password.length > 0 && password.length < MIN_LENGTH && (
+                  <span className="field-hint field-hint-error">{MIN_LENGTH} caractères minimum.</span>
+                )}
+              </div>
+              <div className="field">
+                <label>Confirmer le mot de passe</label>
+                <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+                {confirm.length > 0 && confirm !== password && (
+                  <span className="field-hint field-hint-error">Les mots de passe ne correspondent pas.</span>
+                )}
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+                {busy ? 'Redirection…' : "S'abonner et payer"}
+              </button>
+              <Link to="/admin/login" className="auth-link">
                 Déjà un compte ? Se connecter
               </Link>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              <div className="rounded-md border bg-muted/50 px-4 py-3">
-                <strong className="block text-lg font-semibold">{config?.priceLabel ?? '…'}</strong>
-                <span className="text-sm text-muted-foreground">
-                  Abonnement annuel · accès complet à votre espace
-                </span>
-              </div>
+            </form>
 
-              <form onSubmit={submitEmail} className="flex flex-col gap-4" noValidate>
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="grid gap-2">
-                  <Label htmlFor="subscribe-org">Nom de votre organisation</Label>
-                  <Input
-                    id="subscribe-org"
-                    value={orgName}
-                    onChange={(e) => setOrgName(e.target.value)}
-                    placeholder="Ex. Agence Présence / Festival X"
-                    required
-                    autoFocus
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subscribe-name">Votre nom complet</Label>
-                  <Input
-                    id="subscribe-name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subscribe-email">Email</Label>
-                  <Input
-                    id="subscribe-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subscribe-password">Mot de passe</Label>
-                  <Input
-                    id="subscribe-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={MIN_LENGTH}
-                    required
-                  />
-                  {password.length > 0 && password.length < MIN_LENGTH && (
-                    <span className="text-sm text-destructive">{MIN_LENGTH} caractères minimum.</span>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="subscribe-confirm">Confirmer le mot de passe</Label>
-                  <Input
-                    id="subscribe-confirm"
-                    type="password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
-                  />
-                  {confirm.length > 0 && confirm !== password && (
-                    <span className="text-sm text-destructive">Les mots de passe ne correspondent pas.</span>
-                  )}
-                </div>
-                <Button type="submit" disabled={!canSubmit}>
-                  {busy ? 'Redirection…' : "S'abonner et payer"}
-                </Button>
-                <Link
-                  to="/admin/login"
-                  className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-                >
-                  Déjà un compte ? Se connecter
-                </Link>
-              </form>
-
-              <GoogleButton onCredential={onGoogle} text="signup_with" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <GoogleButton onCredential={onGoogle} text="signup_with" />
+          </>
+        )}
+      </div>
     </main>
   );
 }

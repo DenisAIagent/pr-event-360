@@ -18,26 +18,8 @@ import { BrandingEditor } from '../components/settings/BrandingEditor';
 import { SubdomainCard } from '../components/settings/SubdomainCard';
 import { DomainCard } from '../components/settings/DomainCard';
 import { InfoBubble } from '../components/InfoBubble';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Sous-domaine', 'Clôture', 'Récap & emails'];
-
-// Valeur sentinelle pour l'option « sans scène » : Radix Select interdit une value
-// vide. On mappe vers/depuis la chaîne vide pour conserver le state d'origine.
-const NO_STAGE = '__none__';
 
 interface WindowDraft {
   day: string;
@@ -124,13 +106,8 @@ export function LineupTab() {
     }
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
-  if (error)
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+  if (loading) return <p className="muted">Chargement…</p>;
+  if (error) return <div className="banner banner-error">{error}</div>;
 
   const stages = data?.stages ?? [];
   const artists = data?.artists ?? [];
@@ -138,75 +115,50 @@ export function LineupTab() {
   const noStage = stages.length === 0;
 
   return (
-    <div className="flex max-w-[820px] flex-col gap-6">
+    <div className="stack" style={{ maxWidth: 820 }}>
       {/* Stepper de configuration : 6 étapes cliquables */}
-      <ol className="flex flex-wrap gap-1">
-        {STEPS.map((label, i) => {
-          const state = i === step ? 'current' : i < step ? 'done' : 'upcoming';
-          return (
-            <li key={label}>
-              <button
-                type="button"
-                onClick={() => setStep(i)}
-                aria-current={state === 'current' ? 'step' : undefined}
-                className={cn(
-                  'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors',
-                  state === 'current' && 'bg-primary text-primary-foreground',
-                  state === 'done' && 'text-foreground hover:bg-accent',
-                  state === 'upcoming' && 'text-muted-foreground hover:bg-accent',
-                )}
-              >
-                <span
-                  className={cn(
-                    'grid size-5 place-items-center rounded-full text-xs',
-                    state === 'current'
-                      ? 'bg-primary-foreground text-primary'
-                      : state === 'done'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  {i < step ? <Check size={13} /> : i + 1}
-                </span>
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            </li>
-          );
-        })}
+      <ol className="wizard-steps">
+        {STEPS.map((label, i) => (
+          <li
+            key={label}
+            className={i === step ? 'current' : i < step ? 'done' : ''}
+            onClick={() => setStep(i)}
+            style={{ cursor: 'pointer' }}
+          >
+            <span className="wizard-step-num">{i < step ? <Check size={14} /> : i + 1}</span>
+            <span className="wizard-step-label">{label}</span>
+          </li>
+        ))}
       </ol>
 
       {step === 0 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 1 — créez vos scènes, une à une. Vous pourrez toujours en ajouter ou les corriger plus tard.
           </p>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Scènes</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <form className="flex flex-wrap items-center gap-2" onSubmit={addStage}>
-                <Input
-                  value={stageName}
-                  onChange={(e) => setStageName(e.target.value)}
-                  placeholder="Nom de la scène"
-                  className="flex-1"
-                  autoFocus
-                />
-                <Button size="sm" type="submit">
-                  Ajouter la scène
-                </Button>
-              </form>
-              <div className="flex flex-col items-start gap-2">
-                {stages.map((s) => (
-                  <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
-                ))}
-                {noStage && <span className="text-sm text-muted-foreground">Aucune scène pour l’instant.</span>}
-              </div>
-            </CardContent>
-          </Card>
+          <section className="card">
+            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Scènes</h3>
+            <form className="inline-actions" onSubmit={addStage} style={{ marginBottom: 'var(--space-3)' }}>
+              <input
+                value={stageName}
+                onChange={(e) => setStageName(e.target.value)}
+                placeholder="Nom de la scène"
+                style={{ flex: 1 }}
+                autoFocus
+              />
+              <button className="btn btn-primary btn-sm" type="submit">
+                Ajouter la scène
+              </button>
+            </form>
+            <div className="stack">
+              {stages.map((s) => (
+                <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
+              ))}
+              {noStage && <span className="muted">Aucune scène pour l’instant.</span>}
+            </div>
+          </section>
           {!noStage && (
-            <p className="text-sm text-muted-foreground">
+            <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
               {`${stages.length} scène${stages.length > 1 ? 's' : ''} créée${stages.length > 1 ? 's' : ''}.`} Cliquez
               « Suivant » pour passer aux artistes.
             </p>
@@ -216,176 +168,125 @@ export function LineupTab() {
 
       {step === 1 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 2 — ajoutez vos artistes et rattachez chacun à une scène.
           </p>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Ajouter un artiste</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="flex flex-col gap-4" onSubmit={addArtist}>
-                {formError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{formError}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="grid gap-2">
-                  <Label htmlFor="artist-name">Nom *</Label>
-                  <Input
-                    id="artist-name"
-                    value={artistName}
-                    onChange={(e) => setArtistName(e.target.value)}
-                    required
+          <section className="card">
+            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Ajouter un artiste</h3>
+            <form className="stack" onSubmit={addArtist}>
+              {formError && <div className="banner banner-error">{formError}</div>}
+              <div className="field">
+                <label>Nom *</label>
+                <input value={artistName} onChange={(e) => setArtistName(e.target.value)} required />
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label>Scène</label>
+                  <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
+                    <option value="">— Sans scène</option>
+                    {stages.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Quota interviews (sinon défaut)
+                    <InfoBubble>
+                      Nombre maximum d'interviews pour cet artiste. Laissez <strong>vide</strong> pour
+                      utiliser la valeur par défaut définie à l'étape « Règles & quotas ».
+                    </InfoBubble>
+                  </label>
+                  <input type="number" min={0} value={artistQuota} onChange={(e) => setArtistQuota(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid-2">
+                <div className="field">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Quota photographes
+                    <InfoBubble title="Photographes « dans le pit »">
+                      Le <strong>« pit »</strong> est la zone réservée aux photographes juste devant la
+                      scène. Ce quota limite le nombre de photographes acceptés pour cet artiste. Laissez
+                      vide = illimité.
+                    </InfoBubble>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={artistPhotoQuota}
+                    onChange={(e) => setArtistPhotoQuota(e.target.value)}
+                    placeholder="illimité"
                   />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="artist-stage">Scène</Label>
-                    <Select
-                      value={artistStage || NO_STAGE}
-                      onValueChange={(v) => setArtistStage(v === NO_STAGE ? '' : v)}
-                    >
-                      <SelectTrigger id="artist-stage" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_STAGE}>— Sans scène</SelectItem>
-                        {stages.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="artist-quota" className="inline-flex items-center gap-1.5">
-                      Quota interviews (sinon défaut)
-                      <InfoBubble>
-                        Nombre maximum d'interviews pour cet artiste. Laissez <strong>vide</strong> pour
-                        utiliser la valeur par défaut définie à l'étape « Règles & quotas ».
-                      </InfoBubble>
-                    </Label>
-                    <Input
-                      id="artist-quota"
-                      type="number"
-                      min={0}
-                      value={artistQuota}
-                      onChange={(e) => setArtistQuota(e.target.value)}
-                    />
-                  </div>
+                <div className="field">
+                  <label>Quota vidéastes</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={artistVideoQuota}
+                    onChange={(e) => setArtistVideoQuota(e.target.value)}
+                    placeholder="illimité"
+                  />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="artist-photo" className="inline-flex items-center gap-1.5">
-                      Quota photographes
-                      <InfoBubble title="Photographes « dans le pit »">
-                        Le <strong>« pit »</strong> est la zone réservée aux photographes juste devant la
-                        scène. Ce quota limite le nombre de photographes acceptés pour cet artiste. Laissez
-                        vide = illimité.
-                      </InfoBubble>
-                    </Label>
-                    <Input
-                      id="artist-photo"
-                      type="number"
-                      min={0}
-                      value={artistPhotoQuota}
-                      onChange={(e) => setArtistPhotoQuota(e.target.value)}
-                      placeholder="illimité"
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="artist-video">Quota vidéastes</Label>
-                    <Input
-                      id="artist-video"
-                      type="number"
-                      min={0}
-                      value={artistVideoQuota}
-                      onChange={(e) => setArtistVideoQuota(e.target.value)}
-                      placeholder="illimité"
-                    />
-                  </div>
-                </div>
-                <p className="-mt-2 text-sm text-muted-foreground">
-                  Quotas propres à l’artiste (interviews, photographes dans le pit, vidéastes).
-                  Laisser vide = <strong>illimité</strong>. Au-delà du quota, les demandes passent en liste d’attente.
-                </p>
-                <div className="grid gap-2">
-                  <Label className="inline-flex items-center gap-1.5">
-                    Tranches de disponibilité → créneaux générés
-                    <InfoBubble title="Comment les créneaux sont créés">
-                      Indiquez les plages où l'artiste est disponible pour des interviews. L'app y crée
-                      <strong> automatiquement</strong> les créneaux, selon la <em>durée</em> et le{' '}
-                      <em>battement</em> définis à l'étape « Règles & quotas ».
-                      <br />
-                      Ex : plage 14:00–15:00, durée 15 min + 5 min de pause → créneaux 14:00, 14:20, 14:40.
-                    </InfoBubble>
-                  </Label>
-                  {windows.map((w, i) => (
-                    <div key={i} className="flex flex-wrap items-center gap-2">
-                      <Input
-                        type="date"
-                        className="w-auto"
-                        value={w.day}
-                        onChange={(e) => setWindow(i, { day: e.target.value })}
-                      />
-                      <Input
-                        type="time"
-                        className="w-auto"
-                        value={w.startTime}
-                        onChange={(e) => setWindow(i, { startTime: e.target.value })}
-                      />
-                      <Input
-                        type="time"
-                        className="w-auto"
-                        value={w.endTime}
-                        onChange={(e) => setWindow(i, { endTime: e.target.value })}
-                      />
-                    </div>
-                  ))}
-                  <div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setWindows((ws) => [...ws, { day: '', startTime: '', endTime: '' }])}
-                    >
-                      + Tranche
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <Button type="submit" disabled={busy || !artistName}>
-                    {busy ? 'Ajout…' : "Ajouter l'artiste"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
-          <section className="flex flex-col gap-4">
-            <h3 className="text-base font-semibold">Lineup ({artists.length})</h3>
-            {artists.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Aucun artiste — ajoutez-en un ci-dessus pour gérer les demandes d’interview.
+              </div>
+              <p className="hint" style={{ marginTop: 'calc(-1 * var(--space-2))' }}>
+                Quotas propres à l’artiste (interviews, photographes dans le pit, vidéastes).
+                Laisser vide = <strong>illimité</strong>. Au-delà du quota, les demandes passent en liste d’attente.
               </p>
+              <div className="field">
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  Tranches de disponibilité → créneaux générés
+                  <InfoBubble title="Comment les créneaux sont créés">
+                    Indiquez les plages où l'artiste est disponible pour des interviews. L'app y crée
+                    <strong> automatiquement</strong> les créneaux, selon la <em>durée</em> et le{' '}
+                    <em>battement</em> définis à l'étape « Règles & quotas ».
+                    <br />
+                    Ex : plage 14:00–15:00, durée 15 min + 5 min de pause → créneaux 14:00, 14:20, 14:40.
+                  </InfoBubble>
+                </label>
+                {windows.map((w, i) => (
+                  <div key={i} className="inline-actions" style={{ marginBottom: 'var(--space-1)' }}>
+                    <input type="date" value={w.day} onChange={(e) => setWindow(i, { day: e.target.value })} />
+                    <input type="time" value={w.startTime} onChange={(e) => setWindow(i, { startTime: e.target.value })} />
+                    <input type="time" value={w.endTime} onChange={(e) => setWindow(i, { endTime: e.target.value })} />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setWindows((ws) => [...ws, { day: '', startTime: '', endTime: '' }])}
+                >
+                  + Tranche
+                </button>
+              </div>
+              <button className="btn btn-primary" type="submit" disabled={busy || !artistName}>
+                {busy ? 'Ajout…' : "Ajouter l'artiste"}
+              </button>
+            </form>
+          </section>
+
+          <section className="stack">
+            <h3 style={{ fontSize: 'var(--text-lg)' }}>Lineup ({artists.length})</h3>
+            {artists.length === 0 && (
+              <p className="muted">Aucun artiste — ajoutez-en un ci-dessus pour gérer les demandes d’interview.</p>
             )}
             {stages.map((stage) => {
               const arts = artists.filter((a) => a.stageId === stage.id);
               return (
                 <div key={stage.id}>
-                  <h4 className="mb-2 text-sm font-semibold">
+                  <h4 style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
                     {stage.name}{' '}
-                    <span className="font-normal text-muted-foreground">
+                    <span className="muted" style={{ fontWeight: 400 }}>
                       · {arts.length} artiste{arts.length > 1 ? 's' : ''}
                     </span>
                   </h4>
                   {arts.length === 0 ? (
-                    <span className="text-sm text-muted-foreground">Aucun artiste sur cette scène.</span>
+                    <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>Aucun artiste sur cette scène.</span>
                   ) : (
-                    <div className="flex flex-col gap-2">
+                    <div className="stack">
                       {arts.map((a) => (
                         <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
                       ))}
@@ -396,10 +297,10 @@ export function LineupTab() {
             })}
             {unassigned.length > 0 && (
               <div>
-                <h4 className="mb-2 text-sm font-semibold text-muted-foreground">
+                <h4 className="muted" style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
                   Sans scène · {unassigned.length} artiste{unassigned.length > 1 ? 's' : ''}
                 </h4>
-                <div className="flex flex-col gap-2">
+                <div className="stack">
                   {unassigned.map((a) => (
                     <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
                   ))}
@@ -412,7 +313,7 @@ export function LineupTab() {
 
       {step === 2 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 3 — réglez les règles de priorité : durée des interviews, quota interviews par défaut,
             multiplicateurs par type et poids des médias (servent au score des demandes).
           </p>
@@ -423,14 +324,14 @@ export function LineupTab() {
               <MediaTypes eventId={eventId} mediaTypes={settings.data.mediaTypes} onSaved={settings.reload} />
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Chargement…</p>
+            <p className="muted">Chargement…</p>
           )}
         </>
       )}
 
       {step === 3 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 4 — habillez vos pages publiques (logo, image de fond, couleurs) avec un aperçu en direct.
           </p>
           {settings.data ? (
@@ -440,14 +341,14 @@ export function LineupTab() {
               eventName={ev.data?.name ?? 'Événement'}
             />
           ) : (
-            <p className="text-sm text-muted-foreground">Chargement…</p>
+            <p className="muted">Chargement…</p>
           )}
         </>
       )}
 
       {step === 4 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 5 — l'adresse publique de l'événement : un sous-domaine prêt à l'emploi, et/ou votre
             propre nom de domaine (optionnel).
           </p>
@@ -458,7 +359,7 @@ export function LineupTab() {
 
       {step === 5 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 6 — fixez la date limite d'inscription (optionnel) ; un compte à rebours s'affiche côté public.
           </p>
           <DeadlineCard eventId={eventId} />
@@ -467,7 +368,7 @@ export function LineupTab() {
 
       {step === 6 && (
         <>
-          <p className="text-sm text-muted-foreground">
+          <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
             Étape 7 — récapitulatifs envoyés à l'équipe et personnalisation des modèles d'emails (optionnel).
           </p>
           {settings.data ? (
@@ -476,11 +377,11 @@ export function LineupTab() {
               <Templates eventId={eventId} templates={settings.data.templates} onSaved={settings.reload} />
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Chargement…</p>
+            <p className="muted">Chargement…</p>
           )}
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <div className="card" style={{ borderColor: 'var(--color-accent)', background: 'var(--color-accent-tint)' }}>
             <strong>Votre événement est prêt.</strong>{' '}
-            <span className="text-emerald-800">
+            <span className="muted">
               Partagez le lien d'inscription (en haut de cette page) avec les journalistes.
             </span>
           </div>
@@ -488,20 +389,31 @@ export function LineupTab() {
       )}
 
       {/* Navigation entre étapes */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3)',
+          marginTop: 'var(--space-2)',
+        }}
+      >
         {step > 0 ? (
-          <Button variant="ghost" onClick={() => setStep(step - 1)}>
+          <button className="btn btn-ghost" onClick={() => setStep(step - 1)}>
             <ArrowLeft size={18} /> {STEPS[step - 1]}
-          </Button>
+          </button>
         ) : (
           <span />
         )}
         {step < STEPS.length - 1 ? (
-          <Button onClick={() => setStep(step + 1)}>
+          <button className="btn btn-primary" onClick={() => setStep(step + 1)}>
             Suivant : {STEPS[step + 1]} <ArrowRight size={18} />
-          </Button>
+          </button>
         ) : (
-          <span className="text-sm text-muted-foreground">Configuration terminée.</span>
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            Configuration terminée.
+          </span>
         )}
       </div>
     </div>
@@ -548,28 +460,28 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
 
   if (editing) {
     return (
-      <div className="flex w-full items-center gap-2">
-        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus className="flex-1" />
-        <Button size="sm" onClick={save} disabled={busy || !name.trim()}>
+      <span className="inline-actions" style={{ width: '100%' }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus style={{ flex: 1 }} />
+        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
           OK
-        </Button>
-        <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setName(stage.name); }} disabled={busy}>
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); setName(stage.name); }} disabled={busy}>
           Annuler
-        </Button>
-      </div>
+        </button>
+      </span>
     );
   }
 
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 text-sm">
-      <span className="font-medium">{stage.name}</span>
-      <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+    <span className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+      {stage.name}
+      <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
         Renommer
-      </Button>
-      <Button variant="ghost" size="sm" onClick={remove} disabled={busy} className="text-destructive hover:text-destructive">
+      </button>
+      <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy} style={{ color: 'var(--color-danger)' }}>
         Supprimer
-      </Button>
-    </div>
+      </button>
+    </span>
   );
 }
 
@@ -644,118 +556,80 @@ function ArtistRow({
 
   if (editing) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <div className="grid gap-2">
-            <Label htmlFor={`artist-edit-name-${artist.id}`}>Nom</Label>
-            <Input
-              id={`artist-edit-name-${artist.id}`}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
+      <div className="card stack" style={{ padding: 'var(--space-3)' }}>
+        <div className="field">
+          <label>Nom</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label>Scène</label>
+            <select value={stageId} onChange={(e) => setStageId(e.target.value)}>
+              <option value="">—</option>
+              {stages.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor={`artist-edit-stage-${artist.id}`}>Scène</Label>
-              <Select
-                value={stageId || NO_STAGE}
-                onValueChange={(v) => setStageId(v === NO_STAGE ? '' : v)}
-              >
-                <SelectTrigger id={`artist-edit-stage-${artist.id}`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_STAGE}>—</SelectItem>
-                  {stages.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor={`artist-edit-quota-${artist.id}`}>Quota interviews</Label>
-              <Input
-                id={`artist-edit-quota-${artist.id}`}
-                type="number"
-                min={0}
-                value={quota}
-                onChange={(e) => setQuota(e.target.value)}
-                placeholder="défaut"
-              />
-            </div>
+          <div className="field">
+            <label>Quota interviews</label>
+            <input type="number" min={0} value={quota} onChange={(e) => setQuota(e.target.value)} placeholder="défaut" />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor={`artist-edit-photo-${artist.id}`}>Quota photographes</Label>
-              <Input
-                id={`artist-edit-photo-${artist.id}`}
-                type="number"
-                min={0}
-                value={photoQuota}
-                onChange={(e) => setPhotoQuota(e.target.value)}
-                placeholder="illimité"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor={`artist-edit-video-${artist.id}`}>Quota vidéastes</Label>
-              <Input
-                id={`artist-edit-video-${artist.id}`}
-                type="number"
-                min={0}
-                value={videoQuota}
-                onChange={(e) => setVideoQuota(e.target.value)}
-                placeholder="illimité"
-              />
-            </div>
+        </div>
+        <div className="grid-2">
+          <div className="field">
+            <label>Quota photographes</label>
+            <input type="number" min={0} value={photoQuota} onChange={(e) => setPhotoQuota(e.target.value)} placeholder="illimité" />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={save} disabled={busy || !name.trim()}>
-              Enregistrer
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => { setEditing(false); resetDraft(); }} disabled={busy}>
-              Annuler
-            </Button>
+          <div className="field">
+            <label>Quota vidéastes</label>
+            <input type="number" min={0} value={videoQuota} onChange={(e) => setVideoQuota(e.target.value)} placeholder="illimité" />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="inline-actions">
+          <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !name.trim()}>
+            Enregistrer
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(false); resetDraft(); }} disabled={busy}>
+            Annuler
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          <strong>{artist.name}</strong>
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">{stageName}</span>
-            <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-              Modifier
-            </Button>
-            <Button variant="ghost" size="sm" onClick={remove} disabled={busy} className="text-destructive hover:text-destructive">
-              Supprimer
-            </Button>
-          </span>
+    <div className="card" style={{ padding: 'var(--space-3)' }}>
+      <div className="section-head" style={{ marginBottom: 'var(--space-2)' }}>
+        <strong>{artist.name}</strong>
+        <span className="inline-actions">
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{stageName}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
+            Modifier
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy} style={{ color: 'var(--color-danger)' }}>
+            Supprimer
+          </button>
+        </span>
+      </div>
+      <div className="muted" style={{ fontSize: 'var(--text-sm)', marginBottom: 'var(--space-2)' }}>
+        Quotas — interviews : {artist.itwQuota ?? 'défaut'} · photo : {fmt(artist.photoQuota)} · vidéo : {fmt(artist.videoQuota)}
+      </div>
+      {artist.slots.length === 0 ? (
+        <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          Aucun créneau (ajoutez des tranches de disponibilité).
+        </span>
+      ) : (
+        <div className="inline-actions">
+          {artist.slots.map((s) => (
+            <span key={s.id} className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
+              {s.day} · {s.startTime.slice(0, 5)}
+            </span>
+          ))}
         </div>
-        <div className="text-sm text-muted-foreground">
-          Quotas — interviews : {artist.itwQuota ?? 'défaut'} · photo : {fmt(artist.photoQuota)} · vidéo : {fmt(artist.videoQuota)}
-        </div>
-        {artist.slots.length === 0 ? (
-          <span className="text-sm text-muted-foreground">
-            Aucun créneau (ajoutez des tranches de disponibilité).
-          </span>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            {artist.slots.map((s) => (
-              <Badge key={s.id} variant="secondary" className="font-normal">
-                {s.day} · {s.startTime.slice(0, 5)}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

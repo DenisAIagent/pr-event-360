@@ -6,11 +6,6 @@ import { api, ApiError } from '../../lib/api';
 import type { PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { brandingStyle } from '../../lib/branding';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * Connexion du journaliste à son espace par email + mot de passe (compte par
@@ -60,81 +55,74 @@ export function JournalistLoginPage() {
 
   if (loadError) {
     return (
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardContent className="text-sm text-muted-foreground">{t('common.error')}</CardContent>
-        </Card>
+      <main className="page">
+        <div className="card">{t('common.error')}</div>
       </main>
     );
   }
   if (!event) {
     return (
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
+      <main className="page">
+        <p className="muted">{t('common.loading')}</p>
       </main>
     );
   }
 
   return (
     <div style={brandingStyle(event.branding)}>
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {event.branding.logoUrl && <img src={event.branding.logoUrl} alt="" className="h-10" />}
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {t('login.eyebrow')}
-                </span>
-              </div>
-              <LanguageSwitcher available={event.languages.filter(isLang)} />
-            </div>
-            <CardTitle className="mt-4 text-2xl">{t('login.title')}</CardTitle>
-            <CardDescription>{t('login.lede', { event: event.name })}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              <div className="grid gap-2">
-                <Label htmlFor="jl-email">{t('login.email')}</Label>
-                <Input
-                  id="jl-email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="jl-password">{t('login.password')}</Label>
-                <Input
-                  id="jl-password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <Button type="submit" disabled={busy || !email || !password}>
-                {busy ? '…' : t('login.submit')}
-              </Button>
-              <Link to={links.forgot} className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-                {t('login.forgot')}
-              </Link>
-              <p className="text-sm text-muted-foreground">{t('login.noPassword')}</p>
-            </form>
-          </CardContent>
-        </Card>
-        <p className="mt-4 text-sm">
-          <Link to={links.accreditation} className="text-muted-foreground underline-offset-4 hover:underline">
-            {t('login.back')}
+      <main className="page">
+        <header
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            {event.branding.logoUrl && <img className="brand-logo" src={event.branding.logoUrl} alt="" />}
+            <span className="eyebrow">{t('login.eyebrow')}</span>
+          </div>
+          <LanguageSwitcher available={event.languages.filter(isLang)} />
+        </header>
+
+        <h1 style={{ fontSize: 'var(--text-display)', marginBottom: 'var(--space-2)' }}>{t('login.title')}</h1>
+        <p className="lede" style={{ marginBottom: 'var(--space-4)' }}>
+          {t('login.lede', { event: event.name })}
+        </p>
+
+        <form className="card stack" onSubmit={submit} noValidate>
+          {error && <div className="banner banner-error">{error}</div>}
+          <div className="field">
+            <label htmlFor="jl-email">{t('login.email')}</label>
+            <input
+              id="jl-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="jl-password">{t('login.password')}</label>
+            <input
+              id="jl-password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={busy || !email || !password}>
+            {busy ? '…' : t('login.submit')}
+          </button>
+          <Link to={links.forgot} style={{ fontSize: 'var(--text-sm)' }}>
+            {t('login.forgot')}
           </Link>
+          <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
+            {t('login.noPassword')}
+          </p>
+        </form>
+
+        <p style={{ marginTop: 'var(--space-4)' }}>
+          <Link to={links.accreditation}>{t('login.back')}</Link>
         </p>
       </main>
     </div>

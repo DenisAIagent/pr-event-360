@@ -13,7 +13,6 @@ import {
 } from '../components/settings/SettingsCards';
 import { DomainCard } from '../components/settings/DomainCard';
 import { SubdomainCard } from '../components/settings/SubdomainCard';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function SettingsTab() {
   const { eventId = '' } = useParams();
@@ -23,16 +22,11 @@ export function SettingsTab() {
     [eventId],
   );
 
-  if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
-  if (error || !data)
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error ?? 'Erreur'}</AlertDescription>
-      </Alert>
-    );
+  if (loading) return <p className="muted">Chargement…</p>;
+  if (error || !data) return <div className="banner banner-error">{error ?? 'Erreur'}</div>;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="stack">
       <DeadlineCard eventId={eventId} />
       <SubdomainCard eventId={eventId} />
       <DomainCard eventId={eventId} />

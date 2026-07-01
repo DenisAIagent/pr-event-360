@@ -8,18 +8,9 @@ import {
   Users2,
   ArrowRight,
   ArrowLeft,
+  X,
   type LucideIcon,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface Step {
   icon: LucideIcon;
@@ -67,65 +58,74 @@ export function IntroTour({ open, onClose }: { open: boolean; onClose: () => voi
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowRight') setI((n) => Math.min(n + 1, STEPS.length - 1));
       if (e.key === 'ArrowLeft') setI((n) => Math.max(n - 1, 0));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  }, [open, onClose]);
+
+  if (!open) return null;
 
   const step = STEPS[i]!;
   const Icon = step.icon;
   const last = i === STEPS.length - 1;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-md" aria-label="Présentation de l’application">
-        <DialogHeader>
-          <span className="grid size-14 place-items-center rounded-xl bg-primary/10 text-primary">
-            <Icon size={26} strokeWidth={1.7} />
-          </span>
-          <DialogTitle className="mt-3 text-xl">{step.title}</DialogTitle>
-          <DialogDescription className="text-base">{step.body}</DialogDescription>
-        </DialogHeader>
+    <div
+      className="tour-overlay"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Présentation de l’application"
+    >
+      <div className="tour-card" onClick={(e) => e.stopPropagation()}>
+        <button className="tour-close" onClick={onClose} aria-label="Fermer">
+          <X size={18} />
+        </button>
 
-        <div className="flex justify-center gap-1.5 py-2" aria-hidden>
+        <span className="icon-tile tour-icon">
+          <Icon size={26} strokeWidth={1.7} />
+        </span>
+
+        <h2>{step.title}</h2>
+        <p>{step.body}</p>
+
+        <div className="tour-dots" aria-hidden>
           {STEPS.map((_, n) => (
-            <span
-              key={n}
-              className={cn('size-1.5 rounded-full transition-colors', n === i ? 'bg-primary' : 'bg-muted')}
-            />
+            <span key={n} className={n === i ? 'on' : ''} />
           ))}
         </div>
 
-        <DialogFooter className="sm:justify-between">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+        <div className="tour-foot">
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>
             Passer
-          </Button>
-          <div className="flex gap-2">
+          </button>
+          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
             {i > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setI(i - 1)}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setI(i - 1)}>
                 <ArrowLeft size={16} /> Précédent
-              </Button>
+              </button>
             )}
             {last ? (
-              <Button
-                size="sm"
+              <button
+                className="btn btn-primary btn-sm"
                 onClick={() => {
                   onClose();
                   navigate('/admin/events/new');
                 }}
               >
                 Créer un événement <ArrowRight size={16} />
-              </Button>
+              </button>
             ) : (
-              <Button size="sm" onClick={() => setI(i + 1)}>
+              <button className="btn btn-primary btn-sm" onClick={() => setI(i + 1)}>
                 Suivant <ArrowRight size={16} />
-              </Button>
+              </button>
             )}
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }

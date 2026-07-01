@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
-import { Button } from '@/components/ui/button';
 
 type Surface = 'accreditation' | 'space' | 'newsroom';
 type Device = 'desktop' | 'mobile';
@@ -23,54 +22,48 @@ export function PreviewTab() {
   const src = current.path(eventId);
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="stack">
+      <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
         Prévisualisez exactement ce que verront les journalistes. Le rendu mobile reproduit fidèlement
         l’affichage sur téléphone.
       </p>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Surface">
+      <div className="row-between">
+        <div className="inline-actions" role="tablist" aria-label="Surface">
           {SURFACES.map((s) => (
-            <Button
+            <button
               key={s.value}
-              type="button"
-              size="sm"
-              variant={surface === s.value ? 'default' : 'outline'}
+              className="chip"
               aria-pressed={surface === s.value}
               onClick={() => setSurface(s.value)}
             >
               {s.label}
-            </Button>
+            </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2" role="group" aria-label="Appareil">
-            <Button
-              type="button"
-              size="sm"
-              variant={device === 'desktop' ? 'default' : 'outline'}
+        <div className="inline-actions">
+          <div className="inline-actions" role="group" aria-label="Appareil">
+            <button
+              className="chip"
               aria-pressed={device === 'desktop'}
               onClick={() => setDevice('desktop')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               <Icon name="monitor" /> Desktop
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={device === 'mobile' ? 'default' : 'outline'}
+            </button>
+            <button
+              className="chip"
               aria-pressed={device === 'mobile'}
               onClick={() => setDevice('mobile')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               <Icon name="smartphone" /> Mobile
-            </Button>
+            </button>
           </div>
           {current.openable && (
-            <Button asChild variant="ghost" size="sm">
-              <a href={src} target="_blank" rel="noreferrer">
-                Ouvrir ↗
-              </a>
-            </Button>
+            <a href={src} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
+              Ouvrir ↗
+            </a>
           )}
         </div>
       </div>

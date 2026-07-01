@@ -1,49 +1,10 @@
 import { useState } from 'react';
-import { MoreHorizontal } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import type { EventSummary, Invitation, Team, TeamMember, UserRole } from '../lib/types';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: 'admin', label: 'Administrateur' },
@@ -56,15 +17,6 @@ const ROLE_LABEL: Record<UserRole, string> = {
   assistant: 'Assistant',
 };
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
 export function TeamPage() {
   const { user } = useAuth();
   const apiAuthed = useAuthedApi();
@@ -72,80 +24,51 @@ export function TeamPage() {
   const events = useFetch<EventSummary[]>(() => apiAuthed.get<EventSummary[]>('/admin/events'), []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHero
-        eyebrow="Configuration"
-        title="Équipe"
-        subtitle="Invitez des collaborateurs, définissez leur niveau d’accès et les événements qu’ils gèrent."
-      />
+    <div className="stack">
+        <PageHero
+          eyebrow="Configuration"
+          title="Équipe"
+          subtitle="Invitez des collaborateurs, définissez leur niveau d’accès et les événements qu’ils gèrent."
+        />
 
-      {team.error && (
-        <Alert variant="destructive">
-          <AlertDescription>{team.error}</AlertDescription>
-        </Alert>
-      )}
+        {team.error && <div className="banner banner-error">{team.error}</div>}
 
-      <InviteForm events={events.data ?? []} onInvited={() => team.reload()} />
+        <InviteForm
+          events={events.data ?? []}
+          onInvited={() => team.reload()}
+        />
 
-      {team.loading && <p className="text-muted-foreground">Chargement…</p>}
+        {team.loading && <p className="muted">Chargement…</p>}
 
-      {team.data && (
-        <>
-          <section className="flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">Comptes</h2>
-            <Card>
-              <CardContent className="px-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Membre</TableHead>
-                      <TableHead>Rôle</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {team.data.members.map((m) => (
-                      <MemberRow
-                        key={m.id}
-                        member={m}
-                        events={events.data ?? []}
-                        isSelf={m.id === user?.id}
-                        onChanged={() => team.reload()}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
-
-          {team.data.invitations.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-xl font-semibold">Invitations en attente</h2>
-              <Card>
-                <CardContent className="px-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Détails</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {team.data.invitations.map((inv) => (
-                        <InvitationRow key={inv.id} inv={inv} onChanged={() => team.reload()} />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+        {team.data && (
+          <>
+            <section className="card stack">
+              <h2 style={{ fontSize: 'var(--text-lg)' }}>Comptes</h2>
+              <div className="stack">
+                {team.data.members.map((m) => (
+                  <MemberRow
+                    key={m.id}
+                    member={m}
+                    events={events.data ?? []}
+                    isSelf={m.id === user?.id}
+                    onChanged={() => team.reload()}
+                  />
+                ))}
+              </div>
             </section>
-          )}
-        </>
-      )}
+
+            {team.data.invitations.length > 0 && (
+              <section className="card stack">
+                <h2 style={{ fontSize: 'var(--text-lg)' }}>Invitations en attente</h2>
+                <div className="stack">
+                  {team.data.invitations.map((inv) => (
+                    <InvitationRow key={inv.id} inv={inv} onChanged={() => team.reload()} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
     </div>
   );
 }
@@ -184,31 +107,28 @@ function InvitationRow({ inv, onChanged }: { inv: Invitation; onChanged: () => v
   }
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">{inv.email}</TableCell>
-      <TableCell className="text-sm text-muted-foreground">
-        {ROLE_LABEL[inv.role]} · {inv.eventIds.length} événement(s)
-      </TableCell>
-      <TableCell>
-        <Badge variant="secondary">En attente</Badge>
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={resend} disabled={busy}>
-            Renvoyer
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={cancel}
-            disabled={busy}
-          >
-            Annuler
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+    <div className="row-between">
+      <div>
+        <strong>{inv.email}</strong>
+        <span className="muted" style={{ marginLeft: 8, fontSize: 'var(--text-sm)' }}>
+          {ROLE_LABEL[inv.role]} · {inv.eventIds.length} événement(s)
+        </span>
+      </div>
+      <span className="inline-actions">
+        <span className="badge">En attente</span>
+        <button className="btn btn-ghost btn-sm" onClick={resend} disabled={busy}>
+          Renvoyer
+        </button>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={cancel}
+          disabled={busy}
+          style={{ color: 'var(--color-danger)' }}
+        >
+          Annuler
+        </button>
+      </span>
+    </div>
   );
 }
 
@@ -246,91 +166,64 @@ function InviteForm({ events, onInvited }: { events: EventSummary[]; onInvited: 
 
   if (!open) {
     return (
-      <div className="mb-3 flex items-center justify-end gap-3">
-        <Button size="sm" onClick={() => setOpen(true)}>
+      <div className="section-head">
+        <span />
+        <button className="btn btn-primary btn-sm" onClick={() => setOpen(true)}>
           Inviter un collaborateur
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit}>
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xl">Inviter un collaborateur</CardTitle>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-            Fermer
-          </Button>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {done && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              {done}
-            </div>
-          )}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="invite-email">Email *</Label>
-              <Input
-                id="invite-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="invite-role">Rôle</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                <SelectTrigger id="invite-role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    <form className="card stack" onSubmit={submit}>
+      <div className="row-between">
+        <h2 style={{ fontSize: 'var(--text-lg)' }}>Inviter un collaborateur</h2>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>
+          Fermer
+        </button>
+      </div>
+      {error && <div className="banner banner-error">{error}</div>}
+      {done && <div className="banner banner-success">{done}</div>}
+      <div className="grid-2">
+        <div className="field">
+          <label>Email *</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <div className="field">
+          <label>Rôle</label>
+          <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {role !== 'admin' && (
+        <div className="field">
+          <label>Événements assignés</label>
+          <div className="inline-actions">
+            {events.length === 0 && <span className="muted">Aucun événement à assigner.</span>}
+            {events.map((ev) => (
+              <button
+                type="button"
+                key={ev.id}
+                className="chip"
+                aria-pressed={eventIds.includes(ev.id)}
+                onClick={() => toggleEvent(ev.id)}
+              >
+                {ev.name}
+              </button>
+            ))}
           </div>
-          {role !== 'admin' && (
-            <div className="grid gap-2">
-              <Label>Événements assignés</Label>
-              <div className="flex flex-col gap-2">
-                {events.length === 0 && (
-                  <span className="text-sm text-muted-foreground">Aucun événement à assigner.</span>
-                )}
-                {events.map((ev) => (
-                  <div key={ev.id} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`invite-ev-${ev.id}`}
-                      checked={eventIds.includes(ev.id)}
-                      onCheckedChange={() => toggleEvent(ev.id)}
-                    />
-                    <Label htmlFor={`invite-ev-${ev.id}`} className="font-normal">
-                      {ev.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                Un admin accède à tous les événements automatiquement.
-              </span>
-            </div>
-          )}
-          <Button type="submit" disabled={busy || !email}>
-            {busy ? 'Envoi…' : 'Envoyer l’invitation'}
-          </Button>
-        </CardContent>
-      </Card>
+          <span className="field-hint muted">Un admin accède à tous les événements automatiquement.</span>
+        </div>
+      )}
+      <button type="submit" className="btn btn-primary" disabled={busy || !email}>
+        {busy ? 'Envoi…' : 'Envoyer l’invitation'}
+      </button>
     </form>
   );
 }
@@ -371,147 +264,101 @@ function MemberRow({
   }
 
   return (
-    <>
-      <TableRow className={member.active ? undefined : 'opacity-60'}>
-        <TableCell>
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarFallback>{initials(member.fullName)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{member.fullName}</span>
-                {isSelf && <Badge variant="outline">Vous</Badge>}
-              </div>
-              <div className="text-sm text-muted-foreground">{member.email}</div>
-              <div className="text-xs text-muted-foreground">
-                {member.role === 'admin'
-                  ? 'Accès à tous les événements.'
-                  : `${member.eventIds.length} événement(s) assigné(s)`}
-              </div>
-            </div>
-          </div>
-        </TableCell>
-        <TableCell>
-          <Select
+    <div className="member-row stack" style={{ opacity: member.active ? 1 : 0.55 }}>
+      <div className="row-between">
+        <div>
+          <strong>{member.fullName}</strong>
+          {isSelf && <span className="badge" style={{ marginLeft: 8 }}>Vous</span>}
+          {!member.active && <span className="badge badge-warn" style={{ marginLeft: 8 }}>Désactivé</span>}
+          <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>{member.email}</div>
+        </div>
+        <div className="inline-actions">
+          <select
             value={member.role}
             disabled={busy || isSelf}
-            onValueChange={(v) => call(() => apiAuthed.post(`/admin/team/${member.id}/role`, { role: v }))}
+            onChange={(e) => call(() => apiAuthed.post(`/admin/team/${member.id}/role`, { role: e.target.value }))}
           >
-            <SelectTrigger className="w-[190px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROLES.map((r) => (
-                <SelectItem key={r.value} value={r.value}>
-                  {r.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </TableCell>
-        <TableCell>
-          {member.active ? (
-            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Actif</Badge>
-          ) : (
-            <Badge variant="secondary">Désactivé</Badge>
+            {ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={busy || isSelf}
+            onClick={() => call(() => apiAuthed.post(`/admin/team/${member.id}/active`, { active: !member.active }))}
+          >
+            {member.active ? 'Désactiver' : 'Réactiver'}
+          </button>
+          {member.role !== 'admin' && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditing((v) => !v)}>
+              {editing ? 'Fermer' : 'Événements'}
+            </button>
           )}
-        </TableCell>
-        <TableCell className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="size-8 p-0">
-                <MoreHorizontal className="size-4" />
-                <span className="sr-only">Actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                disabled={busy || isSelf}
-                onSelect={() => call(() => apiAuthed.post(`/admin/team/${member.id}/active`, { active: !member.active }))}
-              >
-                {member.active ? 'Désactiver' : 'Réactiver'}
-              </DropdownMenuItem>
-              {member.role !== 'admin' && (
-                <DropdownMenuItem onSelect={() => setEditing(true)}>Événements</DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                disabled={busy || isSelf}
-                onSelect={async () => {
-                  if (
-                    !(await confirm({
-                      title: 'Supprimer le compte',
-                      message: `Supprimer définitivement le compte de ${member.fullName} (${member.email}) ? Ses événements (s'il en possède) vous seront réattribués. Cette action est irréversible.`,
-                      confirmLabel: 'Supprimer',
-                      danger: true,
-                    }))
-                  )
-                    return;
-                  call(() => apiAuthed.delete(`/admin/team/${member.id}`));
-                }}
-              >
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TableCell>
-      </TableRow>
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={busy || isSelf}
+            style={{ color: 'var(--color-danger)' }}
+            title={isSelf ? 'Impossible de supprimer votre propre compte' : 'Supprimer le compte'}
+            onClick={async () => {
+              if (
+                !(await confirm({
+                  title: 'Supprimer le compte',
+                  message: `Supprimer définitivement le compte de ${member.fullName} (${member.email}) ? Ses événements (s'il en possède) vous seront réattribués. Cette action est irréversible.`,
+                  confirmLabel: 'Supprimer',
+                  danger: true,
+                }))
+              )
+                return;
+              call(() => apiAuthed.delete(`/admin/team/${member.id}`));
+            }}
+          >
+            Supprimer
+          </button>
+        </div>
+      </div>
 
-      {error && !editing && (
-        <TableRow>
-          <TableCell colSpan={4}>
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </TableCell>
-        </TableRow>
+      {member.role === 'admin' ? (
+        <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>Accès à tous les événements.</span>
+      ) : (
+        <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          {member.eventIds.length} événement(s) assigné(s)
+        </span>
       )}
 
-      {member.role !== 'admin' && (
-        <Dialog open={editing} onOpenChange={setEditing}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Événements assignés</DialogTitle>
-              <DialogDescription>{member.fullName}</DialogDescription>
-            </DialogHeader>
-            <div className="flex flex-col gap-2">
-              {events.length === 0 && <span className="text-sm text-muted-foreground">Aucun événement.</span>}
-              {events.map((ev) => (
-                <div key={ev.id} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`member-${member.id}-ev-${ev.id}`}
-                    checked={assigned.includes(ev.id)}
-                    onCheckedChange={() => toggleAssigned(ev.id)}
-                  />
-                  <Label htmlFor={`member-${member.id}-ev-${ev.id}`} className="font-normal">
-                    {ev.name}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <DialogFooter>
-              <Button
-                disabled={busy}
-                onClick={() =>
-                  call(async () => {
-                    await apiAuthed.put(`/admin/team/${member.id}/events`, { eventIds: assigned });
-                    setEditing(false);
-                  })
-                }
+      {error && <div className="banner banner-error">{error}</div>}
+
+      {editing && member.role !== 'admin' && (
+        <div className="stack">
+          <div className="inline-actions">
+            {events.length === 0 && <span className="muted">Aucun événement.</span>}
+            {events.map((ev) => (
+              <button
+                type="button"
+                key={ev.id}
+                className="chip"
+                aria-pressed={assigned.includes(ev.id)}
+                onClick={() => toggleAssigned(ev.id)}
               >
-                Enregistrer les événements
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                {ev.name}
+              </button>
+            ))}
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={busy}
+            onClick={() =>
+              call(async () => {
+                await apiAuthed.put(`/admin/team/${member.id}/events`, { eventIds: assigned });
+                setEditing(false);
+              })
+            }
+          >
+            Enregistrer les événements
+          </button>
+        </div>
       )}
-    </>
+    </div>
   );
 }

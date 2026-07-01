@@ -17,13 +17,13 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-12 text-center">
-      <span className="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+    <div className="empty-state">
+      <span className="empty-state-icon">
         <Icon size={26} strokeWidth={1.6} />
       </span>
-      <p className="text-base font-medium">{title}</p>
-      {hint && <p className="max-w-md text-sm text-muted-foreground">{hint}</p>}
-      {action && <div className="mt-1">{action}</div>}
+      <p className="empty-state-title">{title}</p>
+      {hint && <p className="empty-state-hint">{hint}</p>}
+      {action && <div className="empty-state-action">{action}</div>}
     </div>
   );
 }

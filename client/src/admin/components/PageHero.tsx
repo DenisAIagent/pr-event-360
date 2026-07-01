@@ -17,15 +17,15 @@ export function PageHero({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div className="space-y-1">
-        {eyebrow && (
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{eyebrow}</span>
-        )}
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    <section className="hero-navy">
+      <div className="hero-head">
+        <div>
+          {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+          <h1>{title}</h1>
+          {subtitle && <p className="hero-sub">{subtitle}</p>}
+        </div>
+        {action}
       </div>
-      {action}
-    </div>
+    </section>
   );
 }

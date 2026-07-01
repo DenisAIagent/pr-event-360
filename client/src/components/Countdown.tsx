@@ -54,18 +54,11 @@ export function Countdown({
     { value: c.seconds, label: labels.seconds },
   ];
   return (
-    <div className="flex gap-2" role="timer">
+    <div className="deadline-timer" role="timer">
       {units.map((u, i) => (
-        <div
-          key={i}
-          className="flex min-w-14 flex-col items-center rounded-md bg-muted px-3 py-2"
-        >
-          <span className="text-2xl font-semibold tabular-nums tracking-tight">
-            {String(u.value).padStart(2, '0')}
-          </span>
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            {u.label}
-          </span>
+        <div className="deadline-unit" key={i}>
+          <span className="deadline-value">{String(u.value).padStart(2, '0')}</span>
+          <span className="deadline-unit-label">{u.label}</span>
         </div>
       ))}
     </div>

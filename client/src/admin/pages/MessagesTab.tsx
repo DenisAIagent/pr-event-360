@@ -3,9 +3,6 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { NotificationRow } from '../lib/types';
 import { TRIGGER_LABEL } from '../lib/labels';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function MessagesTab() {
   const { eventId = '' } = useParams();
@@ -20,48 +17,43 @@ export function MessagesTab() {
   );
   const isLive = notif?.mode === 'live';
 
-  if (loading) return <p className="text-sm text-muted-foreground">Chargement…</p>;
-  if (error)
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+  if (loading) return <p className="muted">Chargement…</p>;
+  if (error) return <div className="banner banner-error">{error}</div>;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="stack">
       {isLive ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <div className="banner banner-success" style={{ fontSize: 'var(--text-sm)' }}>
           ✅ <strong>Envoi réel (live)</strong> : ces messages sont <strong>réellement envoyés</strong> aux
           destinataires (via Brevo/Twilio) et journalisés ici.
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
           Mode simulation : ces messages sont journalisés et affichés ici, <strong>jamais envoyés</strong>.
           Configurez le mode « live » dans Intégrations pour activer l'envoi réel.
         </p>
       )}
-      {data?.length === 0 && (
-        <p className="text-sm text-muted-foreground">Aucun message {isLive ? '' : 'simulé '}pour l'instant.</p>
-      )}
+      {data?.length === 0 && <p className="muted">Aucun message {isLive ? '' : 'simulé '}pour l'instant.</p>}
       {data?.map((m) => (
-        <Card key={m.id}>
-          <CardContent className="p-4">
-            <div className="mb-1 flex items-center justify-between gap-3">
-              <strong>{TRIGGER_LABEL[m.triggerKey] ?? m.triggerKey}</strong>
-              <span className="flex items-center gap-2">
-                <Badge variant="secondary">{m.channel}</Badge>
-                <Badge variant="secondary">{m.lang.toUpperCase()}</Badge>
-                <Badge className="border-transparent bg-blue-100 text-blue-800">{m.status}</Badge>
+        <article key={m.id} className="card" style={{ padding: 'var(--space-3)' }}>
+          <div className="section-head" style={{ marginBottom: 'var(--space-1)' }}>
+            <strong>{TRIGGER_LABEL[m.triggerKey] ?? m.triggerKey}</strong>
+            <span className="inline-actions">
+              <span className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
+                {m.channel}
               </span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              À : {m.toAddress} · via {m.provider}
-            </div>
-            {m.subject && <p className="mt-2 font-semibold">{m.subject}</p>}
-            <p className="mt-1 whitespace-pre-wrap text-sm">{m.body}</p>
-          </CardContent>
-        </Card>
+              <span className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
+                {m.lang.toUpperCase()}
+              </span>
+              <span className="badge badge-progress">{m.status}</span>
+            </span>
+          </div>
+          <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            À : {m.toAddress} · via {m.provider}
+          </div>
+          {m.subject && <p style={{ margin: 'var(--space-2) 0 0', fontWeight: 600 }}>{m.subject}</p>}
+          <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)', whiteSpace: 'pre-wrap' }}>{m.body}</p>
+        </article>
       ))}
     </div>
   );

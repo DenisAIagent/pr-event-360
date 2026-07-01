@@ -4,10 +4,6 @@ import { PageHero } from '../components/PageHero';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export function SecurityPage() {
   const api = useAuthedApi();
@@ -64,57 +60,53 @@ export function SecurityPage() {
   const enabled = status.data?.enabled;
 
   return (
-    <div className="flex flex-col gap-4">
-      <PageHero
-        eyebrow="Sécurité"
-        title="Double authentification"
-        subtitle="Ajoutez une étape de vérification à la connexion via une application d'authentification (Google Authenticator, Authy, 1Password…)."
-      />
+    <div className="stack">
+        <PageHero
+          eyebrow="Sécurité"
+          title="Double authentification"
+          subtitle="Ajoutez une étape de vérification à la connexion via une application d'authentification (Google Authenticator, Authy, 1Password…)."
+        />
 
-      <Card className="max-w-[520px]">
-        <CardContent className="flex flex-col gap-4 p-6">
-          {status.loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+        <div className="card stack" style={{ maxWidth: 520 }}>
+          {status.loading && <p className="muted">Chargement…</p>}
 
           {!status.loading && enabled && (
             <>
-              <p className="flex items-center gap-2 font-semibold text-emerald-700">
+              <p style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-success)', fontWeight: 600 }}>
                 <ShieldCheck size={18} /> La double authentification est active.
               </p>
-              <Button variant="ghost" size="sm" onClick={disable} disabled={busy} className="self-start">
+              <button className="btn btn-ghost btn-sm" onClick={disable} disabled={busy} style={{ alignSelf: 'flex-start' }}>
                 Désactiver
-              </Button>
+              </button>
             </>
           )}
 
           {!status.loading && !enabled && !qr && (
             <>
-              <p className="text-sm text-muted-foreground">
+              <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
                 La double authentification n'est pas activée sur votre compte.
               </p>
-              <Button onClick={startSetup} disabled={busy} className="self-start">
+              <button className="btn btn-primary" onClick={startSetup} disabled={busy} style={{ alignSelf: 'flex-start' }}>
                 {busy ? 'Préparation…' : 'Activer la double authentification'}
-              </Button>
+              </button>
             </>
           )}
 
           {!enabled && qr && (
             <>
-              <p className="text-sm">
+              <p style={{ fontSize: 'var(--text-sm)' }}>
                 1. Scannez ce QR code avec votre application d'authentification.
               </p>
               <img
                 src={qr}
                 alt="QR code de configuration"
-                className="rounded-md border"
-                style={{ width: 188, height: 188 }}
+                style={{ width: 188, height: 188, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-line)' }}
               />
-              <p className="mt-2 text-sm">
+              <p style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-2)' }}>
                 2. Saisissez le code à 6 chiffres généré pour confirmer.
               </p>
-              <div className="grid max-w-[200px] gap-2">
-                <Label htmlFor="mfa-code">Code de vérification</Label>
-                <Input
-                  id="mfa-code"
+              <div className="field" style={{ maxWidth: 200 }}>
+                <input
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   value={code}
@@ -123,26 +115,17 @@ export function SecurityPage() {
                   autoFocus
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={enable} disabled={busy || code.trim().length < 6}>
+              <div className="inline-actions">
+                <button className="btn btn-primary btn-sm" onClick={enable} disabled={busy || code.trim().length < 6}>
                   {busy ? 'Activation…' : 'Activer'}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setQr(null);
-                    setCode('');
-                  }}
-                  disabled={busy}
-                >
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setQr(null); setCode(''); }} disabled={busy}>
                   Annuler
-                </Button>
+                </button>
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
     </div>
   );
 }

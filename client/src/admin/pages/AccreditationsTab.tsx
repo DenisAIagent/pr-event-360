@@ -13,17 +13,11 @@ import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { fireConfetti } from '../lib/confetti';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 
 const ACC_BADGE: Record<Accreditation['accStatus'], string> = {
-  pas_encore_traite: 'border-transparent bg-amber-100 text-amber-800',
-  acceptee: 'border-transparent bg-emerald-100 text-emerald-800',
-  refusee: 'border-transparent bg-red-100 text-red-800',
+  pas_encore_traite: 'badge-pending',
+  acceptee: 'badge-success',
+  refusee: 'badge-danger',
 };
 
 type AccType = NonNullable<Accreditation['accreditationType']>;
@@ -114,12 +108,7 @@ export function AccreditationsTab() {
   }
 
   if (loading) return <SkeletonRows count={4} />;
-  if (error)
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
+  if (error) return <div className="banner banner-error">{error}</div>;
 
   if (data?.length === 0) {
     return (
@@ -164,130 +153,124 @@ export function AccreditationsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="stack">
+      <div className="filters">
         {TYPE_FILTERS.map((o) => (
-          <Button
-            key={o.v}
-            variant={typeF === o.v ? 'default' : 'outline'}
-            size="sm"
-            aria-pressed={typeF === o.v}
-            onClick={() => setTypeF(o.v)}
-          >
+          <button key={o.v} className="chip" aria-pressed={typeF === o.v} onClick={() => setTypeF(o.v)}>
             {o.l}
-          </Button>
+          </button>
         ))}
-        <Separator orientation="vertical" className="mx-1 h-6" />
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
         {STATUS_FILTERS.map((o) => (
-          <Button
-            key={o.v}
-            variant={statusF === o.v ? 'default' : 'outline'}
-            size="sm"
-            aria-pressed={statusF === o.v}
-            onClick={() => setStatusF(o.v)}
-          >
+          <button key={o.v} className="chip" aria-pressed={statusF === o.v} onClick={() => setStatusF(o.v)}>
             {o.l}
-          </Button>
+          </button>
         ))}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto"
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ marginLeft: 'auto' }}
           onClick={exportPdf}
           disabled={filtered.length === 0}
         >
           <Download size={15} /> Exporter en PDF
-        </Button>
+        </button>
       </div>
 
-      <Card className="overflow-x-auto p-3">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Demandeur</TableHead>
-              <TableHead>Média</TableHead>
-              <TableHead>Langue</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Demandeur</th>
+              <th>Média</th>
+              <th>Langue</th>
+              <th>Type</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
             {filtered.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>
-                  <strong>
-                    {a.firstName} {a.lastName ?? ''}
-                  </strong>
-                  <br />
-                  <span className="text-xs text-muted-foreground">{a.email}</span>
-                </TableCell>
-                <TableCell>
-                  {a.media ?? <span className="text-muted-foreground" aria-label="Non précisé">—</span>}
-                </TableCell>
-                <TableCell>{a.lang.toUpperCase()}</TableCell>
-                <TableCell>
-                  {a.accreditationType ? (
-                    ACC_TYPE_LABEL[a.accreditationType]
-                  ) : (
-                    <span className="text-muted-foreground" aria-label="Non précisé">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge className={ACC_BADGE[a.accStatus]}>{ACC_STATUS_LABEL[a.accStatus]}</Badge>
-                </TableCell>
-                <TableCell>
-                  {a.accStatus === 'pas_encore_traite' ? (
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => process(a.id, 'accept')}>
-                        Accepter
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => process(a.id, 'reject')}>
-                        Refuser
-                      </Button>
-                    </div>
-                  ) : a.accStatus === 'acceptee' && a.token ? (
-                    <div style={{ minWidth: 280 }}>
-                      <CopyLink url={`${window.location.origin}/espace/${a.token}`} compact />
-                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                        Lien personnel (déjà envoyé par email)
-                        <InfoBubble title="Le lien personnel">
-                          Adresse <strong>unique et secrète</strong> de l'espace de ce journaliste, envoyée
-                          automatiquement par email à l'acceptation. C'est par là qu'il soumet ses demandes et
-                          suit son planning. S'il dit ne pas l'avoir reçue, copiez-la ici et renvoyez-la-lui.
-                        </InfoBubble>
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                  <div className="mt-2 inline-flex items-center gap-1.5">
-                    <Button
-                      type="button"
-                      variant="link"
-                      onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
-                      title="Droit à l'effacement (RGPD, art. 17)"
-                      className="h-auto p-0 text-xs font-semibold text-destructive"
-                    >
-                      Supprimer (RGPD)
-                    </Button>
-                    <InfoBubble title="Supprimer (droit à l'effacement)">
-                      Efface <strong>définitivement</strong> ce journaliste et toutes ses demandes. Action
-                      <strong> irréversible</strong> (pas de corbeille). C'est le « droit à l'effacement »
-                      prévu par le RGPD (art. 17), à utiliser si la personne le demande.
-                    </InfoBubble>
+            <tr key={a.id}>
+              <td>
+                <strong>
+                  {a.firstName} {a.lastName ?? ''}
+                </strong>
+                <br />
+                <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>
+                  {a.email}
+                </span>
+              </td>
+              <td>{a.media ?? <span className="muted" aria-label="Non précisé">—</span>}</td>
+              <td>{a.lang.toUpperCase()}</td>
+              <td>
+                {a.accreditationType ? (
+                  ACC_TYPE_LABEL[a.accreditationType]
+                ) : (
+                  <span className="muted" aria-label="Non précisé">—</span>
+                )}
+              </td>
+              <td>
+                <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
+              </td>
+              <td>
+                {a.accStatus === 'pas_encore_traite' ? (
+                  <div className="inline-actions">
+                    <button className="btn btn-primary btn-sm" onClick={() => process(a.id, 'accept')}>
+                      Accepter
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => process(a.id, 'reject')}>
+                      Refuser
+                    </button>
                   </div>
-                </TableCell>
-              </TableRow>
+                ) : a.accStatus === 'acceptee' && a.token ? (
+                  <div style={{ minWidth: 280 }}>
+                    <CopyLink url={`${window.location.origin}/espace/${a.token}`} compact />
+                    <span className="muted" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      Lien personnel (déjà envoyé par email)
+                      <InfoBubble title="Le lien personnel">
+                        Adresse <strong>unique et secrète</strong> de l'espace de ce journaliste, envoyée
+                        automatiquement par email à l'acceptation. C'est par là qu'il soumet ses demandes et
+                        suit son planning. S'il dit ne pas l'avoir reçue, copiez-la ici et renvoyez-la-lui.
+                      </InfoBubble>
+                    </span>
+                  </div>
+                ) : (
+                  <span className="muted">—</span>
+                )}
+                <div style={{ marginTop: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <button
+                    type="button"
+                    onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
+                    title="Droit à l'effacement (RGPD, art. 17)"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      color: 'var(--color-danger)',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Supprimer (RGPD)
+                  </button>
+                  <InfoBubble title="Supprimer (droit à l'effacement)">
+                    Efface <strong>définitivement</strong> ce journaliste et toutes ses demandes. Action
+                    <strong> irréversible</strong> (pas de corbeille). C'est le « droit à l'effacement »
+                    prévu par le RGPD (art. 17), à utiliser si la personne le demande.
+                  </InfoBubble>
+                </div>
+              </td>
+            </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
         {filtered.length === 0 && (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="muted" style={{ margin: 'var(--space-3) 0 0' }}>
             Aucune accréditation ne correspond à ce filtre.
           </p>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

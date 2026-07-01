@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const MIN_LENGTH = 8;
 const ROLE_LABEL: Record<string, string> = {
@@ -58,95 +53,65 @@ export function AcceptInvitePage() {
 
   if (invalid) {
     return (
-      <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle className="text-xl">Invitation invalide</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Alert variant="destructive">
-              <AlertDescription>
-                Ce lien d’invitation est incomplet ou a expiré. Demandez un nouveau lien à un administrateur.
-              </AlertDescription>
-            </Alert>
-            <Link
-              to="/admin/login"
-              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-            >
-              ← Aller à la connexion
-            </Link>
-          </CardContent>
-        </Card>
+      <main className="login-wrap">
+        <div className="card login-card stack">
+          <h1 style={{ fontSize: 'var(--text-xl)' }}>Invitation invalide</h1>
+          <div className="banner banner-error">
+            Ce lien d’invitation est incomplet ou a expiré. Demandez un nouveau lien à un administrateur.
+          </div>
+          <Link to="/admin/login" className="auth-link">
+            ← Aller à la connexion
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Invitation
-          </span>
-          <CardTitle className="mt-1 text-xl">
-            Rejoindre PR Event <span style={{ color: 'var(--brand-accent)' }}>360</span>
-          </CardTitle>
+    <main className="login-wrap">
+      <div className="card login-card stack">
+        <div>
+          <span className="eyebrow">Invitation</span>
+          <h1 style={{ fontSize: 'var(--text-xl)', marginTop: 'var(--space-1)' }}>
+            Rejoindre PR Event <span style={{ color: 'var(--color-accent)' }}>360</span>
+          </h1>
           {info && (
-            <CardDescription>
+            <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-1)' }}>
               {info.email} · {ROLE_LABEL[info.role] ?? info.role}
-            </CardDescription>
+            </p>
           )}
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+        </div>
+        <form onSubmit={submit} className="stack" noValidate>
+          {error && <div className="banner banner-error">{error}</div>}
+          <div className="field">
+            <label>Votre nom complet</label>
+            <input value={fullName} onChange={(e) => setFullName(e.target.value)} required autoFocus />
+          </div>
+          <div className="field">
+            <label>Mot de passe</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={MIN_LENGTH}
+              required
+            />
+            {password.length > 0 && password.length < MIN_LENGTH && (
+              <span className="field-hint field-hint-error">{MIN_LENGTH} caractères minimum.</span>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="invite-name">Votre nom complet</Label>
-              <Input
-                id="invite-name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="invite-password">Mot de passe</Label>
-              <Input
-                id="invite-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={MIN_LENGTH}
-                required
-              />
-              {password.length > 0 && password.length < MIN_LENGTH && (
-                <span className="text-sm text-destructive">{MIN_LENGTH} caractères minimum.</span>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="invite-confirm">Confirmer le mot de passe</Label>
-              <Input
-                id="invite-confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-              />
-              {confirm.length > 0 && confirm !== password && (
-                <span className="text-sm text-destructive">Les mots de passe ne correspondent pas.</span>
-              )}
-            </div>
-            <Button type="submit" disabled={!canSubmit}>
-              {busy ? 'Création…' : 'Créer mon compte'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+          <div className="field">
+            <label>Confirmer le mot de passe</label>
+            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            {confirm.length > 0 && confirm !== password && (
+              <span className="field-hint field-hint-error">Les mots de passe ne correspondent pas.</span>
+            )}
+          </div>
+          <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
+            {busy ? 'Création…' : 'Créer mon compte'}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

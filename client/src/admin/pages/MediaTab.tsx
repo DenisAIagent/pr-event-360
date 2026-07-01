@@ -6,19 +6,6 @@ import { uploadToCloudinary } from '../lib/upload';
 import { Image as ImageIcon } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import type { AssetKind, EventAsset, UploadSignature } from '../lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 
 const KINDS: { value: AssetKind; label: string }[] = [
   { value: 'photo', label: 'Photo' },
@@ -72,96 +59,71 @@ export function MediaTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Ajouter un média</CardTitle>
-          <CardDescription>
-            Photos, vidéos, logos et dossier de presse. Ils apparaîtront dans la newsroom publique.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {err && (
-            <Alert variant="destructive">
-              <AlertDescription>{err}</AlertDescription>
-            </Alert>
-          )}
-          {msg && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              {msg}
-            </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="asset-kind">Type</Label>
-              <Select value={kind} onValueChange={(v) => setKind(v as AssetKind)}>
-                <SelectTrigger id="asset-kind">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {KINDS.map((k) => (
-                    <SelectItem key={k.value} value={k.value}>
-                      {k.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="asset-title">Titre (optionnel)</Label>
-              <Input
-                id="asset-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Nom du fichier par défaut"
-              />
-            </div>
+    <div className="stack">
+      <section className="card stack">
+        <h2 style={{ fontSize: 'var(--text-lg)' }}>Ajouter un média</h2>
+        <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+          Photos, vidéos, logos et dossier de presse. Ils apparaîtront dans la newsroom publique.
+        </p>
+        {err && <div className="banner banner-error">{err}</div>}
+        {msg && <div className="banner banner-success">{msg}</div>}
+        <div className="grid-2">
+          <div className="field">
+            <label>Type</label>
+            <select value={kind} onChange={(e) => setKind(e.target.value as AssetKind)}>
+              {KINDS.map((k) => (
+                <option key={k.value} value={k.value}>
+                  {k.label}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex items-center gap-2">
-            <Button type="button" size="sm" disabled={busy} onClick={() => fileRef.current?.click()}>
-              Choisir un fichier…
-            </Button>
-            {busy && <span className="text-sm text-muted-foreground">Upload en cours…</span>}
-            <input
-              ref={fileRef}
-              type="file"
-              disabled={busy}
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void onUpload(f);
-              }}
+          <div className="field">
+            <label>Titre (optionnel)</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom du fichier par défaut" />
+          </div>
+        </div>
+        <div className="inline-actions">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            disabled={busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            Choisir un fichier…
+          </button>
+          {busy && <span className="muted">Upload en cours…</span>}
+          <input
+            ref={fileRef}
+            type="file"
+            disabled={busy}
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onUpload(f);
+            }}
+          />
+        </div>
+      </section>
+
+      {loading && <p className="muted">Chargement…</p>}
+      {error && <div className="banner banner-error">{error}</div>}
+
+      <section className="card stack">
+        <h2 style={{ fontSize: 'var(--text-lg)' }}>Médiathèque ({data?.length ?? 0})</h2>
+        <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
+          {data?.map((a) => (
+            <AssetCard key={a.id} asset={a} kindLabel={KIND_LABEL[a.kind]} eventId={eventId} onDeleted={reload} />
+          ))}
+          {data?.length === 0 && !loading && (
+            <EmptyState
+              icon={ImageIcon}
+              title="Aucun média pour l’instant"
+              hint="Importez vos premières photos, vidéos et logos ci-dessus — les journalistes pourront les télécharger depuis la newsroom."
             />
-          </div>
-        </CardContent>
-      </Card>
-
-      {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Médiathèque ({data?.length ?? 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(180px,1fr))]">
-            {data?.map((a) => (
-              <AssetCard key={a.id} asset={a} kindLabel={KIND_LABEL[a.kind]} eventId={eventId} onDeleted={reload} />
-            ))}
-            {data?.length === 0 && !loading && (
-              <EmptyState
-                icon={ImageIcon}
-                title="Aucun média pour l’instant"
-                hint="Importez vos premières photos, vidéos et logos ci-dessus — les journalistes pourront les télécharger depuis la newsroom."
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -191,30 +153,33 @@ function AssetCard({
   }
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 p-2">
-        <div className="grid aspect-[4/3] place-items-center overflow-hidden rounded-md bg-muted">
-          {asset.thumbnailUrl ? (
-            <img src={asset.thumbnailUrl} alt={asset.title} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-sm text-muted-foreground">{kindLabel}</span>
-          )}
-        </div>
-        <strong className="text-sm">{asset.title}</strong>
-        <Badge variant="secondary" className="self-start">
-          {kindLabel}
-        </Badge>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="link" size="sm" className="h-auto p-0">
-            <a href={asset.url} target="_blank" rel="noreferrer">
-              Ouvrir
-            </a>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={del} disabled={busy}>
-            Supprimer
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="card stack" style={{ padding: 'var(--space-2)' }}>
+      <div
+        style={{
+          aspectRatio: '4/3',
+          background: '#f0f0f3',
+          borderRadius: 6,
+          overflow: 'hidden',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        {asset.thumbnailUrl ? (
+          <img src={asset.thumbnailUrl} alt={asset.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{kindLabel}</span>
+        )}
+      </div>
+      <strong style={{ fontSize: 'var(--text-sm)' }}>{asset.title}</strong>
+      <span className="badge">{kindLabel}</span>
+      <div className="inline-actions">
+        <a href={asset.url} target="_blank" rel="noreferrer" className="auth-link">
+          Ouvrir
+        </a>
+        <button className="btn btn-ghost btn-sm" onClick={del} disabled={busy}>
+          Supprimer
+        </button>
+      </div>
+    </div>
   );
 }
