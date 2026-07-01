@@ -31,7 +31,12 @@ beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => undefined);
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  // clearAllMocks : vide l'historique des vi.fn() entre les tests (vitest 4 ne le fait plus
+  // via restoreAllMocks, qui ne restaure que les spies) → isolation des assertions « not called ».
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
+});
 
 describe('requestPasswordReset', () => {
   it('émet un jeton et invalide les précédents quand le compte existe', async () => {
