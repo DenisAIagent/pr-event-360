@@ -3,6 +3,10 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
 import type { AppReview, ReviewStatus } from '../lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function Stars({ n }: { n: number }) {
   return (
@@ -14,10 +18,10 @@ function Stars({ n }: { n: number }) {
   );
 }
 
-const STATUS: Record<ReviewStatus, { text: string; cls: string }> = {
-  pending: { text: 'En attente', cls: 'badge-warn' },
-  approved: { text: 'Approuvé', cls: 'badge-success' },
-  rejected: { text: 'Rejeté', cls: 'badge' },
+const STATUS: Record<ReviewStatus, { text: string; className: string }> = {
+  pending: { text: 'En attente', className: 'border-transparent bg-amber-100 text-amber-800' },
+  approved: { text: 'Approuvé', className: 'border-transparent bg-emerald-100 text-emerald-800' },
+  rejected: { text: 'Rejeté', className: 'bg-secondary text-secondary-foreground' },
 };
 
 export function ReviewsModerationPage() {
@@ -35,65 +39,76 @@ export function ReviewsModerationPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="flex flex-col gap-4">
       <div>
-        <h1 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Modération des avis</h1>
-        <p className="muted" style={{ marginTop: 4 }}>
+        <h1 className="text-2xl font-semibold tracking-tight">Modération des avis</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Seuls les avis <strong>approuvés</strong> et dont l’auteur a <strong>autorisé la publication</strong>{' '}
           apparaissent sur la page d’accueil.
         </p>
       </div>
 
-      {loading && <p className="muted">Chargement…</p>}
-      {error && <div className="banner banner-error">{error}</div>}
-      {data?.length === 0 && <p className="muted">Aucun avis pour l’instant.</p>}
+      {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {data?.length === 0 && <p className="text-sm text-muted-foreground">Aucun avis pour l’instant.</p>}
 
-      <div className="stack">
+      <div className="flex flex-col gap-4">
         {data?.map((r) => (
-          <div key={r.id} className="card stack">
-            <div className="row-between" style={{ alignItems: 'flex-start' }}>
-              <div>
-                <Stars n={r.rating} />
-                <div style={{ marginTop: 4 }}>
-                  <strong>{r.authorName}</strong>
-                  {(r.authorRole || r.authorOrg) && (
-                    <span className="muted"> · {[r.authorRole, r.authorOrg].filter(Boolean).join(', ')}</span>
+          <Card key={r.id}>
+            <CardContent className="flex flex-col gap-4 p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Stars n={r.rating} />
+                  <div className="mt-1">
+                    <strong>{r.authorName}</strong>
+                    {(r.authorRole || r.authorOrg) && (
+                      <span className="text-sm text-muted-foreground">
+                        {' '}
+                        · {[r.authorRole, r.authorOrg].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {!r.consentPublic && (
+                    <Badge variant="secondary" title="L’auteur n’a pas autorisé la publication">
+                      Sans consentement
+                    </Badge>
                   )}
+                  <Badge className={STATUS[r.status].className}>{STATUS[r.status].text}</Badge>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {!r.consentPublic && <span className="badge" title="L’auteur n’a pas autorisé la publication">Sans consentement</span>}
-                <span className={`badge ${STATUS[r.status].cls}`}>{STATUS[r.status].text}</span>
+
+              <blockquote className="m-0 italic text-foreground">« {r.quote} »</blockquote>
+
+              <div className="flex gap-2">
+                {r.status !== 'approved' && (
+                  <Button
+                    size="sm"
+                    onClick={() => setStatus(r.id, 'approved')}
+                    disabled={!r.consentPublic}
+                    title={r.consentPublic ? '' : 'L’auteur n’a pas autorisé la publication'}
+                  >
+                    Approuver
+                  </Button>
+                )}
+                {r.status !== 'rejected' && (
+                  <Button variant="ghost" size="sm" onClick={() => setStatus(r.id, 'rejected')}>
+                    Rejeter
+                  </Button>
+                )}
+                {r.status === 'approved' && (
+                  <Button variant="ghost" size="sm" onClick={() => setStatus(r.id, 'pending')}>
+                    Retirer de la landing
+                  </Button>
+                )}
               </div>
-            </div>
-
-            <blockquote style={{ margin: 0, fontStyle: 'italic', color: 'var(--color-ink, #1a1a2e)' }}>
-              « {r.quote} »
-            </blockquote>
-
-            <div className="inline-actions" style={{ display: 'flex', gap: 8 }}>
-              {r.status !== 'approved' && (
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setStatus(r.id, 'approved')}
-                  disabled={!r.consentPublic}
-                  title={r.consentPublic ? '' : 'L’auteur n’a pas autorisé la publication'}
-                >
-                  Approuver
-                </button>
-              )}
-              {r.status !== 'rejected' && (
-                <button className="btn btn-ghost btn-sm" onClick={() => setStatus(r.id, 'rejected')}>
-                  Rejeter
-                </button>
-              )}
-              {r.status === 'approved' && (
-                <button className="btn btn-ghost btn-sm" onClick={() => setStatus(r.id, 'pending')}>
-                  Retirer de la landing
-                </button>
-              )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/Confirm';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AdminShell } from './components/AdminShell';
 import { LoginPage } from './auth/LoginPage';
@@ -51,6 +52,7 @@ function PlatformRoute() {
 export function AdminApp() {
   return (
     <AuthProvider>
+      <TooltipProvider delayDuration={200}>
       <ToastProvider>
       <ConfirmProvider>
       <Routes>
@@ -95,6 +97,7 @@ export function AdminApp() {
       </Routes>
       </ConfirmProvider>
       </ToastProvider>
+      </TooltipProvider>
     </AuthProvider>
   );
 }

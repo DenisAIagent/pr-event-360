@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { PageHero } from '../components/PageHero';
 import { InfoBubble } from '../components/InfoBubble';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { SettingsStatus } from '../lib/types';
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -79,69 +84,82 @@ export function IntegrationsPage() {
   }
 
   return (
-    <div className="stack">
-        <PageHero
-          eyebrow="Configuration"
-          title="Intégrations"
-          subtitle="Clés des outils externes (envoi d'emails et SMS, stockage des photos/vidéos). Saisies ici, elles sont chiffrées et utilisées en priorité."
-        />
+    <div className="flex flex-col gap-4">
+      <PageHero
+        eyebrow="Configuration"
+        title="Intégrations"
+        subtitle="Clés des outils externes (envoi d'emails et SMS, stockage des photos/vidéos). Saisies ici, elles sont chiffrées et utilisées en priorité."
+      />
 
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 0 }}>
-          Les clés saisies ici priment sur la configuration du serveur.
-          <InfoBubble title="« Priment sur la configuration du serveur »">
-            Si une clé est définie ici, elle est utilisée à la place de celle du serveur (fichier de
-            configuration). Vous pouvez la <strong>modifier ou l'effacer à tout moment</strong> : effacer une
-            clé fait simplement revenir à la valeur définie côté serveur. Rien n'est cassé.
-          </InfoBubble>
-        </p>
+      <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        Les clés saisies ici priment sur la configuration du serveur.
+        <InfoBubble title="« Priment sur la configuration du serveur »">
+          Si une clé est définie ici, elle est utilisée à la place de celle du serveur (fichier de
+          configuration). Vous pouvez la <strong>modifier ou l'effacer à tout moment</strong> : effacer une
+          clé fait simplement revenir à la valeur définie côté serveur. Rien n'est cassé.
+        </InfoBubble>
+      </p>
 
-        {error && <div className="banner banner-error">{error}</div>}
-        {done && <div className="banner banner-success">{done}</div>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      {done && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {done}
+        </div>
+      )}
 
-        {status && !status.encryptionReady && (
-          <div className="banner banner-warn">
-            La sauvegarde sécurisée des clés n’est pas encore activée sur le serveur. Demandez à votre
-            administrateur technique de l’activer (variable <code>APP_ENCRYPTION_KEY</code>). En attendant,
-            les clés restent configurées directement côté serveur.
-          </div>
-        )}
+      {status && !status.encryptionReady && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          La sauvegarde sécurisée des clés n’est pas encore activée sur le serveur. Demandez à votre
+          administrateur technique de l’activer (variable <code>APP_ENCRYPTION_KEY</code>). En attendant,
+          les clés restent configurées directement côté serveur.
+        </div>
+      )}
 
-        {status && (
-          <form className="card stack" onSubmit={submitAll}>
-            {status.items.map((it) => (
-              <div className="field" key={it.key}>
-                <label>
-                  {it.label}{' '}
-                  <span className="muted" style={{ fontWeight: 400, fontSize: 'var(--text-sm)' }}>
-                    — {SOURCE_LABEL[it.source]}
-                  </span>
-                </label>
-                <input
-                  type={it.secret ? 'password' : 'text'}
-                  value={values[it.key] ?? ''}
-                  placeholder={it.secret && it.preview ? `Actuel : ${it.preview}` : ''}
-                  onChange={(e) => setVal(it.key, e.target.value)}
-                  autoComplete="off"
-                  disabled={!status.encryptionReady}
-                />
-                {it.secret && it.source === 'db' && (
-                  <button
-                    type="button"
-                    className="auth-link"
-                    style={{ marginTop: 4 }}
-                    disabled={busy}
-                    onClick={() => save({ [it.key]: '' }, `${it.label} effacé (retour au serveur).`)}
-                  >
-                    Effacer cette clé
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="submit" className="btn btn-primary" disabled={busy || !status.encryptionReady}>
-              {busy ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-          </form>
-        )}
+      {status && (
+        <Card>
+          <CardContent className="p-6">
+            <form className="flex flex-col gap-4" onSubmit={submitAll}>
+              {status.items.map((it) => (
+                <div className="grid gap-2" key={it.key}>
+                  <Label htmlFor={`setting-${it.key}`}>
+                    {it.label}{' '}
+                    <span className="font-normal text-sm text-muted-foreground">
+                      — {SOURCE_LABEL[it.source]}
+                    </span>
+                  </Label>
+                  <Input
+                    id={`setting-${it.key}`}
+                    type={it.secret ? 'password' : 'text'}
+                    value={values[it.key] ?? ''}
+                    placeholder={it.secret && it.preview ? `Actuel : ${it.preview}` : ''}
+                    onChange={(e) => setVal(it.key, e.target.value)}
+                    autoComplete="off"
+                    disabled={!status.encryptionReady}
+                  />
+                  {it.secret && it.source === 'db' && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto self-start p-0 text-sm"
+                      disabled={busy}
+                      onClick={() => save({ [it.key]: '' }, `${it.label} effacé (retour au serveur).`)}
+                    >
+                      Effacer cette clé
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="submit" disabled={busy || !status.encryptionReady} className="self-start">
+                {busy ? 'Enregistrement…' : 'Enregistrer'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

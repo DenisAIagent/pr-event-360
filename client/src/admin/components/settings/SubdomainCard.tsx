@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuthedApi } from '../../auth/AuthContext';
 import { useFetch } from '../../lib/useFetch';
 import { useToast } from '../Toast';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface SiteInfo {
   subdomainSlug: string | null;
@@ -46,48 +50,49 @@ export function SubdomainCard({ eventId }: { eventId: string }) {
   }
 
   return (
-    <section className="card stack">
-      <div>
-        <h3 style={{ fontSize: 'var(--text-lg)' }}>Sous-domaine</h3>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '4px 0 0' }}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Sous-domaine</CardTitle>
+        <CardDescription>
           Une adresse prête à l’emploi sur la plateforme — aucune configuration DNS de votre côté.
-        </p>
-      </div>
-
-      <div className="field">
-        <label htmlFor="subdomain-slug">Identifiant</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <input
-            id="subdomain-slug"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="rock-in-rio"
-            autoCapitalize="none"
-            spellCheck={false}
-            style={{ flex: 1 }}
-          />
-          {base && <span className="muted" style={{ whiteSpace: 'nowrap' }}>.{base}</span>}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="subdomain-slug">Identifiant</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="subdomain-slug"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="rock-in-rio"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="flex-1"
+            />
+            {base && <span className="whitespace-nowrap text-sm text-muted-foreground">.{base}</span>}
+          </div>
         </div>
-      </div>
 
-      {clean && base && (
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
-          Adresse&nbsp;: <code style={{ userSelect: 'all' }}>https://{clean}.{base}</code>
-        </p>
-      )}
-      {!base && (
-        <div className="banner banner-warn" style={{ fontSize: 'var(--text-sm)' }}>
-          <strong>Bientôt disponible.</strong> Les adresses par sous-domaine ne sont pas encore activées sur
-          cette plateforme. Vous pouvez réserver votre identifiant dès maintenant&nbsp;: il sera appliqué
-          automatiquement à l’activation. En attendant, votre newsroom reste accessible via son lien standard.
+        {clean && base && (
+          <p className="text-sm text-muted-foreground">
+            Adresse&nbsp;: <code style={{ userSelect: 'all' }}>https://{clean}.{base}</code>
+          </p>
+        )}
+        {!base && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <strong>Bientôt disponible.</strong> Les adresses par sous-domaine ne sont pas encore activées sur
+            cette plateforme. Vous pouvez réserver votre identifiant dès maintenant&nbsp;: il sera appliqué
+            automatiquement à l’activation. En attendant, votre newsroom reste accessible via son lien standard.
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={save} disabled={busy || !changed}>
+            Enregistrer
+          </Button>
         </div>
-      )}
-
-      <div className="inline-actions">
-        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !changed}>
-          Enregistrer
-        </button>
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }

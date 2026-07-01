@@ -3,6 +3,11 @@ import { useAuthedApi } from '../../auth/AuthContext';
 import { useFetch } from '../../lib/useFetch';
 import { useToast } from '../Toast';
 import { InfoBubble } from '../InfoBubble';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface DomainInfo {
   customDomain: string | null;
@@ -65,47 +70,53 @@ export function DomainCard({ eventId }: { eventId: string }) {
   const rootDomain = parts.length <= 2 ? saved : parts.slice(1).join('.');
 
   return (
-    <section className="card stack">
-      <div>
-        <h3 style={{ fontSize: 'var(--text-lg)' }}>Domaine personnalisé</h3>
-        <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '4px 0 0' }}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Domaine personnalisé</CardTitle>
+        <CardDescription>
           Servez les pages publiques de cet événement sous le domaine du client (ex.{' '}
           <code>presse.mon-festival.com</code>).
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="custom-domain">Domaine</Label>
+          <Input
+            id="custom-domain"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder="presse.mon-festival.com"
+            autoCapitalize="none"
+            spellCheck={false}
+          />
+        </div>
 
-      <div className="field">
-        <label htmlFor="custom-domain">Domaine</label>
-        <input
-          id="custom-domain"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          placeholder="presse.mon-festival.com"
-          autoCapitalize="none"
-          spellCheck={false}
-        />
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" onClick={save} disabled={busy || !changed}>
+            Enregistrer
+          </Button>
+          {saved && (
+            <>
+              <Button variant="ghost" size="sm" onClick={verify} disabled={busy || changed}>
+                Vérifier le DNS
+              </Button>
+              <Badge
+                className={
+                  data?.customDomainVerified
+                    ? 'border-transparent bg-emerald-100 text-emerald-800'
+                    : 'border-transparent bg-amber-100 text-amber-800'
+                }
+              >
+                {data?.customDomainVerified ? 'Vérifié' : 'En attente de vérification'}
+              </Badge>
+            </>
+          )}
+        </div>
 
-      <div className="inline-actions">
-        <button className="btn btn-primary btn-sm" onClick={save} disabled={busy || !changed}>
-          Enregistrer
-        </button>
-        {saved && (
-          <>
-            <button className="btn btn-ghost btn-sm" onClick={verify} disabled={busy || changed}>
-              Vérifier le DNS
-            </button>
-            <span className={`badge ${data?.customDomainVerified ? 'badge-success' : 'badge-warn'}`}>
-              {data?.customDomainVerified ? 'Vérifié' : 'En attente de vérification'}
-            </span>
-          </>
-        )}
-      </div>
-
-      {saved && target && (
-        <div className="stack" style={{ gap: 'var(--space-2)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-            Connecter votre domaine
+        {saved && target && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              Connecter votre domaine
             <InfoBubble title="Comment connecter mon domaine ? (pas à pas)">
               <ol>
                 <li>
@@ -139,13 +150,13 @@ export function DomainCard({ eventId }: { eventId: string }) {
                 Le certificat <strong>HTTPS</strong> est créé automatiquement une fois le DNS en place —
                 vous n'avez rien à gérer.
               </p>
-              <p className="muted" style={{ marginTop: 6 }}>
+              <p className="mt-1.5 text-muted-foreground">
                 Vous ne gérez pas vos DNS vous-même ? Transmettez ces 3 valeurs (Type, Nom, Valeur) à la
                 personne qui s'occupe de votre site / domaine.
               </p>
             </InfoBubble>
           </div>
-          <div className="banner" style={{ fontSize: 'var(--text-sm)' }}>
+          <div className="rounded-md border bg-muted px-3 py-2 text-sm">
             <div className="dns-record">
               <div className="dns-record-row">
                 <span>Type</span>
@@ -160,13 +171,14 @@ export function DomainCard({ eventId }: { eventId: string }) {
                 <code style={{ userSelect: 'all' }}>{target}</code>
               </div>
             </div>
-            <span className="muted" style={{ display: 'block', marginTop: 10 }}>
+            <span className="mt-2.5 block text-muted-foreground">
               Le HTTPS est délivré automatiquement ensuite. La propagation DNS peut prendre quelques
               minutes à quelques heures — cliquez « Vérifier le DNS » pour contrôler.
             </span>
           </div>
         </div>
       )}
-    </section>
+      </CardContent>
+    </Card>
   );
 }

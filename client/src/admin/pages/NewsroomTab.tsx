@@ -8,6 +8,16 @@ import { useToast } from '../components/Toast';
 import { FileText } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { uploadToCloudinary } from '../lib/upload';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 import type { PressRelease, UploadSignature } from '../lib/types';
 
 /** Slug d'URL côté client (sans accents, minuscules, tirets) — miroir de server/src/lib/slug.ts. */
@@ -49,21 +59,23 @@ export function NewsroomTab() {
   const newsroomUrl = `${window.location.origin}/newsroom/${eventId}`;
 
   return (
-    <div className="stack">
-      <section className="share-card">
-        <div className="share-head">
-          <strong>Newsroom publique</strong>
-          <span className="muted">CP publiés + médias téléchargeables, à partager</span>
-        </div>
-        <CopyLink url={newsroomUrl} />
-      </section>
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardContent className="flex flex-col gap-3 p-4">
+          <div className="flex flex-col gap-0.5">
+            <strong className="text-sm font-semibold">Newsroom publique</strong>
+            <span className="text-sm text-muted-foreground">CP publiés + médias téléchargeables, à partager</span>
+          </div>
+          <CopyLink url={newsroomUrl} />
+        </CardContent>
+      </Card>
 
-      <div className="section-head">
-        <h2 style={{ fontSize: 'var(--text-lg)' }}>Communiqués de presse</h2>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">Communiqués de presse</h2>
         {editing === null && (
-          <button className="btn btn-primary btn-sm" onClick={() => setEditing('new')}>
+          <Button size="sm" onClick={() => setEditing('new')}>
             Nouveau communiqué
-          </button>
+          </Button>
         )}
       </div>
 
@@ -79,28 +91,36 @@ export function NewsroomTab() {
         />
       )}
 
-      {loading && <p className="muted">Chargement…</p>}
-      {error && <div className="banner banner-error">{error}</div>}
+      {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="stack">
+      <div className="flex flex-col gap-4">
         {data?.map((pr) => (
-          <div key={pr.id} className="card row-between">
-            <div>
-              <strong>{pr.title}</strong>
-              <span
-                className={`badge ${pr.status === 'published' ? 'badge-success' : 'badge-warn'}`}
-                style={{ marginLeft: 8 }}
-              >
-                {pr.status === 'published' ? 'Publié' : 'Brouillon'}
-              </span>
-              <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-                {pr.publishedAt ? new Date(pr.publishedAt).toLocaleDateString('fr-FR') : 'Non publié'}
+          <Card key={pr.id}>
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <strong className="text-sm font-semibold">{pr.title}</strong>
+                  <Badge
+                    variant={pr.status === 'published' ? undefined : 'secondary'}
+                    className={cn(pr.status === 'published' && 'border-transparent bg-emerald-100 text-emerald-800')}
+                  >
+                    {pr.status === 'published' ? 'Publié' : 'Brouillon'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {pr.publishedAt ? new Date(pr.publishedAt).toLocaleDateString('fr-FR') : 'Non publié'}
+                </div>
               </div>
-            </div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setEditing(pr)}>
-              Modifier
-            </button>
-          </div>
+              <Button variant="ghost" size="sm" onClick={() => setEditing(pr)}>
+                Modifier
+              </Button>
+            </CardContent>
+          </Card>
         ))}
         {data?.length === 0 && !loading && (
           <EmptyState
@@ -208,161 +228,174 @@ function PressEditor({
   }
 
   return (
-    <div className="card stack">
-      <div className="row-between">
-        <h3 style={{ fontSize: 'var(--text-lg)' }}>{initial ? 'Modifier le communiqué' : 'Nouveau communiqué'}</h3>
-        <button className="btn btn-ghost btn-sm" onClick={onClose}>
-          Fermer
-        </button>
-      </div>
-      {err && <div className="banner banner-error">{err}</div>}
-      <div className="field">
-        <label>Titre</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
-      </div>
-      <div className="field">
-        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            Contenu (HTML)
-            <InfoBubble title="Écrire le communiqué (HTML)">
-              Le contenu s'écrit en <strong>HTML</strong> (balises). Les bases&nbsp;:
-              <ul>
-                <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
-                <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
-                <li>Gras : <code>{'<strong>important</strong>'}</code></li>
-                <li>Lien : <code>{'<a href="https://…">lien</a>'}</code></li>
-              </ul>
-              Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
-            </InfoBubble>
-          </span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
-                setBodyHtml(CP_STARTER_HTML);
-              }
-            }}
-          >
-            Insérer un modèle
-          </button>
-        </label>
-        <textarea
-          value={bodyHtml}
-          onChange={(e) => setBodyHtml(e.target.value)}
-          rows={10}
-          style={{ fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}
-        />
-      </div>
-      <div className="field">
-        <label>Aperçu</label>
-        {coverImageUrl && (
-          <img
-            src={coverImageUrl}
-            alt=""
-            style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
-          />
-        )}
-        <div className="card" style={{ background: '#fff' }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-      </div>
-
-      <fieldset className="card stack" style={{ border: '1px solid var(--border, #e3e3e3)' }}>
-        <legend style={{ padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          Référencement & partage (SEO)
-          <InfoBubble title="Pourquoi c’est important">
-            Ces réglages soignent l’apparence du communiqué sur <strong>Google</strong> et dans les
-            <strong> aperçus partagés</strong> (LinkedIn, X, Facebook, WhatsApp). Renseignés par défaut, ils
-            sont modifiables.
-          </InfoBubble>
-        </legend>
-
-        <div className="field">
-          <label>Image de couverture (illustration + aperçu social)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {coverImageUrl && (
-              <img src={coverImageUrl} alt="" style={{ height: 56, width: 96, objectFit: 'cover', borderRadius: 6 }} />
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onUploadCover(f);
-              }}
-            />
-            {uploadBusy && <span className="muted">Upload…</span>}
-            {coverImageUrl && (
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCoverImageUrl(null)}>
-                Retirer
-              </button>
-            )}
-          </div>
-          <input
-            style={{ marginTop: 8 }}
-            placeholder="…ou collez une URL d’image (https://)"
-            value={coverImageUrl ?? ''}
-            onChange={(e) => setCoverImageUrl(e.target.value || null)}
-          />
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">{initial ? 'Modifier le communiqué' : 'Nouveau communiqué'}</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Fermer
+          </Button>
         </div>
-
-        <div className="field">
-          <label style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-            <span>Description SEO (extrait affiché sur Google / aperçus)</span>
-            <button
+        {err && (
+          <Alert variant="destructive">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        <div className="grid gap-2">
+          <Label htmlFor="cp-title">Titre</Label>
+          <Input id="cp-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5">
+              <Label htmlFor="cp-body">Contenu (HTML)</Label>
+              <InfoBubble title="Écrire le communiqué (HTML)">
+                Le contenu s'écrit en <strong>HTML</strong> (balises). Les bases&nbsp;:
+                <ul>
+                  <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
+                  <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
+                  <li>Gras : <code>{'<strong>important</strong>'}</code></li>
+                  <li>Lien : <code>{'<a href="https://…">lien</a>'}</code></li>
+                </ul>
+                Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
+              </InfoBubble>
+            </span>
+            <Button
               type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => setSeoDescription(htmlToText(bodyHtml).slice(0, 155))}
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
+                  setBodyHtml(CP_STARTER_HTML);
+                }
+              }}
             >
-              Générer depuis le contenu
-            </button>
-          </label>
-          <textarea value={seoDescription} onChange={(e) => setSeoDescription(e.target.value)} rows={2} />
-          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            {descPreview.length} caractères {descPreview.length > 160 ? '(idéalement ≤ 160)' : ''}
-          </span>
+              Insérer un modèle
+            </Button>
+          </div>
+          <Textarea
+            id="cp-body"
+            value={bodyHtml}
+            onChange={(e) => setBodyHtml(e.target.value)}
+            rows={10}
+            className="font-mono text-sm"
+          />
         </div>
-
-        <div className="field">
-          <label>Adresse de la page (slug)</label>
-          <input value={slug} placeholder={effectiveSlug} onChange={(e) => setSlug(e.target.value)} />
-          <span className="muted" style={{ fontSize: 'var(--text-sm)', wordBreak: 'break-all' }}>{publicUrl}</span>
-        </div>
-
-        <ul className="stack" style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 'var(--text-sm)' }}>
-          {seoChecks.map((c) => (
-            <li key={c.label} style={{ color: c.ok ? 'var(--success, #15803d)' : 'var(--muted, #777)' }}>
-              {c.ok ? '✓' : '•'} {c.label}
-            </li>
-          ))}
-        </ul>
-      </fieldset>
-
-      <div className="row-between">
-        <div className="field" style={{ margin: 0 }}>
-          <label>Statut</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}>
-            <option value="draft">Brouillon</option>
-            <option value="published">Publié</option>
-          </select>
-        </div>
-        {status === 'published' && (
-          <label className="checkbox-inline" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)' }}>
-            <input type="checkbox" checked={notifyEmail} onChange={(e) => setNotifyEmail(e.target.checked)} />
-            Notifier les accrédités par email
-          </label>
-        )}
-        <div className="inline-actions">
-          {initial && (
-            <button className="btn btn-ghost btn-sm" onClick={remove} disabled={busy}>
-              Supprimer
-            </button>
+        <div className="grid gap-2">
+          <Label>Aperçu</Label>
+          {coverImageUrl && (
+            <img src={coverImageUrl} alt="" className="mb-2.5 max-h-56 w-full rounded-md object-cover" />
           )}
-          <button className="btn btn-primary" onClick={save} disabled={busy || !title}>
-            {busy ? 'Enregistrement…' : 'Enregistrer'}
-          </button>
+          <div className="rounded-md border bg-white p-4" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
         </div>
-      </div>
-    </div>
+
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-6">
+            <div className="flex items-center gap-1.5">
+              <h4 className="text-base font-semibold">Référencement & partage (SEO)</h4>
+              <InfoBubble title="Pourquoi c’est important">
+                Ces réglages soignent l’apparence du communiqué sur <strong>Google</strong> et dans les
+                <strong> aperçus partagés</strong> (LinkedIn, X, Facebook, WhatsApp). Renseignés par défaut, ils
+                sont modifiables.
+              </InfoBubble>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Image de couverture (illustration + aperçu social)</Label>
+              <div className="flex flex-wrap items-center gap-3">
+                {coverImageUrl && (
+                  <img src={coverImageUrl} alt="" className="h-14 w-24 rounded-md object-cover" />
+                )}
+                <Input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="w-auto flex-1"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onUploadCover(f);
+                  }}
+                />
+                {uploadBusy && <span className="text-sm text-muted-foreground">Upload…</span>}
+                {coverImageUrl && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setCoverImageUrl(null)}>
+                    Retirer
+                  </Button>
+                )}
+              </div>
+              <Input
+                placeholder="…ou collez une URL d’image (https://)"
+                value={coverImageUrl ?? ''}
+                onChange={(e) => setCoverImageUrl(e.target.value || null)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="cp-seo-desc">Description SEO (extrait affiché sur Google / aperçus)</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSeoDescription(htmlToText(bodyHtml).slice(0, 155))}
+                >
+                  Générer depuis le contenu
+                </Button>
+              </div>
+              <Textarea
+                id="cp-seo-desc"
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                rows={2}
+              />
+              <span className="text-sm text-muted-foreground">
+                {descPreview.length} caractères {descPreview.length > 160 ? '(idéalement ≤ 160)' : ''}
+              </span>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="cp-slug">Adresse de la page (slug)</Label>
+              <Input id="cp-slug" value={slug} placeholder={effectiveSlug} onChange={(e) => setSlug(e.target.value)} />
+              <span className="text-sm break-all text-muted-foreground">{publicUrl}</span>
+            </div>
+
+            <ul className="m-0 flex list-none flex-col gap-4 p-0 text-sm">
+              {seoChecks.map((c) => (
+                <li key={c.label} className={c.ok ? 'text-emerald-700' : 'text-muted-foreground'}>
+                  {c.ok ? '✓' : '•'} {c.label}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id="cp-status"
+              checked={status === 'published'}
+              onCheckedChange={(v) => setStatus(v ? 'published' : 'draft')}
+            />
+            <Label htmlFor="cp-status">{status === 'published' ? 'Publié' : 'Brouillon'}</Label>
+          </div>
+          {status === 'published' && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={notifyEmail} onCheckedChange={(v) => setNotifyEmail(v === true)} />
+              Notifier les accrédités par email
+            </label>
+          )}
+          <div className="flex items-center gap-2">
+            {initial && (
+              <Button variant="ghost" size="sm" onClick={remove} disabled={busy}>
+                Supprimer
+              </Button>
+            )}
+            <Button onClick={save} disabled={busy || !title}>
+              {busy ? 'Enregistrement…' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -4,6 +4,14 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
 import type { AppReview, MyReviewResponse } from '../lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /** Sélecteur d'étoiles (cliquable). */
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -32,10 +40,13 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-const STATUS_LABEL: Record<AppReview['status'], { text: string; cls: string }> = {
-  pending: { text: 'En attente de relecture', cls: 'badge-warn' },
-  approved: { text: 'Approuvé — visible sur la page d’accueil', cls: 'badge-success' },
-  rejected: { text: 'Non retenu', cls: 'badge' },
+const STATUS_LABEL: Record<AppReview['status'], { text: string; className: string }> = {
+  pending: { text: 'En attente de relecture', className: 'border-transparent bg-amber-100 text-amber-800' },
+  approved: {
+    text: 'Approuvé — visible sur la page d’accueil',
+    className: 'border-transparent bg-emerald-100 text-emerald-800',
+  },
+  rejected: { text: 'Non retenu', className: 'bg-secondary text-secondary-foreground' },
 };
 
 export function ReviewPage() {
@@ -93,72 +104,93 @@ export function ReviewPage() {
   const status = data?.review?.status;
 
   return (
-    <div className="stack" style={{ maxWidth: 640 }}>
+    <div className="flex flex-col gap-4" style={{ maxWidth: 640 }}>
       <div>
-        <h1 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Votre avis</h1>
-        <p className="muted" style={{ marginTop: 4 }}>
+        <h1 className="text-2xl font-semibold tracking-tight">Votre avis</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Dites-nous ce que vous pensez de l’outil. Avec votre accord, votre avis pourra être affiché
           sur notre page d’accueil après relecture.
         </p>
       </div>
 
       {status && (
-        <div className={`badge ${STATUS_LABEL[status].cls}`} style={{ alignSelf: 'flex-start' }}>
-          {STATUS_LABEL[status].text}
-        </div>
+        <Badge className={`self-start ${STATUS_LABEL[status].className}`}>{STATUS_LABEL[status].text}</Badge>
       )}
 
-      <div className="card stack">
-        {err && <div className="banner banner-error">{err}</div>}
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-6">
+          {err && (
+            <Alert variant="destructive">
+              <AlertDescription>{err}</AlertDescription>
+            </Alert>
+          )}
 
-        <div className="field">
-          <label>Votre note</label>
-          <StarPicker value={rating} onChange={setRating} />
-        </div>
-
-        <div className="field">
-          <label>Votre témoignage</label>
-          <textarea
-            value={quote}
-            onChange={(e) => setQuote(e.target.value)}
-            rows={4}
-            maxLength={1000}
-            placeholder="Ce que l’outil vous a apporté, le temps gagné, ce que vous avez préféré…"
-          />
-        </div>
-
-        <div className="grid-2">
-          <div className="field" style={{ margin: 0 }}>
-            <label>Nom affiché</label>
-            <input value={authorName} onChange={(e) => setAuthorName(e.target.value)} maxLength={120} />
+          <div className="grid gap-2">
+            <Label>Votre note</Label>
+            <StarPicker value={rating} onChange={setRating} />
           </div>
-          <div className="field" style={{ margin: 0 }}>
-            <label>Fonction (optionnel)</label>
-            <input
-              value={authorRole}
-              onChange={(e) => setAuthorRole(e.target.value)}
-              maxLength={80}
-              placeholder="ex. Attaché de presse"
+
+          <div className="grid gap-2">
+            <Label htmlFor="review-quote">Votre témoignage</Label>
+            <Textarea
+              id="review-quote"
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              rows={4}
+              maxLength={1000}
+              placeholder="Ce que l’outil vous a apporté, le temps gagné, ce que vous avez préféré…"
             />
           </div>
-        </div>
-        <div className="field">
-          <label>Structure / festival (optionnel)</label>
-          <input value={authorOrg} onChange={(e) => setAuthorOrg(e.target.value)} maxLength={120} />
-        </div>
 
-        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--text-sm)' }}>
-          <input type="checkbox" checked={consentPublic} onChange={(e) => setConsentPublic(e.target.checked)} />
-          <span>
-            J’autorise la publication de cet avis (nom affiché, fonction et structure) sur la page
-            d’accueil publique. Vous pouvez le retirer à tout moment en nous contactant.
-          </span>
-        </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="review-author-name">Nom affiché</Label>
+              <Input
+                id="review-author-name"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                maxLength={120}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="review-author-role">Fonction (optionnel)</Label>
+              <Input
+                id="review-author-role"
+                value={authorRole}
+                onChange={(e) => setAuthorRole(e.target.value)}
+                maxLength={80}
+                placeholder="ex. Attaché de presse"
+              />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="review-author-org">Structure / festival (optionnel)</Label>
+            <Input
+              id="review-author-org"
+              value={authorOrg}
+              onChange={(e) => setAuthorOrg(e.target.value)}
+              maxLength={120}
+            />
+          </div>
 
-        <button className="btn btn-primary" onClick={save} disabled={busy || loading} style={{ alignSelf: 'flex-start' }}>
-          {busy ? 'Envoi…' : data?.review ? 'Mettre à jour mon avis' : 'Envoyer mon avis'}
-        </button>
-      </div>
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="review-consent"
+              checked={consentPublic}
+              onCheckedChange={(v) => setConsentPublic(v === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="review-consent" className="text-sm font-normal leading-snug">
+              J’autorise la publication de cet avis (nom affiché, fonction et structure) sur la page
+              d’accueil publique. Vous pouvez le retirer à tout moment en nous contactant.
+            </Label>
+          </div>
+
+          <Button onClick={save} disabled={busy || loading} className="self-start">
+            {busy ? 'Envoi…' : data?.review ? 'Mettre à jour mon avis' : 'Envoyer mon avis'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

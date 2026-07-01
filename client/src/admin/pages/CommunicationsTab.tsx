@@ -6,6 +6,14 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { InfoBubble } from '../components/InfoBubble';
 import type { Newsletter, Recipient } from '../lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /** Modèle de départ prêt à personnaliser (pour les non-techniciens). */
 const STARTER_HTML = `<h1>Bonjour {{firstName}},</h1>
@@ -43,13 +51,13 @@ export function CommunicationsTab() {
   }
 
   return (
-    <div className="stack">
-      <div className="section-head">
-        <h2 style={{ fontSize: 'var(--text-lg)' }}>Communications</h2>
+    <div className="flex flex-col gap-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold">Communications</h2>
         {draft === null && (
-          <button className="btn btn-primary btn-sm" onClick={() => setDraft('new')}>
+          <Button size="sm" onClick={() => setDraft('new')}>
             Nouvelle newsletter
-          </button>
+          </Button>
         )}
       </div>
 
@@ -62,41 +70,53 @@ export function CommunicationsTab() {
         />
       )}
 
-      {list.loading && <p className="muted">Chargement…</p>}
-      {list.error && <div className="banner banner-error">{list.error}</div>}
+      {list.loading && <p className="text-muted-foreground">Chargement…</p>}
+      {list.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{list.error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="stack">
+      <div className="flex flex-col gap-4">
         {list.data?.map((n) => (
-          <div key={n.id} className="card row-between">
-            <div>
-              <strong>{n.subject}</strong>
-              <span
-                className={`badge ${n.status === 'sent' ? 'badge-success' : 'badge-warn'}`}
-                style={{ marginLeft: 8 }}
-              >
-                {n.status === 'sent' ? `Envoyée · ${n.recipientCount} destinataires` : 'Brouillon'}
-              </span>
-              <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-                {n.sentAt ? new Date(n.sentAt).toLocaleString('fr-FR') : 'Non envoyée'}
+          <Card key={n.id}>
+            <CardContent className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">{n.subject}</span>
+                  {n.status === 'sent' ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                      Envoyée · {n.recipientCount} destinataires
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Brouillon</Badge>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {n.sentAt ? new Date(n.sentAt).toLocaleString('fr-FR') : 'Non envoyée'}
+                </div>
               </div>
-            </div>
-            {n.status === 'draft' && (
-              <div style={{ display: 'flex', gap: 'var(--space-2)', flex: 'none' }}>
-                <button className="btn btn-ghost btn-sm" onClick={() => setDraft(n)}>
-                  Ouvrir
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => removeDraft(n)}
-                  style={{ color: 'var(--color-danger)' }}
-                >
-                  Supprimer
-                </button>
-              </div>
-            )}
-          </div>
+              {n.status === 'draft' && (
+                <div className="flex flex-none gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setDraft(n)}>
+                    Ouvrir
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => removeDraft(n)}
+                  >
+                    Supprimer
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         ))}
-        {list.data?.length === 0 && !list.loading && <p className="muted">Aucune communication.</p>}
+        {list.data?.length === 0 && !list.loading && (
+          <p className="text-muted-foreground">Aucune communication.</p>
+        )}
       </div>
     </div>
   );
@@ -152,103 +172,116 @@ function Composer({
   }
 
   return (
-    <div className="card stack">
-      <div className="row-between">
-        <h3 style={{ fontSize: 'var(--text-lg)' }}>{id ? 'Modifier la newsletter' : 'Nouvelle newsletter'}</h3>
-        <button className="btn btn-ghost btn-sm" onClick={onClose}>
-          Fermer
-        </button>
-      </div>
-      {err && <div className="banner banner-error">{err}</div>}
-      {msg && <div className="banner banner-success">{msg}</div>}
+    <Card>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-semibold">{id ? 'Modifier la newsletter' : 'Nouvelle newsletter'}</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Fermer
+          </Button>
+        </div>
+        {err && (
+          <Alert variant="destructive">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        {msg && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {msg}
+          </div>
+        )}
 
-      <div className="field">
-        <label>Objet de l’email</label>
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} />
-      </div>
+        <div className="grid gap-2">
+          <Label htmlFor="newsletter-subject">Objet de l’email</Label>
+          <Input id="newsletter-subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </div>
 
-      <div className="grid-2">
-        <div className="field">
-          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              Contenu HTML
-              <InfoBubble title="Écrire le contenu (HTML)">
-                Le contenu s'écrit en <strong>HTML</strong> (des balises). Les bases&nbsp;:
-                <ul>
-                  <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
-                  <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
-                  <li>Gras : <code>{'<strong>important</strong>'}</code></li>
-                  <li>Lien : <code>{'<a href="https://…">cliquez ici</a>'}</code></li>
-                  <li>Liste : <code>{'<ul><li>élément</li></ul>'}</code></li>
-                </ul>
-                Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
-                L'aperçu à droite montre le rendu réel.
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                Contenu HTML
+                <InfoBubble title="Écrire le contenu (HTML)">
+                  Le contenu s'écrit en <strong>HTML</strong> (des balises). Les bases&nbsp;:
+                  <ul>
+                    <li>Titre : <code>{'<h1>Mon titre</h1>'}</code></li>
+                    <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
+                    <li>Gras : <code>{'<strong>important</strong>'}</code></li>
+                    <li>Lien : <code>{'<a href="https://…">cliquez ici</a>'}</code></li>
+                    <li>Liste : <code>{'<ul><li>élément</li></ul>'}</code></li>
+                  </ul>
+                  Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
+                  L'aperçu à droite montre le rendu réel.
+                </InfoBubble>
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
+                    setBodyHtml(STARTER_HTML);
+                  }
+                }}
+              >
+                Insérer un modèle
+              </Button>
+            </div>
+            <Textarea
+              value={bodyHtml}
+              onChange={(e) => setBodyHtml(e.target.value)}
+              rows={16}
+              placeholder="<h1>Bonjour {{firstName}}</h1><p>…</p>"
+              className="font-mono text-sm"
+            />
+            <span className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              Variables : {'{{firstName}}'} et {'{{lastName}}'}. Le contenu est habillé aux couleurs de l’event.
+              <InfoBubble title="Les variables">
+                Ces étiquettes sont remplacées à l'envoi par les infos de chaque destinataire&nbsp;:{' '}
+                <code>{'{{firstName}}'}</code> = prénom, <code>{'{{lastName}}'}</code> = nom. Écrivez-les
+                exactement ainsi (avec les doubles accolades). Seules ces deux variables sont gérées pour les
+                newsletters.
               </InfoBubble>
             </span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
-                  setBodyHtml(STARTER_HTML);
-                }
+          </div>
+          <div className="grid gap-2">
+            <Label>
+              Aperçu <span className="font-normal text-muted-foreground">· valeurs d’exemple</span>
+            </Label>
+            <div
+              className="overflow-auto rounded-md border bg-white p-4"
+              style={{ minHeight: 200 }}
+              dangerouslySetInnerHTML={{
+                __html: (bodyHtml || '<p style="color:#999">Aperçu…</p>')
+                  .replace(/\{\{\s*firstName\s*\}\}/g, 'Camille')
+                  .replace(/\{\{\s*lastName\s*\}\}/g, 'Martin'),
               }}
-            >
-              Insérer un modèle
-            </button>
-          </label>
-          <textarea
-            value={bodyHtml}
-            onChange={(e) => setBodyHtml(e.target.value)}
-            rows={16}
-            placeholder="<h1>Bonjour {{firstName}}</h1><p>…</p>"
-            style={{ fontFamily: 'monospace', fontSize: 'var(--text-sm)' }}
-          />
-          <span className="field-hint muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            Variables : {'{{firstName}}'} et {'{{lastName}}'}. Le contenu est habillé aux couleurs de l’event.
-            <InfoBubble title="Les variables">
-              Ces étiquettes sont remplacées à l'envoi par les infos de chaque destinataire&nbsp;:{' '}
-              <code>{'{{firstName}}'}</code> = prénom, <code>{'{{lastName}}'}</code> = nom. Écrivez-les
-              exactement ainsi (avec les doubles accolades). Seules ces deux variables sont gérées pour les
-              newsletters.
-            </InfoBubble>
-          </span>
+            />
+          </div>
         </div>
-        <div className="field">
-          <label>Aperçu <span className="muted" style={{ fontWeight: 400 }}>· valeurs d’exemple</span></label>
-          <div
-            className="card"
-            style={{ background: '#fff', minHeight: 200, overflow: 'auto' }}
-            dangerouslySetInnerHTML={{
-              __html: (bodyHtml || '<p style="color:#999">Aperçu…</p>')
-                .replace(/\{\{\s*firstName\s*\}\}/g, 'Camille')
-                .replace(/\{\{\s*lastName\s*\}\}/g, 'Martin'),
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" onClick={saveDraft} disabled={busy || !subject}>
+            Enregistrer le brouillon
+          </Button>
+          <Button onClick={openRecipients} disabled={busy || !subject || !bodyHtml}>
+            Choisir les destinataires →
+          </Button>
+        </div>
+
+        {showRecipients && id && (
+          <RecipientPicker
+            eventId={eventId}
+            newsletterId={id}
+            onSent={() => {
+              setShowRecipients(false);
+              onChanged();
+              onClose();
             }}
           />
-        </div>
-      </div>
-
-      <div className="inline-actions">
-        <button className="btn btn-ghost" onClick={saveDraft} disabled={busy || !subject}>
-          Enregistrer le brouillon
-        </button>
-        <button className="btn btn-primary" onClick={openRecipients} disabled={busy || !subject || !bodyHtml}>
-          Choisir les destinataires →
-        </button>
-      </div>
-
-      {showRecipients && id && (
-        <RecipientPicker
-          eventId={eventId}
-          newsletterId={id}
-          onSent={() => {
-            setShowRecipients(false);
-            onChanged();
-            onClose();
-          }}
-        />
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -311,46 +344,70 @@ function RecipientPicker({
   }
 
   return (
-    <div className="card stack" style={{ background: 'var(--color-accent-tint, #f5f5ff)' }}>
-      <h3 style={{ fontSize: 'var(--text-lg)' }}>Destinataires</h3>
-      {err && <div className="banner banner-error">{err}</div>}
-      {result && <div className="banner banner-success">{result}</div>}
-      <div className="inline-actions">
-        <label className="inline-actions" style={{ gap: 6 }}>
-          <input type="checkbox" checked={onlyAccepted} onChange={(e) => setOnlyAccepted(e.target.checked)} />
-          Accrédités acceptés uniquement
-        </label>
-        <InfoBubble title="Filtrer les destinataires">
-          <strong>Coché</strong> : la liste ne montre que les journalistes dont l'accréditation est{' '}
-          <strong>acceptée</strong> (le cas habituel). <strong>Décoché</strong> : elle inclut aussi les
-          autres statuts (en attente, refusés) — à utiliser avec prudence pour ne pas écrire à des
-          personnes non accréditées.
-        </InfoBubble>
-        <button className="btn btn-ghost btn-sm" onClick={selectAll}>
-          Tout sélectionner ({filtered.length})
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={clear}>
-          Aucun
-        </button>
-      </div>
+    <Card className="bg-muted/40">
+      <CardContent className="flex flex-col gap-4">
+        <h3 className="text-base font-semibold">Destinataires</h3>
+        {err && (
+          <Alert variant="destructive">
+            <AlertDescription>{err}</AlertDescription>
+          </Alert>
+        )}
+        {result && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {result}
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="only-accepted"
+              checked={onlyAccepted}
+              onCheckedChange={(v) => setOnlyAccepted(v === true)}
+            />
+            <Label htmlFor="only-accepted" className="font-normal">
+              Accrédités acceptés uniquement
+            </Label>
+          </div>
+          <InfoBubble title="Filtrer les destinataires">
+            <strong>Coché</strong> : la liste ne montre que les journalistes dont l'accréditation est{' '}
+            <strong>acceptée</strong> (le cas habituel). <strong>Décoché</strong> : elle inclut aussi les
+            autres statuts (en attente, refusés) — à utiliser avec prudence pour ne pas écrire à des
+            personnes non accréditées.
+          </InfoBubble>
+          <Button variant="ghost" size="sm" onClick={selectAll}>
+            Tout sélectionner ({filtered.length})
+          </Button>
+          <Button variant="ghost" size="sm" onClick={clear}>
+            Aucun
+          </Button>
+        </div>
 
-      <div className="stack" style={{ maxHeight: 260, overflow: 'auto' }}>
-        {filtered.map((r) => (
-          <label key={r.id} className="row-between" style={{ gap: 8 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
-              {r.firstName} {r.lastName ?? ''}{' '}
-              <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{r.email}</span>
-            </span>
-            <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>{r.accStatus}</span>
-          </label>
-        ))}
-        {filtered.length === 0 && <p className="muted">Aucun destinataire pour ce filtre.</p>}
-      </div>
+        <div className="flex max-h-[260px] flex-col gap-2 overflow-auto">
+          {filtered.map((r) => (
+            <div key={r.id} className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id={`recipient-${r.id}`}
+                  checked={selected.has(r.id)}
+                  onCheckedChange={() => toggle(r.id)}
+                />
+                <Label htmlFor={`recipient-${r.id}`} className="font-normal">
+                  {r.firstName} {r.lastName ?? ''}{' '}
+                  <span className="text-sm text-muted-foreground">{r.email}</span>
+                </Label>
+              </span>
+              <span className="text-sm text-muted-foreground">{r.accStatus}</span>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-muted-foreground">Aucun destinataire pour ce filtre.</p>
+          )}
+        </div>
 
-      <button className="btn btn-primary" onClick={send} disabled={busy || selected.size === 0}>
-        {busy ? 'Envoi…' : `Envoyer à ${selected.size} destinataire(s)`}
-      </button>
-    </div>
+        <Button onClick={send} disabled={busy || selected.size === 0}>
+          {busy ? 'Envoi…' : `Envoyer à ${selected.size} destinataire(s)`}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

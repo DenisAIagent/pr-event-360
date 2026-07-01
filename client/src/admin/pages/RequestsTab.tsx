@@ -13,7 +13,6 @@ import type {
 } from '../lib/types';
 import {
   SETTABLE_STATUSES,
-  STATUS_BADGE,
   STATUS_LABEL,
   TYPE_LABEL,
   formatSlot,
@@ -36,6 +35,13 @@ import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { StatusBadge } from '@/components/StatusBadge';
+import { cn } from '@/lib/utils';
 
 const QUEUE_COLUMNS = ['Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut'];
 
@@ -131,13 +137,15 @@ export function RequestsTab() {
       )}
 
       <div className="toolbar">
-        <div className="segmented">
-          {VIEWS.map((v) => (
-            <button key={v.value} className={view === v.value ? 'on' : ''} onClick={() => setView(v.value)}>
-              {v.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={view} onValueChange={(v) => setView(v as View)}>
+          <TabsList>
+            {VIEWS.map((v) => (
+              <TabsTrigger key={v.value} value={v.value}>
+                {v.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {view === 'queue' && (
@@ -288,20 +296,30 @@ function QueueView({
     <>
       <div className="toolbar">
         {TYPE_FILTERS.map((f) => (
-          <button key={f.value} className="chip" aria-pressed={typeF === f.value} onClick={() => setTypeF(f.value)}>
+          <Button
+            key={f.value}
+            size="sm"
+            variant={typeF === f.value ? 'default' : 'outline'}
+            aria-pressed={typeF === f.value}
+            onClick={() => setTypeF(f.value)}
+          >
             {f.label}
-          </button>
+          </Button>
         ))}
         <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
         <StatusFilter value={statusF} onChange={setStatusF} />
         <div className="tb-spacer" />
-        <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
+        <Button variant="ghost" size="sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
           <Icon name="download" /> Exporter
-        </button>
+        </Button>
       </div>
 
       {queue.loading && <SkeletonRows count={4} />}
-      {queue.error && <div className="banner banner-error">{queue.error}</div>}
+      {queue.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{queue.error}</AlertDescription>
+        </Alert>
+      )}
       {queue.data?.length === 0 && !queue.loading && (
         <EmptyState
           icon={Inbox}
@@ -400,9 +418,11 @@ function QueueRow({
       </div>
 
       <div className="c-req">
-        <div className="ava" style={{ background: AVA_GRADIENT[item.type] }}>
-          {initials}
-        </div>
+        <Avatar className="size-8" style={{ background: AVA_GRADIENT[item.type] }}>
+          <AvatarFallback className="bg-transparent text-[11px] font-semibold text-white">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
         <div className="info">
           <div className="nm">{requesterName(item)}</div>
           <div className="sub">
@@ -434,26 +454,26 @@ function QueueRow({
       </div>
 
       <div className="c-stat">
-        <span className={`badge ${STATUS_BADGE[item.status]}`}>{STATUS_LABEL[item.status]}</span>
+        <StatusBadge status={item.status} />
       </div>
 
       <div className="c-act">
         {item.status === 'liste_attente' ? (
-          <button className="act promote" onClick={() => onChange(item.id, 'acceptee')}>
+          <Button size="sm" onClick={() => onChange(item.id, 'acceptee')}>
             <ArrowUp size={14} /> Promouvoir
-          </button>
+          </Button>
         ) : item.status === 'acceptee' ? (
-          <button className="act reject" onClick={() => onChange(item.id, 'refusee')}>
+          <Button size="sm" variant="outline" onClick={() => onChange(item.id, 'refusee')}>
             Annuler
-          </button>
+          </Button>
         ) : (
           <>
-            <button className="act accept" onClick={() => onChange(item.id, 'acceptee')}>
+            <Button size="sm" onClick={() => onChange(item.id, 'acceptee')}>
               <Check size={14} /> Accepter
-            </button>
-            <button className="act reject" onClick={() => onChange(item.id, 'refusee')}>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onChange(item.id, 'refusee')}>
               Refuser
-            </button>
+            </Button>
           </>
         )}
         <select
@@ -614,27 +634,38 @@ function GroupedView({
               { v: 'photo_report', l: 'Photo' },
               { v: 'video_report', l: 'Vidéo' },
             ] as const).map((o) => (
-              <button key={o.v} className="chip" aria-pressed={reportType === o.v} onClick={() => setReportType(o.v)}>
+              <Button
+                key={o.v}
+                size="sm"
+                variant={reportType === o.v ? 'default' : 'outline'}
+                aria-pressed={reportType === o.v}
+                onClick={() => setReportType(o.v)}
+              >
                 {o.l}
-              </button>
+              </Button>
             ))}
             <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
           </>
         )}
         <StatusFilter value={statusF} onChange={setStatusF} />
-        <button
-          className="btn btn-ghost btn-sm"
+        <Button
+          variant="ghost"
+          size="sm"
           style={{ marginLeft: 'auto' }}
           onClick={exportAll}
           disabled={ordered.every((e) => (grouped.get(e.id)?.length ?? 0) === 0)}
         >
           <Icon name="download" /> Exporter en PDF
-        </button>
+        </Button>
       </div>
 
-      {(queue.loading || lineup.loading) && <p className="muted">Chargement…</p>}
-      {queue.error && <div className="banner banner-error">{queue.error}</div>}
-      {!lineup.loading && entities.length === 0 && <p className="muted">{emptyLabel}</p>}
+      {(queue.loading || lineup.loading) && <p className="text-muted-foreground">Chargement…</p>}
+      {queue.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{queue.error}</AlertDescription>
+        </Alert>
+      )}
+      {!lineup.loading && entities.length === 0 && <p className="text-muted-foreground">{emptyLabel}</p>}
 
       {ordered.map((entity) => {
         const items = grouped.get(entity.id) ?? [];
@@ -659,7 +690,7 @@ function GroupedView({
             onExport={items.length > 0 ? () => exportGroups([buildGroup(entity.name, items, quota)]) : undefined}
           >
             {items.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
+              <p className="text-muted-foreground" style={{ margin: 0 }}>
                 Aucune demande.
               </p>
             ) : (
@@ -790,40 +821,44 @@ function PlanningView({
     <>
       <div className="filters">
         <StatusFilter value={statusF} onChange={setStatusF} />
-        <button
-          className="btn btn-primary btn-sm"
+        <Button
+          size="sm"
           style={{ marginLeft: 'auto' }}
           onClick={generate}
           disabled={busy}
         >
           <Icon name="check" /> {busy ? 'Génération…' : 'Générer le planning'}
-        </button>
+        </Button>
         <InfoBubble title="Générer le planning">
           Attribue les créneaux aux interviews <strong>acceptées</strong>, par priorité (meilleur score →
           créneau le plus tôt). Vous pouvez le relancer à tout moment&nbsp;: il <strong>recalcule et
           réattribue</strong> tous les créneaux. Les demandes non acceptées ne sont pas planifiées.
         </InfoBubble>
-        <button className="btn btn-ghost btn-sm" onClick={exportPlanning} disabled={empty}>
+        <Button variant="ghost" size="sm" onClick={exportPlanning} disabled={empty}>
           <Icon name="download" /> Exporter en PDF
-        </button>
+        </Button>
       </div>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
+      <p className="text-muted-foreground" style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
         « Générer le planning » attribue automatiquement les créneaux aux interviews{' '}
         <strong>acceptées</strong>, par ordre de priorité (meilleur score → créneau le plus tôt). Recalculable
         à volonté.
       </p>
 
-      {queue.loading && <p className="muted">Chargement…</p>}
-      {queue.error && <div className="banner banner-error">{queue.error}</div>}
-      {!queue.loading && empty && <p className="muted">Aucune interview à planifier.</p>}
+      {queue.loading && <p className="text-muted-foreground">Chargement…</p>}
+      {queue.error && (
+        <Alert variant="destructive">
+          <AlertDescription>{queue.error}</AlertDescription>
+        </Alert>
+      )}
+      {!queue.loading && empty && <p className="text-muted-foreground">Aucune interview à planifier.</p>}
 
       {days.map(([day, items]) => (
         <section className="artist-group" key={day}>
           <div className="artist-group-head" style={{ cursor: 'default' }}>
             <span className="artist-group-name">{formatSlotDate(day)}</span>
-            <span className="badge badge-progress">
+            <Badge className="border-transparent bg-blue-100 text-blue-800">
               {items.length} interview{items.length > 1 ? 's' : ''}
-            </span>
+            </Badge>
           </div>
           <div className="artist-group-body">
             {items.map((i) => (
@@ -837,7 +872,7 @@ function PlanningView({
         <section className="artist-group">
           <div className="artist-group-head" style={{ cursor: 'default' }}>
             <span className="artist-group-name">Sans créneau attribué</span>
-            <span className="badge badge-pending">{noSlot.length}</span>
+            <Badge variant="secondary">{noSlot.length}</Badge>
           </div>
           <div className="artist-group-body">
             {noSlot.map((i) => (
@@ -858,7 +893,7 @@ function PlanningRow({ item, onChange }: { item: QueueItem; onChange: (id: strin
       <span className="planning-artist">{item.subject.artistName ?? '—'}</span>
       <span className="planning-journalist">
         <strong>{requesterName(item)}</strong>
-        <span className="muted"> · {item.requester.media ?? 'média n.c.'}</span>
+        <span className="text-muted-foreground"> · {item.requester.media ?? 'média n.c.'}</span>
       </span>
       <select
         className="status-select"
@@ -909,9 +944,14 @@ function SubjectGroup({
         <span className="artist-group-meta">
           {quota && (
             <>
-              <span className={`badge ${full ? 'badge-danger' : 'badge-success'}`}>
+              <Badge
+                className={cn(
+                  'border-transparent',
+                  full ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800',
+                )}
+              >
                 Quota {quota.used}/{quota.limit}
-              </span>
+              </Badge>
               <InfoBubble title="Quota">
                 <strong>Places accordées / maximum</strong> pour ce groupe. Une fois le maximum atteint, les
                 nouvelles demandes passent en liste d'attente. Le maximum se règle sur l'artiste (Configuration)
@@ -919,10 +959,10 @@ function SubjectGroup({
               </InfoBubble>
             </>
           )}
-          <span className="badge badge-progress">
+          <Badge className="border-transparent bg-blue-100 text-blue-800">
             {count} {noun}
             {count > 1 ? 's' : ''}
-          </span>
+          </Badge>
         </span>
       </button>
       {open && (
@@ -930,8 +970,8 @@ function SubjectGroup({
           {(toAccept > 0 || onExport) && (
             <div className="inline-actions" style={{ marginBottom: 'var(--space-3)' }}>
               {toAccept > 0 && (
-                <button
-                  className="btn btn-primary btn-sm"
+                <Button
+                  size="sm"
                   disabled={busy}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -940,7 +980,7 @@ function SubjectGroup({
                 >
                   <Icon name="check" /> Accepter {toAccept > 1 ? `les ${toAccept} meilleurs` : 'le meilleur'} (quota
                   restant)
-                </button>
+                </Button>
               )}
               {toAccept > 0 && (
                 <InfoBubble title="Accepter les meilleurs">
@@ -950,15 +990,16 @@ function SubjectGroup({
                 </InfoBubble>
               )}
               {onExport && (
-                <button
-                  className="btn btn-ghost btn-sm"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     onExport();
                   }}
                 >
                   <Icon name="download" /> PDF de ce groupe
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -1023,7 +1064,7 @@ function RequestCard({
       <div className="req-main">
         <h4>
           {hideSubject ? TYPE_LABEL[item.type] : `${TYPE_LABEL[item.type]} · ${subject}`}
-          {slot && <span className="muted"> · {slot}</span>}
+          {slot && <span className="text-muted-foreground"> · {slot}</span>}
         </h4>
         <div className="req-meta">
           <strong>{requesterName(item)}</strong> — {item.requester.media ?? 'média n.c.'} · {item.requester.email}
@@ -1032,7 +1073,7 @@ function RequestCard({
       </div>
 
       <div className="req-aside">
-        <span className={`badge ${STATUS_BADGE[item.status]}`}>{STATUS_LABEL[item.status]}</span>
+        <StatusBadge status={item.status} />
         {!hideSubject && item.quota && (
           <div className="quota-meter">
             Quota {item.quota.used}/{item.quota.limit}

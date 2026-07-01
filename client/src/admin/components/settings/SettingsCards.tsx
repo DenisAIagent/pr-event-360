@@ -5,6 +5,32 @@ import type { EventConfig, EventSettings, EmailTemplate, EventRecap, RecapFreque
 import { TRIGGER_LABEL, TYPE_LABEL } from '../../lib/labels';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../InfoBubble';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+/** Bandeau de confirmation « Enregistré » réutilisé dans les cartes de réglages. */
+function SuccessBanner({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+      {children}
+    </div>
+  );
+}
 
 /** Bloc d'explication réutilisable du score de priorité (concept central, opaque). */
 const SCORE_HELP = (
@@ -44,28 +70,37 @@ export function DeadlineCard({ eventId }: { eventId: string }) {
   }
 
   return (
-    <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)' }}>Clôture des inscriptions</h3>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
-        Au-delà de cette date, le formulaire public refuse les nouvelles accréditations.
-      </p>
-      {saved && <div className="banner banner-success">Enregistré.</div>}
-      <div className="inline-actions" style={{ alignItems: 'center' }}>
-        <input type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} />
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => save(value ? new Date(value).toISOString() : null)}
-          disabled={!value}
-        >
-          Définir la clôture
-        </button>
-        {data?.accreditationDeadline && (
-          <button className="btn btn-ghost btn-sm" onClick={() => save(null)}>
-            Retirer (aucune limite)
-          </button>
-        )}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Clôture des inscriptions</CardTitle>
+        <CardDescription>
+          Au-delà de cette date, le formulaire public refuse les nouvelles accréditations.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {saved && <SuccessBanner>Enregistré.</SuccessBanner>}
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="datetime-local"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="w-auto"
+          />
+          <Button
+            size="sm"
+            onClick={() => save(value ? new Date(value).toISOString() : null)}
+            disabled={!value}
+          >
+            Définir la clôture
+          </Button>
+          {data?.accreditationDeadline && (
+            <Button variant="ghost" size="sm" onClick={() => save(null)}>
+              Retirer (aucune limite)
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -116,69 +151,80 @@ export function RecapCard({
   }
 
   return (
-    <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)' }}>
-        Récapitulatif des inscriptions
-      </h3>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0 }}>
-        Envoyez à l'équipe presse un résumé des nouvelles inscriptions. Ajoutez l'email de chaque attaché concerné.
-      </p>
-      {saved && <div className="banner banner-success">Enregistré.</div>}
-      {sendResult && <div className="banner banner-success">{sendResult}</div>}
-      {error && <div className="banner banner-error">{error}</div>}
-
-      <div className="field">
-        <label>Fréquence</label>
-        <select value={frequency} onChange={(e) => setFrequency(e.target.value as RecapFrequency)}>
-          <option value="none">Aucun</option>
-          <option value="daily">Quotidien (08:00)</option>
-          <option value="weekly">Hebdomadaire (lundi 08:00)</option>
-        </select>
-      </div>
-
-      <div className="field">
-        <label>Destinataires</label>
-        <div className="inline-actions">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmail())}
-            placeholder="attache@presse.fr"
-            style={{ flex: 1 }}
-          />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={addEmail}>
-            Ajouter
-          </button>
-        </div>
-        {recipients.length > 0 && (
-          <div className="inline-actions" style={{ marginTop: 'var(--space-2)' }}>
-            {recipients.map((r) => (
-              <span key={r} className="chip" aria-pressed={false} style={{ cursor: 'default' }}>
-                {r}
-                <button
-                  type="button"
-                  onClick={() => setRecipients((cur) => cur.filter((x) => x !== r))}
-                  style={{ marginLeft: 6, border: 'none', background: 'none', cursor: 'pointer', color: 'inherit' }}
-                  aria-label={`Retirer ${r}`}
-                >
-                  <Icon name="close" size={12} />
-                </button>
-              </span>
-            ))}
-          </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Récapitulatif des inscriptions</CardTitle>
+        <CardDescription>
+          Envoyez à l'équipe presse un résumé des nouvelles inscriptions. Ajoutez l'email de chaque attaché
+          concerné.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {saved && <SuccessBanner>Enregistré.</SuccessBanner>}
+        {sendResult && <SuccessBanner>{sendResult}</SuccessBanner>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-      </div>
 
-      <div className="inline-actions">
-        <button className="btn btn-primary" onClick={save}>
-          Enregistrer
-        </button>
-        <button className="btn btn-ghost" onClick={sendNow} disabled={recipients.length === 0}>
-          Envoyer maintenant
-        </button>
-      </div>
-    </div>
+        <div className="grid gap-2">
+          <Label htmlFor="recap-frequency">Fréquence</Label>
+          <Select value={frequency} onValueChange={(v) => setFrequency(v as RecapFrequency)}>
+            <SelectTrigger id="recap-frequency">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Aucun</SelectItem>
+              <SelectItem value="daily">Quotidien (08:00)</SelectItem>
+              <SelectItem value="weekly">Hebdomadaire (lundi 08:00)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="recap-email">Destinataires</Label>
+          <div className="flex gap-2">
+            <Input
+              id="recap-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEmail())}
+              placeholder="attache@presse.fr"
+              className="flex-1"
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={addEmail}>
+              Ajouter
+            </Button>
+          </div>
+          {recipients.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {recipients.map((r) => (
+                <Badge key={r} variant="secondary" className="gap-1">
+                  {r}
+                  <button
+                    type="button"
+                    onClick={() => setRecipients((cur) => cur.filter((x) => x !== r))}
+                    className="ml-1 cursor-pointer text-inherit"
+                    aria-label={`Retirer ${r}`}
+                  >
+                    <Icon name="close" size={12} />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={save}>Enregistrer</Button>
+          <Button variant="ghost" onClick={sendNow} disabled={recipients.length === 0}>
+            Envoyer maintenant
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -197,49 +243,55 @@ export function ConfigForm({ eventId, config }: { eventId: string; config: Event
   }
 
   return (
-    <form className="card" onSubmit={save}>
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        Configuration
-        <InfoBubble title="À quoi servent ces réglages ?">{SCORE_HELP}</InfoBubble>
-      </h3>
-      {saved && <div className="banner banner-success">Enregistré.</div>}
-      <div className="grid-2">
-        <Num
-          label="Durée interview (min)"
-          value={c.itwDurationMin}
-          onChange={num('itwDurationMin')}
-          help="Durée d'un créneau d'interview. Sert à découper automatiquement les plages de disponibilité des artistes."
-        />
-        <Num
-          label="Battement entre interviews (min)"
-          value={c.itwBufferMin}
-          onChange={num('itwBufferMin')}
-          help="Temps de pause entre deux interviews qui se suivent (transition, respiration de l'artiste). Ex : 5 min."
-        />
-        <Num
-          label="Quota interviews / artiste (défaut)"
-          value={c.defaultItwQuota}
-          onChange={num('defaultItwQuota')}
-          help="Nombre maximum d'interviews accordées par artiste, quand l'artiste n'a pas de quota propre. Au-delà, les demandes passent en liste d'attente."
-        />
-        <Num
-          label="Bonus d'ancienneté / heure"
-          value={c.ageBonusPerHour}
-          onChange={num('ageBonusPerHour')}
-          step="0.1"
-          help="Points ajoutés au score pour chaque heure d'attente d'une demande. Évite qu'une demande ancienne soit oubliée. Laissez 0 si vous ne savez pas."
-        />
-        <Num
-          label="Plafond du bonus d'ancienneté"
-          value={c.ageBonusCap}
-          onChange={num('ageBonusCap')}
-          help="Limite maximale du bonus d'ancienneté : une vieille demande remonte, mais sans jamais doubler indéfiniment les autres."
-        />
-      </div>
-      <button className="btn btn-primary" type="submit" style={{ marginTop: 'var(--space-3)' }}>
-        Enregistrer la configuration
-      </button>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle className="inline-flex items-center gap-2 text-base">
+          Configuration
+          <InfoBubble title="À quoi servent ces réglages ?">{SCORE_HELP}</InfoBubble>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="flex flex-col gap-3" onSubmit={save}>
+          {saved && <SuccessBanner>Enregistré.</SuccessBanner>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Num
+              label="Durée interview (min)"
+              value={c.itwDurationMin}
+              onChange={num('itwDurationMin')}
+              help="Durée d'un créneau d'interview. Sert à découper automatiquement les plages de disponibilité des artistes."
+            />
+            <Num
+              label="Battement entre interviews (min)"
+              value={c.itwBufferMin}
+              onChange={num('itwBufferMin')}
+              help="Temps de pause entre deux interviews qui se suivent (transition, respiration de l'artiste). Ex : 5 min."
+            />
+            <Num
+              label="Quota interviews / artiste (défaut)"
+              value={c.defaultItwQuota}
+              onChange={num('defaultItwQuota')}
+              help="Nombre maximum d'interviews accordées par artiste, quand l'artiste n'a pas de quota propre. Au-delà, les demandes passent en liste d'attente."
+            />
+            <Num
+              label="Bonus d'ancienneté / heure"
+              value={c.ageBonusPerHour}
+              onChange={num('ageBonusPerHour')}
+              step="0.1"
+              help="Points ajoutés au score pour chaque heure d'attente d'une demande. Évite qu'une demande ancienne soit oubliée. Laissez 0 si vous ne savez pas."
+            />
+            <Num
+              label="Plafond du bonus d'ancienneté"
+              value={c.ageBonusCap}
+              onChange={num('ageBonusCap')}
+              help="Limite maximale du bonus d'ancienneté : une vieille demande remonte, mais sans jamais doubler indéfiniment les autres."
+            />
+          </div>
+          <div>
+            <Button type="submit">Enregistrer la configuration</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -277,47 +329,64 @@ export function PhotoRulesCard({ eventId, config }: { eventId: string; config: E
   }
 
   return (
-    <form className="card" onSubmit={save}>
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        Règles photo & autorisations
-        <InfoBubble title="À quoi ça sert ?">
-          La <strong>règle de prise de vue</strong> et l'<strong>autorisation d'utilisation</strong> sont
-          jointes automatiquement à l'email d'acceptation de chaque <strong>reportage photo/vidéo</strong>,
-          et affichées dans l'espace du journaliste. Cochez « contrat à signer sur place » si la production
-          l'exige.
-        </InfoBubble>
-      </h3>
-      {saved && <div className="banner banner-success">Enregistré.</div>}
+    <Card>
+      <CardHeader>
+        <CardTitle className="inline-flex items-center gap-2 text-base">
+          Règles photo &amp; autorisations
+          <InfoBubble title="À quoi ça sert ?">
+            La <strong>règle de prise de vue</strong> et l'<strong>autorisation d'utilisation</strong> sont
+            jointes automatiquement à l'email d'acceptation de chaque <strong>reportage photo/vidéo</strong>,
+            et affichées dans l'espace du journaliste. Cochez « contrat à signer sur place » si la production
+            l'exige.
+          </InfoBubble>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form className="flex flex-col gap-4" onSubmit={save}>
+          {saved && <SuccessBanner>Enregistré.</SuccessBanner>}
 
-      <div className="field">
-        <label>Règle de prise de vue</label>
-        <input
-          list="photo-rule-presets"
-          value={rule}
-          onChange={(e) => setRule(e.target.value)}
-          placeholder="Ex. 3 premiers titres, sans flash, depuis la fosse"
-        />
-        <datalist id="photo-rule-presets">
-          {PHOTO_RULE_PRESETS.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="photo-rule">Règle de prise de vue</Label>
+            <Input
+              id="photo-rule"
+              list="photo-rule-presets"
+              value={rule}
+              onChange={(e) => setRule(e.target.value)}
+              placeholder="Ex. 3 premiers titres, sans flash, depuis la fosse"
+            />
+            <datalist id="photo-rule-presets">
+              {PHOTO_RULE_PRESETS.map((p) => (
+                <option key={p} value={p} />
+              ))}
+            </datalist>
+          </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 'var(--space-2) 0' }}>
-        <input type="checkbox" checked={contract} onChange={(e) => setContract(e.target.checked)} />
-        Contrat à signer sur place (indiqué à l'acceptation des reportages)
-      </label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="onsite-contract"
+              checked={contract}
+              onCheckedChange={(v) => setContract(v === true)}
+            />
+            <Label htmlFor="onsite-contract" className="font-normal">
+              Contrat à signer sur place (indiqué à l'acceptation des reportages)
+            </Label>
+          </div>
 
-      <div className="field">
-        <label>Autorisation d'utilisation des photos/vidéos (envoyée à chaque acceptation de reportage)</label>
-        <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={6} />
-      </div>
+          <div className="grid gap-2">
+            <Label htmlFor="photo-terms">
+              Autorisation d'utilisation des photos/vidéos (envoyée à chaque acceptation de reportage)
+            </Label>
+            <Textarea id="photo-terms" value={terms} onChange={(e) => setTerms(e.target.value)} rows={6} />
+          </div>
 
-      <button className="btn btn-primary" type="submit" disabled={busy}>
-        {busy ? 'Enregistrement…' : 'Enregistrer les règles photo'}
-      </button>
-    </form>
+          <div>
+            <Button type="submit" disabled={busy}>
+              {busy ? 'Enregistrement…' : 'Enregistrer les règles photo'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -335,12 +404,12 @@ function Num({
   help?: ReactNode;
 }) {
   return (
-    <div className="field">
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div className="grid gap-2">
+      <Label className="inline-flex items-center gap-1.5">
         {label}
         {help && <InfoBubble>{help}</InfoBubble>}
-      </label>
-      <input type="number" min={0} step={step ?? '1'} value={value} onChange={onChange} />
+      </Label>
+      <Input type="number" min={0} step={step ?? '1'} value={value} onChange={onChange} />
     </div>
   );
 }
@@ -364,34 +433,42 @@ export function TypeWeights({
   }
 
   return (
-    <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        Multiplicateurs par type de demande
-        <InfoBubble title="Multiplicateur par type">
-          Importance relative de chaque type de demande dans le score&nbsp;: <strong>1 = normal</strong>,{' '}
-          <strong>2 = priorité doublée</strong>. Ex : mettre les interviews à 1.5 les fait remonter
-          devant les reportages à 1.
-        </InfoBubble>
-      </h3>
-      <div className="grid-2">
-        {weights.map((w) => (
-          <div key={w.type} className="inline-actions" style={{ alignItems: 'center' }}>
-            <span style={{ flex: 1 }}>{TYPE_LABEL[w.type]}</span>
-            <input
-              type="number"
-              step="0.1"
-              min={0}
-              style={{ width: 90 }}
-              value={draft[w.type] ?? w.multiplier}
-              onChange={(e) => setDraft((d) => ({ ...d, [w.type]: Number(e.target.value) }))}
-            />
-            <button className="btn btn-ghost btn-sm" onClick={() => save(w.type, draft[w.type] ?? w.multiplier)}>
-              Enregistrer
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="inline-flex items-center gap-2 text-base">
+          Multiplicateurs par type de demande
+          <InfoBubble title="Multiplicateur par type">
+            Importance relative de chaque type de demande dans le score&nbsp;: <strong>1 = normal</strong>,{' '}
+            <strong>2 = priorité doublée</strong>. Ex : mettre les interviews à 1.5 les fait remonter
+            devant les reportages à 1.
+          </InfoBubble>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {weights.map((w) => (
+            <div key={w.type} className="flex items-center gap-2">
+              <span className="flex-1">{TYPE_LABEL[w.type]}</span>
+              <Input
+                type="number"
+                step="0.1"
+                min={0}
+                className="w-24"
+                value={draft[w.type] ?? w.multiplier}
+                onChange={(e) => setDraft((d) => ({ ...d, [w.type]: Number(e.target.value) }))}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => save(w.type, draft[w.type] ?? w.multiplier)}
+              >
+                Enregistrer
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -418,38 +495,53 @@ export function MediaTypes({
   }
 
   return (
-    <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-        Poids par type de média
-        <InfoBubble title="Poids du média">
-          Importance de chaque média dans le score (ex : blog = 1, presse nationale = 2, TV nationale = 3).
-          Une demande venant d'un média à poids élevé est traitée en priorité.
-        </InfoBubble>
-      </h3>
-      <table className="table" style={{ marginBottom: 'var(--space-3)' }}>
-        <thead>
-          <tr>
-            <th>Type de média</th>
-            <th>Poids</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mediaTypes.map((m) => (
-            <tr key={m.id}>
-              <td>{m.label}</td>
-              <td>{m.weight}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <form className="inline-actions" onSubmit={add}>
-        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Nouveau type" style={{ flex: 1 }} />
-        <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Poids" style={{ width: 100 }} />
-        <button className="btn btn-primary btn-sm" type="submit">
-          Ajouter
-        </button>
-      </form>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="inline-flex items-center gap-2 text-base">
+          Poids par type de média
+          <InfoBubble title="Poids du média">
+            Importance de chaque média dans le score (ex : blog = 1, presse nationale = 2, TV nationale = 3).
+            Une demande venant d'un média à poids élevé est traitée en priorité.
+          </InfoBubble>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type de média</TableHead>
+              <TableHead>Poids</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mediaTypes.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>{m.label}</TableCell>
+                <TableCell>{m.weight}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <form className="flex gap-2" onSubmit={add}>
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Nouveau type"
+            className="flex-1"
+          />
+          <Input
+            type="number"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="Poids"
+            className="w-24"
+          />
+          <Button size="sm" type="submit">
+            Ajouter
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -463,27 +555,29 @@ export function Templates({
   onSaved: () => void;
 }) {
   return (
-    <div className="card">
-      <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Templates d'emails</h3>
-      <p className="muted" style={{ fontSize: 'var(--text-sm)', marginTop: 0, display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        Variables disponibles : {'{{firstName}}'}, {'{{event}}'}, {'{{link}}'}, {'{{artist}}'}, {'{{slot}}'}.
-        <InfoBubble title="Que devient chaque variable ?">
-          Ces étiquettes sont remplacées automatiquement à l'envoi&nbsp;:
-          <ul>
-            <li><code>{'{{firstName}}'}</code> : prénom du journaliste</li>
-            <li><code>{'{{event}}'}</code> : nom de l'événement</li>
-            <li><code>{'{{artist}}'}</code> : nom de l'artiste concerné</li>
-            <li><code>{'{{slot}}'}</code> : jour + heure du créneau (ex : ven. 10 juil. · 14:00)</li>
-            <li><code>{'{{link}}'}</code> : lien personnel d'accès du journaliste</li>
-          </ul>
-        </InfoBubble>
-      </p>
-      <div className="stack">
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Templates d'emails</CardTitle>
+        <CardDescription className="inline-flex flex-wrap items-center gap-1.5">
+          Variables disponibles : {'{{firstName}}'}, {'{{event}}'}, {'{{link}}'}, {'{{artist}}'}, {'{{slot}}'}.
+          <InfoBubble title="Que devient chaque variable ?">
+            Ces étiquettes sont remplacées automatiquement à l'envoi&nbsp;:
+            <ul>
+              <li><code>{'{{firstName}}'}</code> : prénom du journaliste</li>
+              <li><code>{'{{event}}'}</code> : nom de l'événement</li>
+              <li><code>{'{{artist}}'}</code> : nom de l'artiste concerné</li>
+              <li><code>{'{{slot}}'}</code> : jour + heure du créneau (ex : ven. 10 juil. · 14:00)</li>
+              <li><code>{'{{link}}'}</code> : lien personnel d'accès du journaliste</li>
+            </ul>
+          </InfoBubble>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {templates.map((t) => (
           <TemplateEditor key={t.id} eventId={eventId} template={t} onSaved={onSaved} />
         ))}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -507,22 +601,31 @@ function TemplateEditor({ eventId, template, onSaved }: { eventId: string; templ
   }
 
   return (
-    <details style={{ border: '1px solid var(--color-line)', borderRadius: 'var(--radius-sm)', padding: 'var(--space-2)' }}>
-      <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+    <details className="rounded-md border p-2">
+      <summary className="cursor-pointer text-sm font-semibold">
         {TRIGGER_LABEL[template.triggerKey] ?? template.triggerKey} · {template.lang.toUpperCase()}{' '}
         {saved && <Icon name="check" />}
       </summary>
-      <div className="field" style={{ marginTop: 'var(--space-2)' }}>
-        <label>Sujet</label>
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} />
+      <div className="mt-2 grid gap-2">
+        <Label htmlFor={`tpl-subject-${template.id}`}>Sujet</Label>
+        <Input
+          id={`tpl-subject-${template.id}`}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+        />
       </div>
-      <div className="field">
-        <label>Corps</label>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
+      <div className="mt-2 grid gap-2">
+        <Label htmlFor={`tpl-body-${template.id}`}>Corps</Label>
+        <Textarea
+          id={`tpl-body-${template.id}`}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={3}
+        />
       </div>
-      <button className="btn btn-ghost btn-sm" onClick={save}>
+      <Button variant="ghost" size="sm" onClick={save} className="mt-3">
         Enregistrer
-      </button>
+      </Button>
     </details>
   );
 }

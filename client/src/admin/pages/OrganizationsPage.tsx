@@ -8,6 +8,13 @@ import { SkeletonCards } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { ApiError } from '../../lib/api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 import type { OrganizationSummary } from '../lib/types';
 
 /**
@@ -119,111 +126,160 @@ export function OrganizationsPage() {
   }
 
   return (
-    <div className="stack">
+    <div className="flex flex-col gap-4">
       <PageHero
         eyebrow="Super-admin plateforme"
         title="Organisations"
         subtitle={data ? `${data.length} organisation${data.length > 1 ? 's' : ''} cliente${data.length > 1 ? 's' : ''}` : '…'}
         action={
-          <button type="button" className="btn btn-primary" onClick={() => setShowInvite((s) => !s)}>
+          <Button type="button" onClick={() => setShowInvite((s) => !s)}>
             <Plus size={16} /> Inviter un client
-          </button>
+          </Button>
         }
       />
 
       {showInvite && (
-        <form onSubmit={invite} className="org-create card stack">
-          <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
-            Invitez un email à créer son propre espace (accès offert, sans paiement). Vous obtenez un
-            <strong> lien à partager vous-même</strong> — la personne nomme son organisation et choisit son accès.
-          </p>
-          <div className="field">
-            <label>Email de la personne à inviter</label>
-            <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required autoFocus />
-          </div>
-          <button type="submit" className="btn btn-primary" disabled={inviting}>
-            {inviting ? 'Génération…' : 'Générer le lien d’invitation'}
-          </button>
-
-          {inviteLink && (
-            <div className="invite-link">
-              <p className="muted" style={{ margin: '0 0 6px', fontSize: 'var(--text-sm)' }}>
-                Lien d'invitation (valable 14 jours) — copiez-le et envoyez-le à la personne :
+        <Card>
+          <CardContent className="p-6">
+            <form onSubmit={invite} className="flex flex-col gap-4">
+              <p className="text-sm text-muted-foreground">
+                Invitez un email à créer son propre espace (accès offert, sans paiement). Vous obtenez un
+                <strong> lien à partager vous-même</strong> — la personne nomme son organisation et choisit son accès.
               </p>
-              <div className="invite-link-row">
-                <input value={inviteLink} readOnly onFocus={(e) => e.currentTarget.select()} />
-                <button type="button" className="btn btn-ghost btn-sm" onClick={copyLink}>
-                  <Copy size={14} /> Copier
-                </button>
+              <div className="grid gap-2">
+                <Label htmlFor="invite-email">Email de la personne à inviter</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
               </div>
-            </div>
-          )}
-        </form>
+              <Button type="submit" disabled={inviting} className="self-start">
+                {inviting ? 'Génération…' : 'Générer le lien d’invitation'}
+              </Button>
+
+              {inviteLink && (
+                <div className="rounded-md border bg-muted/40 p-3">
+                  <p className="mb-1.5 text-sm text-muted-foreground">
+                    Lien d'invitation (valable 14 jours) — copiez-le et envoyez-le à la personne :
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={inviteLink}
+                      readOnly
+                      onFocus={(e) => e.currentTarget.select()}
+                      className="font-mono text-xs"
+                    />
+                    <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={copyLink}>
+                      <Copy size={14} /> Copier
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {loading && <SkeletonCards count={4} />}
-      {error && <div className="banner banner-error">{error}</div>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="org-list">
-        {data?.map((org) => {
-          const current = org.id === user?.organizationId;
-          return (
-            <div key={org.id} className={`org-row${current ? ' org-row-current' : ''}`}>
-              <div className="org-row-icon">
-                <Building2 size={18} />
-              </div>
-              <div className="org-row-main">
-                <div className="org-row-name">
-                  {org.name}
-                  {current && <span className="org-row-badge"><Check size={12} /> Actif</span>}
+      {data && data.length > 0 && (
+        <Card>
+          <div className="divide-y">
+            {data.map((org) => {
+              const current = org.id === user?.organizationId;
+              return (
+                <div
+                  key={org.id}
+                  className={cn('flex items-center gap-3 p-4', current && 'bg-muted/40')}
+                >
+                  <div className="grid size-9 shrink-0 place-items-center rounded-md border bg-muted text-muted-foreground">
+                    <Building2 size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 font-medium">
+                      {org.name}
+                      {current && (
+                        <Badge className="gap-1 border-transparent bg-emerald-100 text-emerald-800">
+                          <Check size={12} /> Actif
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {org.eventCount} événement{org.eventCount > 1 ? 's' : ''} · {org.userCount} membre
+                      {org.userCount > 1 ? 's' : ''} · <span>{org.slug}</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={current || busyId === org.id}
+                    onClick={() => enter(org)}
+                  >
+                    {current ? 'En cours' : busyId === org.id ? 'Bascule…' : <>Entrer <ArrowRight size={14} /></>}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={current || busyId === org.id}
+                    className="text-destructive hover:text-destructive"
+                    title={current ? 'Impossible de supprimer votre propre organisation' : "Supprimer l'organisation"}
+                    onClick={() => removeOrg(org)}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
                 </div>
-                <div className="org-row-meta">
-                  {org.eventCount} événement{org.eventCount > 1 ? 's' : ''} · {org.userCount} membre
-                  {org.userCount > 1 ? 's' : ''} · <span className="muted">{org.slug}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                disabled={current || busyId === org.id}
-                onClick={() => enter(org)}
-              >
-                {current ? 'En cours' : busyId === org.id ? 'Bascule…' : <>Entrer <ArrowRight size={14} /></>}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                disabled={current || busyId === org.id}
-                style={{ color: 'var(--color-danger)' }}
-                title={current ? 'Impossible de supprimer votre propre organisation' : "Supprimer l'organisation"}
-                onClick={() => removeOrg(org)}
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
-      <div style={{ marginTop: 'var(--space-4)' }}>
+      <div className="mt-2">
         {!showDeleteAccount ? (
-          <button type="button" className="auth-link" onClick={() => setShowDeleteAccount(true)}>
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto p-0 text-sm"
+            onClick={() => setShowDeleteAccount(true)}
+          >
             Supprimer un compte par email…
-          </button>
+          </Button>
         ) : (
-          <form onSubmit={deleteAccount} className="org-create card stack">
-            <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
-              Supprimer un compte précis par son email (libère l'email). Si c'est le seul compte de son
-              organisation, l'organisation entière est supprimée.
-            </p>
-            <div className="field">
-              <label>Email du compte à supprimer</label>
-              <input type="email" value={deleteEmail} onChange={(e) => setDeleteEmail(e.target.value)} required autoFocus />
-            </div>
-            <button type="submit" className="btn btn-ghost btn-sm" style={{ color: 'var(--color-danger)' }}>
-              <Trash2 size={14} /> Supprimer ce compte
-            </button>
-          </form>
+          <Card>
+            <CardContent className="p-6">
+              <form onSubmit={deleteAccount} className="flex flex-col gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Supprimer un compte précis par son email (libère l'email). Si c'est le seul compte de son
+                  organisation, l'organisation entière est supprimée.
+                </p>
+                <div className="grid gap-2">
+                  <Label htmlFor="delete-email">Email du compte à supprimer</Label>
+                  <Input
+                    id="delete-email"
+                    type="email"
+                    value={deleteEmail}
+                    onChange={(e) => setDeleteEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <Button type="submit" variant="ghost" size="sm" className="self-start text-destructive hover:text-destructive">
+                  <Trash2 size={14} /> Supprimer ce compte
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

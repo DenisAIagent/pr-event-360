@@ -5,6 +5,8 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
 import { useToast } from '../components/Toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 function formatRange(start: string | null, end: string | null): string {
   if (!start) return '';
@@ -50,44 +52,46 @@ export function EventLayout() {
   }
 
   return (
-    <div className="stack">
-      <div className="ev-banner">
-        <div className="ev-ico">
-          <Music2 size={24} />
-        </div>
-        <div className="ev-meta">
-          <h2>{event?.name ?? '…'}</h2>
-          <p>
-            <span>
-              <MapPin size={13} /> {event?.location ?? 'Lieu non précisé'}
-            </span>
-            {event?.startDate && (
-              <span>
-                <CalendarDays size={13} /> {formatRange(event.startDate, event.endDate)}
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-4 p-6">
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-muted text-foreground">
+            <Music2 size={24} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-semibold">{event?.name ?? '…'}</h2>
+            <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin size={13} /> {event?.location ?? 'Lieu non précisé'}
               </span>
-            )}
-            {event && event.languages.length > 0 && (
-              <span>
-                <Languages size={13} /> {event.languages.map((l) => l.toUpperCase()).join(' · ')}
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="ev-actions">
-          <button type="button" className="ev-share" onClick={copyRegistration}>
-            {copied ? <Check size={14} /> : <Link2 size={14} />}
-            {copied ? 'Lien copié' : "Copier le lien d'inscription"}
-          </button>
-          {event?.accreditationDeadline && (
-            <div className="deadline">
-              <div className="k">Clôture accréditations</div>
-              <div className="v">
-                J–<small>{daysUntil(event.accreditationDeadline)}</small>
+              {event?.startDate && (
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays size={13} /> {formatRange(event.startDate, event.endDate)}
+                </span>
+              )}
+              {event && event.languages.length > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Languages size={13} /> {event.languages.map((l) => l.toUpperCase()).join(' · ')}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" size="sm" onClick={copyRegistration}>
+              {copied ? <Check size={14} /> : <Link2 size={14} />}
+              {copied ? 'Lien copié' : "Copier le lien d'inscription"}
+            </Button>
+            {event?.accreditationDeadline && (
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">Clôture accréditations</div>
+                <div className="text-lg font-semibold">
+                  J–<small>{daysUntil(event.accreditationDeadline)}</small>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Outlet />
     </div>
