@@ -35,7 +35,10 @@ h3 {
   margin: 0;
 }
 
-a {
+/* Les liens rendus comme boutons shadcn (<Button asChild><a/>) portent data-slot="button"
+   et gèrent leur propre couleur de texte : on les exclut de la couleur de lien par défaut,
+   sinon le texte bleu passe sur les fonds foncés des boutons (illisible). */
+a:not([data-slot='button']) {
   color: var(--color-accent-strong);
 }
 
