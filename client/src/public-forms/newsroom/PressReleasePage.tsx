@@ -3,21 +3,44 @@ import { useParams } from 'react-router-dom';
 import { useEventId, newsroomPath } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
+import { usePageTitle } from '../../lib/usePageTitle';
 import { printPressRelease } from './printPressRelease';
 import type { PressReleaseDetail } from '../../lib/types';
+
+/**
+ * Données initiales injectées par le serveur (script JSON inerte `#__pr_cp__`,
+ * même forme que l'API publique) : rendu immédiat sans flash de chargement au
+ * premier affichage. Consommé une seule fois (les navigations SPA refetchent).
+ */
+function readInitialData(slug: string): PressReleaseDetail | null {
+  const el = document.getElementById('__pr_cp__');
+  if (!el?.textContent) return null;
+  // Le script inerte reste dans le DOM (StrictMode double-monte : le retirer
+  // ferait perdre les données au second montage) ; il ne matche que son slug.
+  try {
+    const data = JSON.parse(el.textContent) as PressReleaseDetail;
+    return data?.pressRelease?.slug === slug ? data : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Page dédiée d'un communiqué (URL propre par slug) : illustration, titre, corps, PDF. */
 export function PressReleasePage() {
   const eventId = useEventId();
   const { slug = '' } = useParams();
-  const [data, setData] = useState<PressReleaseDetail | null>(null);
+  const [data, setData] = useState<PressReleaseDetail | null>(() => readInitialData(slug));
   const [error, setError] = useState<string | null>(null);
 
+  usePageTitle(data ? `${data.pressRelease.title} — ${data.event.name}` : null);
+
   useEffect(() => {
+    if (data?.pressRelease.slug === slug) return; // données serveur déjà en place
     api
       .get<PressReleaseDetail>(`/public/newsroom/${eventId}/cp/${encodeURIComponent(slug)}`)
       .then(setData)
       .catch((e) => setError(e instanceof ApiError ? e.message : 'Communiqué indisponible'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch uniquement quand l'URL change
   }, [eventId, slug]);
 
   if (error) {

@@ -5,6 +5,14 @@ import type { EventBranding, PressRelease } from '../domain';
 const env = loadEnv();
 const PLATFORM_NAME = 'PR Event 360';
 const PLATFORM_LOGO = `${env.PUBLIC_BASE_URL}/brand/logo-pr-event-360.png`;
+// Carte sociale 1200×630 dédiée aux partages (un logo brut est mal cadré par les réseaux).
+const PLATFORM_CARD = `${env.PUBLIC_BASE_URL}/brand/social-card.jpg`;
+const PLATFORM_TITLE = 'PR Event 360 — Votre orchestrateur de relations presse';
+const PLATFORM_DESCRIPTION =
+  "PR Event 360, votre orchestrateur de relations presse événementielles : accréditations, demandes d'interview et de reportage, planning, newsroom et communications, de l'accréditation à la retombée.";
+
+/** Balise robots noindex (surfaces privées : admin, espaces tokenisés, auth). */
+const NOINDEX_TAG = '    <meta name="robots" content="noindex, nofollow" />\n  ';
 
 /** Champs d'événement nécessaires au calcul des URLs publiques (typage structurel). */
 export interface SeoEvent {
@@ -37,11 +45,15 @@ export function pressReleaseUrl(event: SeoEvent, slug: string): string {
 }
 
 /** Première image http(s) exploitable comme image sociale (les data: URL ne marchent pas pour l'OG). */
-function socialImage(...candidates: Array<string | null | undefined>): string {
+function httpUrl(...candidates: Array<string | null | undefined>): string | null {
   for (const c of candidates) {
     if (c && /^https?:\/\//i.test(c)) return c;
   }
-  return PLATFORM_LOGO;
+  return null;
+}
+
+function socialImage(...candidates: Array<string | null | undefined>): string {
+  return httpUrl(...candidates) ?? PLATFORM_CARD;
 }
 
 const meta = (prop: 'name' | 'property', key: string, content: string): string =>
@@ -69,6 +81,7 @@ function renderHead(p: HeadParts): string {
     meta('property', 'og:url', p.canonical),
     meta('property', 'og:image', p.image),
     meta('property', 'og:site_name', p.siteName),
+    meta('property', 'og:locale', 'fr_FR'),
     meta('name', 'twitter:card', 'summary_large_image'),
     meta('name', 'twitter:title', p.title),
     meta('name', 'twitter:description', p.description),
@@ -100,8 +113,9 @@ export function pressReleaseHead(opts: {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
     headline: cp.title.slice(0, 110),
+    // Pas de dateModified : la table ne trace pas les mises à jour — mieux vaut
+    // l'omettre (Google retombe sur datePublished) qu'affirmer une date fausse.
     datePublished: published,
-    dateModified: published,
     image: [image],
     articleBody: stripHtml(cp.bodyHtml).slice(0, 5000),
     mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
@@ -109,7 +123,7 @@ export function pressReleaseHead(opts: {
     publisher: {
       '@type': 'Organization',
       name: event.name,
-      logo: { '@type': 'ImageObject', url: socialImage(branding?.logoUrl) },
+      logo: { '@type': 'ImageObject', url: httpUrl(branding?.logoUrl) ?? PLATFORM_LOGO },
     },
   };
   return renderHead({
@@ -138,25 +152,132 @@ export function newsroomHead(opts: { event: SeoEvent; branding: EventBranding | 
   });
 }
 
+/** `<head>` SEO de la landing plateforme (canonical, Open Graph, JSON-LD Organization). */
+export function platformHead(): string {
+  return renderHead({
+    title: PLATFORM_TITLE,
+    description: PLATFORM_DESCRIPTION,
+    canonical: `${env.PUBLIC_BASE_URL}/`,
+    image: PLATFORM_CARD,
+    type: 'website',
+    siteName: PLATFORM_NAME,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Organization',
+          name: PLATFORM_NAME,
+          url: `${env.PUBLIC_BASE_URL}/`,
+          logo: PLATFORM_LOGO,
+        },
+        {
+          '@type': 'SoftwareApplication',
+          name: PLATFORM_NAME,
+          applicationCategory: 'BusinessApplication',
+          operatingSystem: 'Web',
+          url: `${env.PUBLIC_BASE_URL}/`,
+          description: PLATFORM_DESCRIPTION,
+        },
+      ],
+    },
+  });
+}
+
+/** `<head>` SEO d'une page statique plateforme (ressources, pages légales). */
+export function staticPageHead(pathName: string, title: string, description: string): string {
+  return renderHead({
+    title: `${title} — ${PLATFORM_NAME}`,
+    description,
+    canonical: `${env.PUBLIC_BASE_URL}${pathName}`,
+    image: PLATFORM_CARD,
+    type: 'website',
+    siteName: PLATFORM_NAME,
+  });
+}
+
+/** `<head>` SEO du formulaire d'accréditation (surface cherchée par les journalistes). */
+export function accreditationHead(opts: { event: SeoEvent; branding: EventBranding | null }): string {
+  const { event, branding } = opts;
+  const base = `Accréditation presse — ${event.name}`;
+  return renderHead({
+    title: base,
+    description: `Demandez votre accréditation presse pour ${event.name} : formulaire officiel pour journalistes, photographes et créateurs de contenu.`,
+    canonical: accreditationUrl(event),
+    image: socialImage(branding?.bgImageUrl, branding?.logoUrl),
+    type: 'website',
+    siteName: event.name,
+  });
+}
+
+/** URL absolue canonique du formulaire d'accréditation. */
+export function accreditationUrl(event: SeoEvent): string {
+  const base = eventDomainBase(event);
+  return base ? `${base}/` : `${env.PUBLIC_BASE_URL}/accreditation/${event.id}`;
+}
+
 /**
- * Injecte le `<head>` SEO et/ou le contexte d'événement (mode domaine) dans l'index SPA.
- * Retire le title/description statiques quand on a des balises propres à la page.
+ * Corps HTML statique d'un communiqué, injecté dans `#root` pour les crawlers qui
+ * n'exécutent pas le JavaScript (GPTBot, ClaudeBot, PerplexityBot…). React remplace
+ * ce contenu au montage ; le client relit les mêmes données via `__pr_cp__` pour
+ * rendre immédiatement sans flash de chargement.
  */
-export function injectHead(
-  indexHtml: string,
-  headHtml: string,
-  eventData: { id: string; name: string } | null,
-): string {
+export function pressReleaseStaticBody(opts: { event: SeoEvent; cp: PressRelease }): string {
+  const { event, cp } = opts;
+  const dateLabel = cp.publishedAt
+    ? new Date(cp.publishedAt).toLocaleDateString('fr-FR', { dateStyle: 'long' })
+    : null;
+  const cover = httpUrl(cp.coverImageUrl);
+  return [
+    '<main style="max-width:760px;margin:0 auto;padding:40px 24px">',
+    '<article>',
+    `<p>Communiqué de presse — ${escapeHtml(event.name)}</p>`,
+    `<h1>${escapeHtml(cp.title)}</h1>`,
+    dateLabel ? `<p>${escapeHtml(dateLabel)}</p>` : '',
+    cover ? `<img src="${escapeHtml(cover)}" alt="" style="max-width:100%" />` : '',
+    // bodyHtml est assaini à l'écriture ET à la lecture (sanitizeRichHtml) par l'appelant.
+    cp.bodyHtml,
+    '</article>',
+    '</main>',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+interface InjectOptions {
+  /** Balises `<head>` propres à la page (remplace title/description statiques). */
+  headHtml?: string;
+  /** Contexte d'événement (mode domaine personnalisé). */
+  eventData?: { id: string; name: string } | null;
+  /** Marque la page « noindex, nofollow » (surfaces privées ou tokenisées). */
+  noindex?: boolean;
+  /** Contenu statique pré-rendu placé dans `#root` (crawlers sans JavaScript). */
+  rootHtml?: string;
+  /** Données initiales `PressReleaseDetail` relues par le client (script JSON inerte). */
+  pressReleaseData?: object | null;
+}
+
+/**
+ * Injecte le `<head>` SEO, le contexte d'événement et/ou le contenu pré-rendu dans
+ * l'index SPA. Retire le title/description statiques quand on a des balises propres.
+ */
+export function injectHead(indexHtml: string, opts: InjectOptions): string {
+  const { headHtml = '', eventData = null, noindex = false, rootHtml = '', pressReleaseData = null } = opts;
   let html = indexHtml;
   if (headHtml) {
     html = html
       .replace(/<title>[\s\S]*?<\/title>\s*/i, '')
       .replace(/<meta\s+name="description"[^>]*>\s*/i, '');
   }
-  const eventScript = eventData
-    ? `  <script type="application/json" id="__pr_event__">${JSON.stringify(eventData).replace(/</g, '\\u003c')}</script>\n`
-    : '';
-  return html.replace('</head>', `${headHtml}${eventScript}  </head>`);
+  const jsonScript = (id: string, data: object): string =>
+    `  <script type="application/json" id="${id}">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>\n`;
+  const eventScript = eventData ? jsonScript('__pr_event__', eventData) : '';
+  const cpScript = pressReleaseData ? jsonScript('__pr_cp__', pressReleaseData) : '';
+  const robots = noindex ? NOINDEX_TAG : '';
+  html = html.replace('</head>', `${headHtml}${robots}${eventScript}${cpScript}  </head>`);
+  if (rootHtml) {
+    html = html.replace('<div id="root"></div>', `<div id="root">${rootHtml}</div>`);
+  }
+  return html;
 }
 
-export { PLATFORM_NAME, PLATFORM_LOGO };
+export { PLATFORM_NAME, PLATFORM_LOGO, PLATFORM_CARD };

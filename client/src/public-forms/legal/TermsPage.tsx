@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '../../lib/usePageTitle';
 
 const CONTACT = 'contact@mdmcmusicads.com';
 
@@ -7,6 +8,7 @@ const CONTACT = 'contact@mdmcmusicads.com';
  * PR Event 360. Page publique, française. À faire valider par un conseil juridique.
  */
 export function TermsPage() {
+  usePageTitle('Conditions générales de vente — PR Event 360');
   return (
     <main className="page" style={{ maxWidth: 760 }}>
       <span className="eyebrow">Contrat</span>

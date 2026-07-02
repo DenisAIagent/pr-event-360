@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '../../lib/usePageTitle';
 
 // Contact RGPD (boîte surveillée par l'organisation).
 const PRIVACY_CONTACT = 'rgpd@mdmcmusicads.com';
@@ -8,6 +9,7 @@ const PRIVACY_CONTACT = 'rgpd@mdmcmusicads.com';
  * Reflète l'architecture cible conforme : hébergement UE, sous-traitants encadrés.
  */
 export function PrivacyPage() {
+  usePageTitle('Politique de confidentialité — PR Event 360');
   return (
     <main className="page" style={{ maxWidth: 760 }}>
       <span className="eyebrow">Protection des données</span>

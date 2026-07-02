@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '../../lib/usePageTitle';
 import {
   BadgeCheck,
   Mic,
@@ -186,6 +187,7 @@ function GuideCard({ guide }: { guide: Guide }) {
 
 /** Centre de ressources public : guides d'utilisation, bonnes pratiques RP et FAQ. */
 export function ResourcesPage() {
+  usePageTitle('Ressources relations presse — PR Event 360');
   return (
     <main className="page" style={{ maxWidth: 880 }}>
       <span className="eyebrow">Ressources</span>

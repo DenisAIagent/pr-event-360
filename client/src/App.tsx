@@ -13,9 +13,20 @@ import { PrivacyPage } from './public-forms/legal/PrivacyPage';
 import { LegalNoticePage } from './public-forms/legal/LegalNoticePage';
 import { TermsPage } from './public-forms/legal/TermsPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
-import type { ReactNode } from 'react';
-import { AdminApp } from './admin/AdminApp';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { isDomainMode } from './lib/domainEvent';
+
+// Back-office chargé à la demande : son code (la majorité du bundle) ne pèse pas
+// sur les pages publiques (landing, newsroom, accréditation) → meilleur LCP/INP.
+const AdminAppLazy = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })));
+
+function AdminRoute() {
+  return (
+    <Suspense fallback={<main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>Chargement…</main>}>
+      <AdminAppLazy />
+    </Suspense>
+  );
+}
 
 /** Enveloppe une page publique multilingue. */
 function L({ children }: { children: ReactNode }) {
@@ -45,7 +56,7 @@ export function App() {
           <Route path="/confidentialite" element={<PrivacyPage />} />
           <Route path="/mentions-legales" element={<LegalNoticePage />} />
           <Route path="/cgv" element={<TermsPage />} />
-          <Route path="/admin/*" element={<AdminApp />} />
+          <Route path="/admin/*" element={<AdminRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -60,7 +71,7 @@ export function App() {
         <Route path="/mentions-legales" element={<LegalNoticePage />} />
         <Route path="/cgv" element={<TermsPage />} />
         <Route path="/ressources" element={<ResourcesPage />} />
-        <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/admin/*" element={<AdminRoute />} />
         <Route
           path="/accreditation/:eventId"
           element={

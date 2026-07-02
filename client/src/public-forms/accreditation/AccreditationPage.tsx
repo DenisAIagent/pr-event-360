@@ -7,6 +7,7 @@ import type { AccreditationType, PublicEvent } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { brandingStyle } from '../../lib/branding';
 import { DeadlineCountdown } from './DeadlineCountdown';
+import { usePageTitle } from '../../lib/usePageTitle';
 
 interface FormState {
   firstName: string;
@@ -43,6 +44,7 @@ export function AccreditationPage() {
   const links = useEventLinks();
   const { t, lang, setLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
+  usePageTitle(event ? `Accréditation presse — ${event.name}` : null);
   const [loadError, setLoadError] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [submitting, setSubmitting] = useState(false);

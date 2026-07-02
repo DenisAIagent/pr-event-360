@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { usePageTitle } from '../../lib/usePageTitle';
 
 const CONTACT = 'contact@mdmcmusicads.com';
 
@@ -9,6 +10,7 @@ const CONTACT = 'contact@mdmcmusicads.com';
  * sont à confirmer par l'éditeur.
  */
 export function LegalNoticePage() {
+  usePageTitle('Mentions légales — PR Event 360');
   return (
     <main className="page" style={{ maxWidth: 760 }}>
       <span className="eyebrow">Informations légales</span>

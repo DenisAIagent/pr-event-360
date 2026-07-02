@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import './landing.css';
+import { usePageTitle } from '../../lib/usePageTitle';
 
 const DEMO_MAILTO = 'mailto:tech@band.stream?subject=Démo%20PR%20Event%20360';
 
@@ -150,6 +151,7 @@ function IconTile({ icon: Ic, size = 21 }: { icon: LucideIcon; size?: number }) 
 
 /** Page marketing publique (racine du site). Navy/bleu, Inter/Manrope. */
 export function LandingPage() {
+  usePageTitle('PR Event 360 — Votre orchestrateur de relations presse');
   const [reviews, setReviews] = useState<PublicReview[]>([]);
   useEffect(() => {
     api.get<PublicReview[]>('/public/reviews').then(setReviews).catch(() => setReviews([]));

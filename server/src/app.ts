@@ -20,7 +20,17 @@ import { handleWebhook } from './services/billingService';
 import { resolveEventForHost } from './services/siteService';
 import { findEventById, getBranding } from './db/repositories/eventRepo';
 import { findPressReleaseBySlug } from './db/repositories/pressReleaseRepo';
-import { injectHead, newsroomHead, pressReleaseHead } from './services/seo';
+import {
+  accreditationHead,
+  injectHead,
+  newsroomHead,
+  platformHead,
+  pressReleaseHead,
+  pressReleaseStaticBody,
+  staticPageHead,
+} from './services/seo';
+import { sanitizeRichHtml } from './lib/sanitizeRichHtml';
+import { seoRouter, PRIVATE_PATH_PREFIXES } from './routes/seoRoutes';
 import type { Event } from './domain';
 import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
@@ -29,7 +39,6 @@ import { publicSpaceRouter } from './routes/public/space';
 import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
 import { publicReviewsRouter } from './routes/public/reviews';
 import { reviewRouter, reviewAdminRouter } from './routes/admin/reviews';
-import { seoRouter } from './routes/seoRoutes';
 import { requireAuth } from './middleware/auth';
 import { getNotifSettings } from './services/settingsService';
 
@@ -39,9 +48,36 @@ import { getNotifSettings } from './services/settingsService';
  * - injecte les balises SEO (title/description/Open Graph/JSON-LD) pour les pages
  *   newsroom et communiqués, rendues côté serveur (crawlers + aperçus sociaux).
  */
+/** Titles/descriptions des pages statiques plateforme (canonical + Open Graph propres). */
+const STATIC_PAGES: Record<string, { title: string; description: string }> = {
+  '/ressources': {
+    title: 'Ressources relations presse',
+    description:
+      "Guides pratiques pour organisateurs d'événements : accréditations presse, demandes d'interview et de reportage, planning médias, newsroom et communications.",
+  },
+  '/confidentialite': {
+    title: 'Politique de confidentialité',
+    description: 'Politique de confidentialité de PR Event 360 : données collectées, finalités, droits RGPD.',
+  },
+  '/mentions-legales': {
+    title: 'Mentions légales',
+    description: 'Mentions légales de la plateforme PR Event 360.',
+  },
+  '/cgv': {
+    title: 'Conditions générales de vente',
+    description: 'Conditions générales de vente et d’utilisation de PR Event 360.',
+  },
+};
+
 async function renderSpa(hostname: string, pathName: string, indexHtml: string): Promise<string> {
   const hostEvent = await resolveEventForHost(hostname).catch(() => null);
   const segments = pathName.split('/').filter(Boolean);
+
+  // Surfaces privées ou tokenisées : jamais indexées (le Disallow robots.txt ne
+  // suffit pas si l'URL est liée ailleurs — ex. espace journaliste tokenisé).
+  const noindex = PRIVATE_PATH_PREFIXES.some((p) =>
+    p.endsWith('/') ? pathName.startsWith(p) : pathName === p || pathName.startsWith(`${p}/`),
+  );
 
   let event: Event | null = hostEvent;
   let cpSlug: string | null = null;
@@ -66,19 +102,43 @@ async function renderSpa(hostname: string, pathName: string, indexHtml: string):
   }
 
   let headHtml = '';
+  let rootHtml = '';
+  let pressReleaseData: object | null = null;
   if (event && cpSlug) {
     const cp = await findPressReleaseBySlug(event.id, cpSlug).catch(() => null);
     if (cp && cp.status === 'published') {
       const branding = await getBranding(event.id).catch(() => null);
       headHtml = pressReleaseHead({ event, branding, cp });
+      // Défense en profondeur : assainit aussi à la lecture (même règle que l'API publique).
+      const safeCp = { ...cp, bodyHtml: sanitizeRichHtml(cp.bodyHtml) };
+      rootHtml = pressReleaseStaticBody({ event, cp: safeCp });
+      // Même forme que GET /api/public/newsroom/:eventId/cp/:slug → rendu client sans flash.
+      pressReleaseData = { event: { id: event.id, name: event.name, branding }, pressRelease: safeCp };
     }
   } else if (event && isNewsroomList) {
     const branding = await getBranding(event.id).catch(() => null);
     headHtml = newsroomHead({ event, branding });
+  } else if (!noindex) {
+    if (hostEvent && segments.length === 0) {
+      // Mode domaine : la racine est le formulaire d'accréditation de l'événement.
+      const branding = await getBranding(hostEvent.id).catch(() => null);
+      headHtml = accreditationHead({ event: hostEvent, branding });
+    } else if (!hostEvent && segments.length === 0) {
+      headHtml = platformHead();
+    } else if (!hostEvent && segments[0] === 'accreditation' && segments[1] && segments.length === 2) {
+      const accEvent = await findEventById(segments[1]).catch(() => null);
+      if (accEvent) {
+        const branding = await getBranding(accEvent.id).catch(() => null);
+        headHtml = accreditationHead({ event: accEvent, branding });
+      }
+    } else if (!hostEvent && STATIC_PAGES[pathName]) {
+      const page = STATIC_PAGES[pathName]!;
+      headHtml = staticPageHead(pathName, page.title, page.description);
+    }
   }
 
   const eventData = hostEvent ? { id: hostEvent.id, name: hostEvent.name } : null;
-  return injectHead(indexHtml, headHtml, eventData);
+  return injectHead(indexHtml, { headHtml, eventData, noindex, rootHtml, pressReleaseData });
 }
 
 export function createApp(): Express {
@@ -102,7 +162,8 @@ export function createApp(): Express {
           // accounts.google.com : « Continuer avec Google » (Google Identity Services).
           scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
           styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style'],
-          fontSrc: ["'self'"],
+          // data: : Vite inline les petits sous-ensembles de polices (<4 Ko) en data URL.
+          fontSrc: ["'self'", 'data:'],
           imgSrc: ["'self'", 'data:', 'https:'], // les RP collent des URLs d'images externes
           // Restreint aux destinations réellement appelées par le navigateur (anti-exfiltration
           // en cas de XSS) : notre API ('self'), l'upload Cloudinary, Google Identity, et
