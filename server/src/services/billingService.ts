@@ -17,6 +17,7 @@ import {
   findPendingSignupById,
   deletePendingSignup,
 } from '../db/repositories/pendingSignupRepo';
+import { markStripeEventProcessed, unmarkStripeEvent } from '../db/repositories/stripeEventRepo';
 
 const env = loadEnv();
 let stripe: Stripe | null = null;
@@ -112,28 +113,39 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
     throw AppError.badRequest('Signature de webhook invalide.');
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      if (session.payment_status === 'paid' || session.status === 'complete') {
-        await materializeFromSession(session);
+  // Idempotence : un événement rejoué par Stripe (retry) n'est traité qu'une fois.
+  if (!(await markStripeEventProcessed(event.id, event.type))) return;
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        // Strict : on exige un paiement réellement encaissé. `status === 'complete'`
+        // seul admettrait des sessions sans paiement (coupon 100 %, essai) → refusé.
+        if (session.payment_status === 'paid') {
+          await materializeFromSession(session);
+        }
+        break;
       }
-      break;
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription;
+        await updateSubscriptionStatusBySubId(sub.id, sub.status, periodEnd(sub));
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const inv = event.data.object as unknown as { subscription?: string | { id: string } };
+        const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id;
+        if (subId) await updateSubscriptionStatusBySubId(subId, 'past_due', null);
+        break;
+      }
+      default:
+        break;
     }
-    case 'customer.subscription.updated':
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object as Stripe.Subscription;
-      await updateSubscriptionStatusBySubId(sub.id, sub.status, periodEnd(sub));
-      break;
-    }
-    case 'invoice.payment_failed': {
-      const inv = event.data.object as unknown as { subscription?: string | { id: string } };
-      const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id;
-      if (subId) await updateSubscriptionStatusBySubId(subId, 'past_due', null);
-      break;
-    }
-    default:
-      break;
+  } catch (e) {
+    // Échec de traitement : on retire le marqueur pour que le retry Stripe le reprenne.
+    await unmarkStripeEvent(event.id).catch(() => undefined);
+    throw e;
   }
 }
 
@@ -143,6 +155,11 @@ async function materializeFromSession(session: Stripe.Checkout.Session): Promise
   if (!pendingId) return;
   const pending = await findPendingSignupById(pendingId);
   if (!pending) return; // déjà traité (livraison multiple du webhook)
+  // Pending expiré : ne pas matérialiser une inscription trop ancienne (session tardive).
+  if (new Date(pending.expiresAt).getTime() < Date.now()) {
+    await deletePendingSignup(pending.id);
+    return;
+  }
   if (await findUserByEmail(pending.email)) {
     await deletePendingSignup(pending.id);
     return;
@@ -156,6 +173,17 @@ async function materializeFromSession(session: Stripe.Checkout.Session): Promise
   let currentPeriodEnd: string | null = null;
   if (subscriptionId) {
     const sub = await client().subscriptions.retrieve(subscriptionId);
+    // Vérifie que l'abonnement porte bien NOTRE prix (anti-manipulation de session).
+    const priceId = sub.items.data[0]?.price.id;
+    if (env.STRIPE_PRICE_ID && priceId !== env.STRIPE_PRICE_ID) {
+      console.error(`[billing] Prix inattendu (${priceId}) pour la session ${session.id} — matérialisation refusée.`);
+      return;
+    }
+    // Statut d'abonnement réellement exploitable : sinon on ne crée pas l'org.
+    if (sub.status !== 'active' && sub.status !== 'trialing') {
+      console.error(`[billing] Statut d'abonnement non actif (${sub.status}) — matérialisation refusée.`);
+      return;
+    }
     status = sub.status;
     currentPeriodEnd = periodEnd(sub);
   }
