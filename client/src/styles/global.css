@@ -553,3 +553,16 @@ textarea {
   .jspace-nav-item { width: auto; }
   .jspace-nav-item.active::before { display: none; }
 }
+
+/* Corps des communiqués (HTML riche assaini) : lecteur vidéo YouTube responsive.
+   Les attributs width/height de l'iframe servent de fallback ; le CSS impose 16/9 fluide. */
+.cp-body figure { margin: 20px 0; }
+.cp-body figure:has(> iframe) { max-width: 100%; }
+.cp-body iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+  border-radius: 10px;
+}
+.cp-body img { max-width: 100%; height: auto; border-radius: 8px; }

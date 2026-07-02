@@ -169,7 +169,9 @@ export function createApp(): Express {
           // en cas de XSS) : notre API ('self'), l'upload Cloudinary, Google Identity, et
           // l'ingestion Sentry (suivi d'erreurs — inactif tant que VITE_SENTRY_DSN est absent).
           connectSrc: ["'self'", 'https://api.cloudinary.com', 'https://accounts.google.com', 'https://*.sentry.io'],
-          frameSrc: ["'self'", 'https://accounts.google.com/gsi/'],
+          // youtube-nocookie : lecteur YouTube « privacy-enhanced » intégré dans les
+          // communiqués et la newsroom (seul hôte d'iframe accepté par sanitizeRichHtml).
+          frameSrc: ["'self'", 'https://accounts.google.com/gsi/', 'https://www.youtube-nocookie.com'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
         },

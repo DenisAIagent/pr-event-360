@@ -5,6 +5,8 @@ import { brandingStyle } from '../../lib/branding';
 import { Countdown } from '../../components/Countdown';
 import { Icon } from '../../components/Icon';
 import type { NewsroomAsset, NewsroomAssetKind, NewsroomData } from '../../lib/types';
+import { usePageTitle } from '../../lib/usePageTitle';
+import { youtubeEmbedUrl, youtubeVideoId } from '../../lib/youtube';
 
 /** Extrait texte (≈ 160 car.) depuis le HTML d'un CP, pour la carte de la liste. */
 function htmlExcerpt(html: string): string {
@@ -25,6 +27,7 @@ const GROUPS: { kind: NewsroomAssetKind; label: string }[] = [
 export function NewsroomPage() {
   const eventId = useEventId();
   const [data, setData] = useState<NewsroomData | null>(null);
+  usePageTitle(data ? `Espace presse — ${data.event.name}` : null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -130,7 +133,8 @@ export function NewsroomPage() {
                 <h3 style={{ fontSize: 'var(--text-lg)' }}>{label}</h3>
                 <div
                   className="kpis"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
+                  // Vidéos : tuiles plus larges pour un lecteur intégré confortable.
+                  style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${kind === 'video' ? 320 : 200}px, 1fr))` }}
                 >
                   {items.map((a) => (
                     <AssetTile key={a.id} asset={a} />
@@ -146,6 +150,29 @@ export function NewsroomPage() {
 }
 
 function AssetTile({ asset }: { asset: NewsroomAsset }) {
+  // Vidéo YouTube ajoutée par lien : lecteur intégré (variante sans cookies)
+  // plutôt qu'un bouton de téléchargement qui n'aurait pas de sens.
+  const ytId = youtubeVideoId(asset.url);
+  if (ytId) {
+    return (
+      <div className="card stack" style={{ padding: 'var(--space-2)' }}>
+        <iframe
+          src={youtubeEmbedUrl(ytId)}
+          title={asset.title}
+          loading="lazy"
+          allowFullScreen
+          // Le player YouTube exige un Referer (erreur 153) malgré le no-referrer
+          // global de l'app : n'envoie que l'origine (jamais le chemin).
+          referrerPolicy="strict-origin-when-cross-origin"
+          style={{ width: '100%', aspectRatio: '16/9', border: 0, borderRadius: 6 }}
+        />
+        <strong style={{ fontSize: 'var(--text-sm)' }}>{asset.title}</strong>
+        <a href={asset.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
+          Voir sur YouTube
+        </a>
+      </div>
+    );
+  }
   return (
     <div className="card stack" style={{ padding: 'var(--space-2)' }}>
       {asset.thumbnailUrl && (

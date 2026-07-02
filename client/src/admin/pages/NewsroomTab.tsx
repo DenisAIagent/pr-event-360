@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { FileText } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 import { uploadToCloudinary } from '../lib/upload';
+import { youtubeEmbedHtml, youtubeVideoId } from '../../lib/youtube';
 import type { PressRelease, UploadSignature } from '../lib/types';
 
 /** Slug d'URL côté client (sans accents, minuscules, tirets) — miroir de server/src/lib/slug.ts. */
@@ -138,6 +139,22 @@ function PressEditor({
   const [uploadBusy, setUploadBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  /** Insère un lecteur YouTube (sans cookies) à la position du curseur dans le HTML. */
+  function insertYoutubeVideo() {
+    const url = window.prompt('Collez le lien de la vidéo YouTube (watch, youtu.be, Shorts…) :');
+    if (!url) return;
+    const id = youtubeVideoId(url);
+    if (!id) {
+      toast.error('Lien YouTube non reconnu — collez l’adresse complète de la vidéo.');
+      return;
+    }
+    const block = `\n${youtubeEmbedHtml(id)}\n`;
+    const pos = bodyRef.current?.selectionEnd ?? bodyHtml.length;
+    setBodyHtml(bodyHtml.slice(0, pos) + block + bodyHtml.slice(pos));
+    toast.success('Vidéo insérée — visible dans l’aperçu ci-dessous.');
+  }
 
   const effectiveSlug = slug.trim() || toSlug(title || 'communique');
   const publicUrl = `${window.location.origin}/newsroom/${eventId}/${effectiveSlug}`;
@@ -231,23 +248,30 @@ function PressEditor({
                 <li>Paragraphe : <code>{'<p>Mon texte</p>'}</code></li>
                 <li>Gras : <code>{'<strong>important</strong>'}</code></li>
                 <li>Lien : <code>{'<a href="https://…">lien</a>'}</code></li>
+                <li>Vidéo : bouton <strong>« Insérer une vidéo YouTube »</strong>, collez le lien</li>
               </ul>
               Pas à l'aise ? Cliquez <strong>« Insérer un modèle »</strong> et remplacez le texte.
             </InfoBubble>
           </span>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm"
-            onClick={() => {
-              if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
-                setBodyHtml(CP_STARTER_HTML);
-              }
-            }}
-          >
-            Insérer un modèle
-          </button>
+          <span className="inline-actions">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={insertYoutubeVideo}>
+              Insérer une vidéo YouTube
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                if (!bodyHtml.trim() || window.confirm('Remplacer le contenu actuel par le modèle ?')) {
+                  setBodyHtml(CP_STARTER_HTML);
+                }
+              }}
+            >
+              Insérer un modèle
+            </button>
+          </span>
         </label>
         <textarea
+          ref={bodyRef}
           value={bodyHtml}
           onChange={(e) => setBodyHtml(e.target.value)}
           rows={10}
@@ -263,7 +287,7 @@ function PressEditor({
             style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }}
           />
         )}
-        <div className="card" style={{ background: '#fff' }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+        <div className="card cp-body" style={{ background: '#fff' }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
       </div>
 
       <fieldset className="card stack" style={{ border: '1px solid var(--border, #e3e3e3)' }}>

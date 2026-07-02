@@ -5,6 +5,7 @@ import { useFetch } from '../lib/useFetch';
 import { uploadToCloudinary } from '../lib/upload';
 import { Image as ImageIcon } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
+import { youtubeThumbnailUrl, youtubeVideoId, youtubeWatchUrl } from '../../lib/youtube';
 import type { AssetKind, EventAsset, UploadSignature } from '../lib/types';
 
 const KINDS: { value: AssetKind; label: string }[] = [
@@ -30,6 +31,36 @@ export function MediaTab() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [ytUrl, setYtUrl] = useState('');
+
+  /** Ajoute une vidéo YouTube par lien : lecteur intégré dans la newsroom, miniature automatique. */
+  async function onAddYoutube() {
+    const id = youtubeVideoId(ytUrl);
+    if (!id) {
+      setErr('Lien YouTube non reconnu — collez l’adresse complète de la vidéo (watch, youtu.be, Shorts…).');
+      return;
+    }
+    setErr(null);
+    setMsg(null);
+    setBusy(true);
+    try {
+      await apiAuthed.post(`/admin/events/${eventId}/assets`, {
+        kind: 'video',
+        title: title || 'Vidéo YouTube',
+        url: youtubeWatchUrl(id),
+        thumbnailUrl: youtubeThumbnailUrl(id),
+        source: 'link',
+      });
+      setMsg(`« ${title || 'Vidéo YouTube'} » ajoutée — elle s’affiche en lecteur intégré dans la newsroom.`);
+      setTitle('');
+      setYtUrl('');
+      reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Échec');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onUpload(file: File) {
     setErr(null);
@@ -103,6 +134,23 @@ export function MediaTab() {
               if (f) void onUpload(f);
             }}
           />
+        </div>
+        <div className="field" style={{ borderTop: '1px solid var(--color-line, #e6e8ec)', paddingTop: 'var(--space-3)' }}>
+          <label>…ou intégrez une vidéo YouTube (collez le lien)</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              value={ytUrl}
+              onChange={(e) => setYtUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=… ou https://youtu.be/…"
+              style={{ flex: 1, minWidth: 260 }}
+            />
+            <button type="button" className="btn btn-primary btn-sm" disabled={busy || !ytUrl.trim()} onClick={() => void onAddYoutube()}>
+              Ajouter la vidéo
+            </button>
+          </div>
+          <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+            La vidéo apparaîtra en lecteur intégré dans la newsroom publique (miniature récupérée automatiquement).
+          </span>
         </div>
       </section>
 
