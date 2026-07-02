@@ -12,7 +12,9 @@ if (!url) {
   process.exit(1);
 }
 
-const MAX_ATTEMPTS = 30;
+// Jusqu'à ~2 min : le réseau privé Railway peut mettre plusieurs dizaines de secondes
+// à être joignable après un redéploiement (ex. changement de région).
+const MAX_ATTEMPTS = 60;
 const DELAY_MS = 2000;
 
 async function reachable(): Promise<boolean> {
