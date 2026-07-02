@@ -144,5 +144,7 @@
   "space.coverage.cat.podcast": "Podcast",
   "space.coverage.cat.photo": "Photo",
   "space.coverage.cat.video": "Vidéo",
-  "space.coverage.cat.autre": "Autre"
+  "space.coverage.cat.autre": "Autre",
+  "space.password.changeHint": "Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié » — un lien sécurisé vous sera envoyé par email.",
+  "space.password.forgotLink": "Mot de passe oublié"
 }

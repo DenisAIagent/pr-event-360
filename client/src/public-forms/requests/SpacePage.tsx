@@ -442,11 +442,26 @@ export function SpacePage({
                   <h2 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.password.title')}</h2>
                   <p className="muted" style={{ margin: 0 }}>{t('space.password.hint')}</p>
                 </section>
+              ) : data.journalist.hasPassword && !pwdSaved ? (
+                // Mot de passe déjà défini : plus de remplacement via le seul lien magique
+                // (anti-détournement d'un lien fuité). Le changement passe par le reset email.
+                <section className="card stack" aria-labelledby="sec-pwd">
+                  <h2 id="sec-pwd" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.password.title')}</h2>
+                  <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>{t('space.password.setHint')}</p>
+                  <p style={{ margin: 0, fontSize: 'var(--text-sm)' }}>{t('space.password.changeHint')}</p>
+                  <a
+                    className="btn btn-ghost btn-sm"
+                    style={{ alignSelf: 'flex-start' }}
+                    href={domainEvent ? '/mot-de-passe-oublie' : `/evenement/${data.event.id}/mot-de-passe-oublie`}
+                  >
+                    {t('space.password.forgotLink')}
+                  </a>
+                </section>
               ) : (
                 <section className="card stack" aria-labelledby="sec-pwd">
                   <h2 id="sec-pwd" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>{t('space.password.title')}</h2>
                   <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
-                    {data.journalist.hasPassword || pwdSaved ? t('space.password.setHint') : t('space.password.hint')}
+                    {pwdSaved ? t('space.password.setHint') : t('space.password.hint')}
                   </p>
                   <form className="stack" onSubmit={savePassword} noValidate>
                     {pwdError && <div className="banner banner-error">{pwdError}</div>}

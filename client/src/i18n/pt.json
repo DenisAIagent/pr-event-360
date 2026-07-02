@@ -144,5 +144,7 @@
   "space.coverage.cat.podcast": "Podcast",
   "space.coverage.cat.photo": "Foto",
   "space.coverage.cat.video": "Vídeo",
-  "space.coverage.cat.autre": "Outro"
+  "space.coverage.cat.autre": "Outro",
+  "space.password.changeHint": "Uma senha já está definida. Para alterá-la, use «esqueci a senha» — enviaremos um link seguro por email.",
+  "space.password.forgotLink": "Esqueci a senha"
 }

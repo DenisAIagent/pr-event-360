@@ -20,14 +20,22 @@ const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 /**
- * Le journaliste (accès par lien magique) définit ou remplace son mot de passe d'espace.
- * Lui permet ensuite de se reconnecter par email + mot de passe, sans dépendre de l'email.
+ * Le journaliste (accès par lien magique) définit son mot de passe d'espace la
+ * PREMIÈRE fois. Une fois un mot de passe posé, il n'est plus remplaçable via le
+ * seul lien magique : sinon tout porteur d'un lien fuité pourrait détourner le
+ * compte. Le changement passe alors par le flux « mot de passe oublié » (email +
+ * token de reset haché à usage unique — resetJournalistPassword).
  */
 export async function setSpacePassword(token: string, password: string): Promise<void> {
   const journalist = await findJournalistByToken(token);
   if (!journalist) throw AppError.notFound('Espace introuvable');
   if (journalist.accStatus !== 'acceptee') {
     throw AppError.forbidden('Accréditation non encore acceptée');
+  }
+  if (journalist.passwordHash) {
+    throw AppError.badRequest(
+      'Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié ».',
+    );
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     throw AppError.badRequest(`Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères`);
