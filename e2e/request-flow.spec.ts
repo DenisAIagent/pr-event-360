@@ -10,7 +10,7 @@ import { apiLogin, uiLogin, api } from './helpers';
  */
 test('accréditation → acceptation → demande → refuser/rouvrir', async ({ page, request }) => {
   const auth = await apiLogin(request);
-  const t = auth.token;
+  const t = auth.csrf;
   const stamp = Date.now();
   const email = `journaliste.e2e.${stamp}@test.local`;
 

@@ -4,7 +4,8 @@ export const ADMIN_EMAIL = process.env.E2E_EMAIL ?? 'demo@pr-event-360.local';
 export const ADMIN_PASSWORD = process.env.E2E_PASSWORD ?? 'DemoEvent360!';
 
 export interface Auth {
-  token: string;
+  /** Jeton CSRF (double-submit) à renvoyer en en-tête sur les requêtes mutantes. */
+  csrf: string;
   user: Record<string, unknown>;
 }
 
@@ -17,14 +18,20 @@ async function unwrap(res: import('@playwright/test').APIResponse): Promise<unkn
   return body?.data ?? body;
 }
 
-/** Connexion via l'API (rapide) → jeton + user, pour préparer les fixtures et injecter la session. */
+/**
+ * Connexion via l'API (rapide). La session est posée en cookie httpOnly sur le
+ * contexte de requêtes (le token n'est plus renvoyé dans le JSON) ; on récupère le
+ * jeton CSRF (cookie lisible, pattern double-submit) pour les requêtes mutantes.
+ */
 export async function apiLogin(request: APIRequestContext): Promise<Auth> {
   const res = await request.post('/api/admin/auth/login', {
     data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
   });
-  const data = (await unwrap(res)) as Auth;
-  if (!data.token) throw new Error(`Login sans jeton (MFA ?) : ${JSON.stringify(data)}`);
-  return data;
+  const data = (await unwrap(res)) as { user: Record<string, unknown> };
+  const { cookies } = await request.storageState();
+  const csrf = cookies.find((c) => c.name === 'pr360_csrf')?.value;
+  if (!csrf) throw new Error(`Login sans cookie CSRF (MFA ?) : ${JSON.stringify(data)}`);
+  return { csrf, user: data.user };
 }
 
 /** Connexion via le formulaire (pose le cookie de session httpOnly dans le contexte du navigateur). */
@@ -36,16 +43,19 @@ export async function uiLogin(page: Page): Promise<void> {
   await page.waitForURL('**/admin');
 }
 
-/** Appel API authentifié renvoyant le payload déballé. */
+/**
+ * Appel API authentifié renvoyant le payload déballé. La session voyage via le
+ * cookie httpOnly du contexte ; le jeton CSRF est renvoyé en en-tête (double-submit).
+ */
 export async function api(
   request: APIRequestContext,
-  token: string,
+  csrf: string,
   method: 'get' | 'post' | 'put' | 'delete',
   path: string,
   data?: unknown,
 ): Promise<unknown> {
   const res = await request[method](`/api${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 'x-csrf-token': csrf },
     ...(data !== undefined ? { data } : {}),
   });
   return unwrap(res);
