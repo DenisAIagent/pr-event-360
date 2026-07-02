@@ -9,11 +9,18 @@ import {
   getUserMfa,
 } from '../db/repositories/userRepo';
 import { verifyMfaCode } from './mfaService';
+import { mfaRequiredFor } from '../lib/mfaPolicy';
 import type { User } from '../domain';
 
-/** Résultat d'un login : soit un jeton de session, soit un challenge MFA à compléter. */
+/**
+ * Résultat d'un login :
+ * - challenge MFA à compléter (MFA déjà active) ;
+ * - jeton de session, éventuellement marqué `mfaSetupRequired` : la MFA est
+ *   OBLIGATOIRE pour ce compte mais pas encore activée → la session n'autorise que
+ *   l'enrôlement (imposé par requireAuth) tant que la MFA n'est pas configurée.
+ */
 export type LoginResult =
-  | { token: string; user: User }
+  | { token: string; user: User; mfaSetupRequired?: boolean }
   | { mfaRequired: true; challenge: string };
 
 const ACTIVE_STATUSES = new Set(['active', 'trialing']);
@@ -82,6 +89,10 @@ export async function login(email: string, password: string): Promise<LoginResul
     organizationId: found.user.organizationId,
     isPlatformAdmin: found.user.isPlatformAdmin,
   });
+  // MFA obligatoire non encore activée : session émise mais restreinte à l'enrôlement.
+  if (mfaRequiredFor(found.user.role, found.user.isPlatformAdmin)) {
+    return { token, user: found.user, mfaSetupRequired: true };
+  }
   return { token, user: found.user };
 }
 

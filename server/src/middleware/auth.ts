@@ -4,7 +4,19 @@ import { EVENT_EDITOR_ROLES } from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
 import { verifyToken, type AuthClaims } from '../lib/jwt';
 import { csrfValid, sessionTokenFromCookie } from '../lib/session';
-import { findUserAuthState } from '../db/repositories/userRepo';
+import { findUserAuthState, getUserMfa } from '../db/repositories/userRepo';
+import { mfaRequiredFor } from '../lib/mfaPolicy';
+
+// Endpoints accessibles à une session « MFA obligatoire non encore activée » :
+// juste de quoi s'enrôler (ou se déconnecter). Tout le reste est bloqué tant que
+// la double authentification n'est pas activée.
+const MFA_ENROLLMENT_ALLOWLIST = new Set([
+  '/api/admin/auth/me',
+  '/api/admin/auth/mfa/status',
+  '/api/admin/auth/mfa/setup',
+  '/api/admin/auth/mfa/enable',
+  '/api/admin/auth/logout',
+]);
 
 // Étend Request avec l'utilisateur authentifié (back-office).
 declare global {
@@ -75,6 +87,21 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     if (req.authVia === 'cookie' && MUTATING.has(req.method) && !csrfValid(req)) {
       throw AppError.forbidden('Jeton CSRF manquant ou invalide');
+    }
+
+    // MFA obligatoire : un compte à privilèges élevés sans MFA active ne peut
+    // atteindre QUE les endpoints d'enrôlement. Contrôle sur la vérité DB (pas sur
+    // le jeton), donc effet immédiat et non contournable en forgeant un jeton.
+    if (mfaRequiredFor(current.role, current.isPlatformAdmin)) {
+      const path = (req.originalUrl ?? req.url ?? '').split('?')[0] ?? '';
+      if (!MFA_ENROLLMENT_ALLOWLIST.has(path)) {
+        const mfa = await getUserMfa(current.id);
+        if (!mfa?.enabled) {
+          throw new AppError(403, 'Double authentification obligatoire : activez-la pour continuer.', {
+            code: 'MFA_SETUP_REQUIRED',
+          });
+        }
+      }
     }
     next();
   } catch (err) {

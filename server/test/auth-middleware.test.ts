@@ -3,6 +3,9 @@ import type { Request, Response } from 'express';
 
 vi.mock('../src/db/repositories/userRepo', () => ({
   findUserAuthState: vi.fn(),
+  // Ces tests portent sur la relecture des droits, pas sur la MFA : on la déclare
+  // active pour ne pas déclencher le gate d'enrôlement obligatoire (requireAuth).
+  getUserMfa: vi.fn(async () => ({ enabled: true, secret: 'x' })),
 }));
 
 import { requireAuth } from '../src/middleware/auth';
@@ -92,5 +95,42 @@ describe('requireAuth', () => {
 
     expect(err).toBeInstanceOf(AppError);
     expect((err as AppError).statusCode).toBe(401);
+  });
+
+  it('bloque un admin SANS MFA active hors des endpoints d’enrôlement (MFA obligatoire)', async () => {
+    vi.mocked(userRepo.findUserAuthState).mockResolvedValue(currentUser); // admin
+    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null });
+    const token = signToken({
+      sub: currentUser.id,
+      email: currentUser.email,
+      role: 'admin',
+      organizationId: currentUser.organizationId,
+      isPlatformAdmin: false,
+    });
+    const req = reqWithBearer(token);
+    req.originalUrl = '/api/admin/events';
+
+    const next = await run(req);
+    const err = next.mock.calls[0]?.[0];
+    expect(err).toBeInstanceOf(AppError);
+    expect((err as AppError).statusCode).toBe(403);
+    expect((err as AppError).details).toMatchObject({ code: 'MFA_SETUP_REQUIRED' });
+  });
+
+  it('laisse passer un admin sans MFA vers un endpoint d’enrôlement', async () => {
+    vi.mocked(userRepo.findUserAuthState).mockResolvedValue(currentUser);
+    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null });
+    const token = signToken({
+      sub: currentUser.id,
+      email: currentUser.email,
+      role: 'admin',
+      organizationId: currentUser.organizationId,
+      isPlatformAdmin: false,
+    });
+    const req = reqWithBearer(token);
+    req.originalUrl = '/api/admin/auth/mfa/setup';
+
+    const next = await run(req);
+    expect(next).toHaveBeenCalledWith(); // pas d'erreur
   });
 });

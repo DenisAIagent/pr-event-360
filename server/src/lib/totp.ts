@@ -61,13 +61,18 @@ function hotp(secret: string, counter: number): string {
   return (code % 1_000_000).toString().padStart(6, '0');
 }
 
+/** Code TOTP courant pour un secret (décalage de fenêtres de 30 s optionnel). */
+export function generateTotp(secret: string, windowOffset = 0): string {
+  const counter = Math.floor(Date.now() / 1000 / 30) + windowOffset;
+  return hotp(secret, counter);
+}
+
 /** Vérifie un code TOTP avec une tolérance de ±`window` fenêtres de 30 s. */
 export function verifyTotp(token: string, secret: string, window = 1): boolean {
   const t = token.trim();
   if (!/^\d{6}$/.test(t)) return false;
-  const counter = Math.floor(Date.now() / 1000 / 30);
   for (let w = -window; w <= window; w++) {
-    if (hotp(secret, counter + w) === t) return true;
+    if (generateTotp(secret, w) === t) return true;
   }
   return false;
 }

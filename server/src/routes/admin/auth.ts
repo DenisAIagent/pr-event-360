@@ -21,6 +21,7 @@ function withSession<T extends object>(res: Response, result: T, status = 200): 
   sendData(res, result, status);
 }
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
+import { mfaRequiredFor } from '../../lib/mfaPolicy';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
 import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
@@ -55,7 +56,13 @@ authRouter.get(
   '/me',
   requireAuth,
   asyncHandler(async (req, res) => {
-    sendData(res, { user: req.user });
+    // Signale au front qu'un enrôlement MFA est obligatoire (compte à privilèges
+    // sans MFA active) → il force l'écran d'activation au rechargement.
+    let mfaSetupRequired = false;
+    if (mfaRequiredFor(req.user!.role, req.user!.isPlatformAdmin)) {
+      mfaSetupRequired = !(await getMfaStatus(req.user!.sub)).enabled;
+    }
+    sendData(res, { user: req.user, mfaSetupRequired });
   }),
 );
 
