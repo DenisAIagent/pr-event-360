@@ -21,7 +21,6 @@ type LoginOutcome = { mfaRequired: true; challenge: string } | undefined;
 type GoogleOutcome = { needsSignup: true } | undefined;
 
 interface AuthValue {
-  token: string | null;
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<LoginOutcome>;
   completeMfa: (challenge: string, code: string) => Promise<void>;
@@ -31,92 +30,86 @@ interface AuthValue {
   logout: () => void;
 }
 
-const STORAGE_KEY = 'pr360.auth';
+// On ne persiste QUE le profil (non sensible) pour l'affichage instantané du rail.
+// Le jeton de session vit dans un cookie httpOnly, jamais accessible au JavaScript.
+const STORAGE_KEY = 'pr360.user';
 const AuthContext = createContext<AuthValue | null>(null);
 
-function readStored(): { token: string; user: AuthUser } | null {
+function readStored(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as { token: string; user: AuthUser }) : null;
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
   } catch {
     return null;
   }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(() => readStored());
+  const [user, setUser] = useState<AuthUser | null>(() => readStored());
 
-  const login = useCallback(async (email: string, password: string): Promise<LoginOutcome> => {
-    const result = await api.post<
-      { token: string; user: AuthUser } | { mfaRequired: true; challenge: string }
-    >('/admin/auth/login', { email, password });
-    if ('mfaRequired' in result) {
-      return { mfaRequired: true, challenge: result.challenge };
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-    setState(result);
-    return undefined;
+  const persist = useCallback((u: AuthUser) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+    setUser(u);
   }, []);
 
-  const completeMfa = useCallback(async (challenge: string, code: string) => {
-    const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/login/mfa', {
-      challenge,
-      code,
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-    setState(result);
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string): Promise<LoginOutcome> => {
+      const result = await api.post<
+        { user: AuthUser } | { mfaRequired: true; challenge: string }
+      >('/admin/auth/login', { email, password });
+      if ('mfaRequired' in result) return { mfaRequired: true, challenge: result.challenge };
+      persist(result.user);
+      return undefined;
+    },
+    [persist],
+  );
 
-  const loginWithGoogle = useCallback(async (credential: string): Promise<GoogleOutcome> => {
-    const result = await api.post<{ token: string; user: AuthUser } | { needsSignup: true }>(
-      '/admin/auth/google',
-      { credential },
-    );
-    if ('needsSignup' in result) return { needsSignup: true };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-    setState(result);
-    return undefined;
-  }, []);
+  const completeMfa = useCallback(
+    async (challenge: string, code: string) => {
+      const result = await api.post<{ user: AuthUser }>('/admin/auth/login/mfa', { challenge, code });
+      persist(result.user);
+    },
+    [persist],
+  );
+
+  const loginWithGoogle = useCallback(
+    async (credential: string): Promise<GoogleOutcome> => {
+      const result = await api.post<{ user: AuthUser } | { needsSignup: true }>('/admin/auth/google', {
+        credential,
+      });
+      if ('needsSignup' in result) return { needsSignup: true };
+      persist(result.user);
+      return undefined;
+    },
+    [persist],
+  );
 
   const acceptOrgInvite = useCallback(
     async (body: { token: string; orgName: string; fullName?: string; password?: string; googleCredential?: string }) => {
-      const result = await api.post<{ token: string; user: AuthUser }>('/admin/auth/org-invite/accept', body);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-      setState(result);
+      const result = await api.post<{ user: AuthUser }>('/admin/auth/org-invite/accept', body);
+      persist(result.user);
     },
-    [],
+    [persist],
   );
 
   const switchOrg = useCallback(
     async (orgId: string) => {
-      const result = await api.post<{ token: string; user: AuthUser }>(
-        `/admin/organizations/${orgId}/switch`,
-        undefined,
-        state?.token ?? undefined,
-      );
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
-      setState(result);
+      const result = await api.post<{ user: AuthUser }>(`/admin/organizations/${orgId}/switch`);
+      persist(result.user);
     },
-    [state],
+    [persist],
   );
 
   const logout = useCallback(() => {
+    // Efface le cookie de session côté serveur (best-effort), puis l'état local.
+    void api.post('/admin/auth/logout').catch(() => {});
     localStorage.removeItem(STORAGE_KEY);
-    setState(null);
+    setUser(null);
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({
-      token: state?.token ?? null,
-      user: state?.user ?? null,
-      login,
-      completeMfa,
-      loginWithGoogle,
-      acceptOrgInvite,
-      switchOrg,
-      logout,
-    }),
-    [state, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, logout],
+    () => ({ user, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, logout }),
+    [user, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -129,11 +122,12 @@ export function useAuth(): AuthValue {
 }
 
 /**
- * Méthodes API liées au token courant. Déconnecte automatiquement sur 401
- * (jeton expiré/invalide) pour renvoyer l'utilisateur vers la connexion.
+ * Méthodes API du back-office. L'authentification passe par le cookie de session
+ * (envoyé automatiquement), plus par un jeton en mémoire. Déconnecte sur 401
+ * (session expirée/invalide) pour renvoyer vers la connexion.
  */
 export function useAuthedApi() {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
   return useMemo(() => {
     const guard = async <T,>(p: Promise<T>): Promise<T> => {
       try {
@@ -144,10 +138,10 @@ export function useAuthedApi() {
       }
     };
     return {
-      get: <T,>(path: string) => guard(api.get<T>(path, token ?? undefined)),
-      post: <T,>(path: string, body?: unknown) => guard(api.post<T>(path, body, token ?? undefined)),
-      put: <T,>(path: string, body?: unknown) => guard(api.put<T>(path, body, token ?? undefined)),
-      delete: <T,>(path: string) => guard(api.del<T>(path, token ?? undefined)),
+      get: <T,>(path: string) => guard(api.get<T>(path)),
+      post: <T,>(path: string, body?: unknown) => guard(api.post<T>(path, body)),
+      put: <T,>(path: string, body?: unknown) => guard(api.put<T>(path, body)),
+      delete: <T,>(path: string) => guard(api.del<T>(path)),
     };
-  }, [token, logout]);
+  }, [logout]);
 }

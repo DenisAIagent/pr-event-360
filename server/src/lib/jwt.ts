@@ -11,6 +11,7 @@ export interface AuthClaims {
   role: UserRole;
   organizationId: string;
   isPlatformAdmin: boolean;
+  iat?: number; // « issued at » (secondes epoch), ajouté par jsonwebtoken — sert à la révocation
 }
 
 export function signToken(claims: AuthClaims): string {

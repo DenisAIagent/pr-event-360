@@ -1,11 +1,19 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
+import { issueSession, clearSession } from '../../lib/session';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
+
+/** Si le résultat contient un jeton, ouvre la session (cookie httpOnly + CSRF) avant de répondre. */
+function withSession<T extends object>(res: Response, result: T, status = 200): void {
+  const token = (result as { token?: unknown }).token;
+  if (typeof token === 'string') issueSession(res, token);
+  sendData(res, result, status);
+}
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
@@ -32,7 +40,25 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const { email, password } = req.body as z.infer<typeof LoginSchema>;
     const result = await login(email, password);
-    sendData(res, result);
+    withSession(res, result); // ouvre la session si login direct (pas de MFA)
+  }),
+);
+
+// Session courante (le front ne peut pas lire le cookie httpOnly) : hydrate l'UI au démarrage.
+authRouter.get(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    sendData(res, { user: req.user });
+  }),
+);
+
+// Déconnexion : efface les cookies de session + CSRF.
+authRouter.post(
+  '/logout',
+  asyncHandler(async (_req, res) => {
+    clearSession(res);
+    sendData(res, { ok: true });
   }),
 );
 
@@ -47,7 +73,7 @@ authRouter.post(
   validateBody(z.object({ challenge: z.string().min(1), code: z.string().min(6).max(8) })),
   asyncHandler(async (req, res) => {
     const { challenge, code } = req.body as { challenge: string; code: string };
-    sendData(res, await completeMfaLogin(challenge, code));
+    withSession(res, await completeMfaLogin(challenge, code));
   }),
 );
 
@@ -140,7 +166,7 @@ authRouter.post(
   validateBody(OrgInviteAcceptSchema),
   asyncHandler(async (req, res) => {
     const { token, ...body } = req.body as z.infer<typeof OrgInviteAcceptSchema>;
-    sendData(res, await acceptOrgInvite(token, body), 201);
+    withSession(res, await acceptOrgInvite(token, body), 201);
   }),
 );
 
@@ -153,7 +179,8 @@ authRouter.post(
   validateBody(GoogleLoginSchema),
   asyncHandler(async (req, res) => {
     const { credential } = req.body as z.infer<typeof GoogleLoginSchema>;
-    sendData(res, await loginWithGoogle(credential));
+    // Résultat = { token, user } (compte lié) OU { needsSignup } (aucun token → pas de session).
+    withSession(res, (await loginWithGoogle(credential)) as { token?: string });
   }),
 );
 

@@ -27,11 +27,13 @@ export async function apiLogin(request: APIRequestContext): Promise<Auth> {
   return data;
 }
 
-/** Injecte la session dans le localStorage AVANT le chargement de la page (clé pr360.auth). */
-export async function injectAuth(page: Page, auth: Auth): Promise<void> {
-  await page.addInitScript((value) => {
-    window.localStorage.setItem('pr360.auth', value);
-  }, JSON.stringify(auth));
+/** Connexion via le formulaire (pose le cookie de session httpOnly dans le contexte du navigateur). */
+export async function uiLogin(page: Page): Promise<void> {
+  await page.goto('/admin/login');
+  await page.locator('input[type="email"]').fill(ADMIN_EMAIL);
+  await page.locator('input[type="password"]').fill(ADMIN_PASSWORD);
+  await page.getByRole('button', { name: /Se connecter/i }).click();
+  await page.waitForURL('**/admin');
 }
 
 /** Appel API authentifié renvoyant le payload déballé. */

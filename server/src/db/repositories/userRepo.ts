@@ -139,7 +139,20 @@ export async function updatePasswordHash(
   passwordHash: string,
   db: Queryable = pool,
 ): Promise<void> {
-  await db.query('UPDATE users SET password_hash = $2 WHERE id = $1', [userId, passwordHash]);
+  // Horodate le changement → révoque toutes les sessions émises avant (voir requireAuth).
+  await db.query(
+    'UPDATE users SET password_hash = $2, password_changed_at = now() WHERE id = $1',
+    [userId, passwordHash],
+  );
+}
+
+/** Instant du dernier changement de mot de passe (null si jamais changé). Pour la révocation de session. */
+export async function findPasswordChangedAt(userId: string, db: Queryable = pool): Promise<Date | null> {
+  const { rows } = await db.query<{ password_changed_at: Date | null }>(
+    'SELECT password_changed_at FROM users WHERE id = $1',
+    [userId],
+  );
+  return rows[0]?.password_changed_at ?? null;
 }
 
 export async function countUsers(db: Queryable = pool): Promise<number> {

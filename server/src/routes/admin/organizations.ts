@@ -6,6 +6,7 @@ import { validateBody } from '../../middleware/validate';
 import { requireAuth, requirePlatformAdmin } from '../../middleware/auth';
 import { AppError } from '../../http/AppError';
 import { signToken } from '../../lib/jwt';
+import { issueSession } from '../../lib/session';
 import {
   createOrganization,
   findOrganizationById,
@@ -104,6 +105,8 @@ organizationsRouter.post(
       organizationId: org.id,
       isPlatformAdmin: user.isPlatformAdmin,
     });
+    // Nouvelle session (org active différente) → on remplace le cookie httpOnly.
+    issueSession(res, token);
     // Le DTO renvoyé reflète l'organisation active (pour l'affichage du rail).
     sendData(res, { token, user: { ...user, organizationId: org.id, organizationName: org.name } });
   }),

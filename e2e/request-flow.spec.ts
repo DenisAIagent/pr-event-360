@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiLogin, injectAuth, api } from './helpers';
+import { apiLogin, uiLogin, api } from './helpers';
 
 /**
  * Parcours critique de bout en bout : création d'événement → accréditation publique →
@@ -67,8 +67,9 @@ test('accréditation → acceptation → demande → refuser/rouvrir', async ({ 
     data: { type: 'interview', artistId, slotId: null, stageId: null, message: 'Demande E2E' },
   });
 
-  // 5) Back-office : la file des demandes se charge (PAS de page blanche) et affiche la demande.
-  await injectAuth(page, auth);
+  // 5) Back-office : connexion réelle (pose le cookie de session) puis la file des demandes
+  // se charge (PAS de page blanche) et affiche la demande.
+  await uiLogin(page);
   await page.goto(`/admin/events/${event.id}/requests`);
 
   await expect(page.getByRole('heading', { name: `E2E ${stamp}` })).toBeVisible();

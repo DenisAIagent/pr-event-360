@@ -20,6 +20,14 @@ interface Envelope<T> {
 
 const BASE = '/api';
 
+/** Lit un cookie non-httpOnly (ici le jeton CSRF déposé à l'ouverture de session). */
+function readCookie(name: string): string | undefined {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]!) : undefined;
+}
+
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 async function request<T>(
   method: string,
   path: string,
@@ -28,13 +36,21 @@ async function request<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // Repli Bearer (clients/tests) — l'auth normale du navigateur passe par le cookie de session.
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Double-submit CSRF : on rejoue le cookie CSRF en en-tête sur les requêtes mutantes.
+  if (MUTATING.has(method)) {
+    const csrf = readCookie('pr360_csrf');
+    if (csrf) headers['X-CSRF-Token'] = csrf;
+  }
 
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       method,
       headers,
+      // Envoie/reçoit les cookies de session (même origine en prod, cross-origin en dev via CORS credentials).
+      credentials: 'include',
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {

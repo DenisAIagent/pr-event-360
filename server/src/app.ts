@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { loadEnv } from './config/env';
 import { sendData } from './http/respond';
@@ -113,9 +114,15 @@ export function createApp(): Express {
       // onglet gsi/transform blanc). `same-origin-allow-popups` garde la protection
       // tout en autorisant la communication avec les popups d'auth.
       crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      // HSTS : force HTTPS pendant 1 an (sous-domaines inclus), éligible à la preload list.
+      // N'a d'effet que servi en HTTPS — inoffensif en dev http.
+      strictTransportSecurity: { maxAge: 31_536_000, includeSubDomains: true, preload: true },
     }),
   );
-  app.use(cors({ origin: env.CLIENT_URL }));
+  // CORS avec cookies : le front doit pouvoir envoyer le cookie de session cross-origin en dev
+  // (5173 → 4000). credentials:true impose une origine explicite (pas de '*').
+  app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
+  app.use(cookieParser());
 
   // Webhook Stripe : la vérification de signature exige le CORPS BRUT → déclaré AVANT
   // express.json (qui consommerait/parserait le corps).
