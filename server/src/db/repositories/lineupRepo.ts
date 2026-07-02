@@ -1,6 +1,22 @@
 import { pool } from '../pool';
 import type { Queryable } from '../types';
+import { AppError } from '../../http/AppError';
 import type { Artist, ArtistWindow, InterviewSlot, Stage } from '../../domain';
+
+/**
+ * Garde-fou multi-tenant : refuse une scène qui n'appartient pas à l'événement.
+ * L'isolation ne peut pas reposer que sur le scoping applicatif — un UUID de scène
+ * d'un autre événement passerait la validation Zod (uuid valide) sans ce contrôle.
+ */
+async function assertStageInEvent(
+  stageId: string | null | undefined,
+  eventId: string,
+  db: Queryable,
+): Promise<void> {
+  if (!stageId) return;
+  const { rowCount } = await db.query('SELECT 1 FROM stages WHERE id = $1 AND event_id = $2', [stageId, eventId]);
+  if (!rowCount) throw AppError.badRequest('Scène introuvable pour cet événement.');
+}
 
 // ── Stages ──────────────────────────────────────────────────────────
 interface StageRow {
@@ -94,6 +110,7 @@ export async function insertArtist(
   input: ArtistInput & { eventId: string },
   db: Queryable = pool,
 ): Promise<Artist> {
+  await assertStageInEvent(input.stageId, input.eventId, db);
   const { rows } = await db.query<ArtistRow>(
     `INSERT INTO artists (event_id, name, stage_id, itw_quota, photo_quota, video_quota)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${ARTIST_COLS}`,
@@ -136,6 +153,7 @@ export async function updateArtist(
   input: ArtistInput,
   db: Queryable = pool,
 ): Promise<Artist | null> {
+  await assertStageInEvent(input.stageId, eventId, db);
   const { rows } = await db.query<ArtistRow>(
     `UPDATE artists SET name = $3, stage_id = $4, itw_quota = $5, photo_quota = $6, video_quota = $7
      WHERE id = $1 AND event_id = $2

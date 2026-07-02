@@ -10,7 +10,7 @@ import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
 import { nowMs } from '../lib/clock';
 import { getConfig } from '../db/repositories/eventRepo';
-import { findArtist, findSlot } from '../db/repositories/lineupRepo';
+import { findArtist, findSlot, findStage } from '../db/repositories/lineupRepo';
 import { findJournalistByToken } from '../db/repositories/journalistRepo';
 import {
   addHistory,
@@ -60,6 +60,12 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
   const event = await getEventOrThrow(journalist.eventId);
   const config = await getConfig(journalist.eventId);
   if (!config) throw AppError.notFound('Configuration de l’événement introuvable');
+
+  // Garde-fou multi-tenant : une scène ciblée doit appartenir à l'événement du
+  // journaliste (le stageId vient du client, un UUID d'un autre event passerait Zod).
+  if (input.stageId && !(await findStage(input.stageId, journalist.eventId))) {
+    throw AppError.badRequest('Scène inconnue pour cet événement');
+  }
 
   // Validation de cohérence cible selon le type.
   let initialStatus: RequestStatus = 'pas_encore_traite';

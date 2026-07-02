@@ -51,12 +51,22 @@ export async function submitAccreditation(input: SubmitAccreditationInput): Prom
     const mt = await findMediaType(input.mediaTypeId, input.eventId);
     if (!mt) throw AppError.badRequest('Type de média inconnu pour cet événement');
   }
-  // Anti-doublon : une seule demande par email et par événement.
+  // Anti-doublon : une seule demande par email et par événement. Le pré-contrôle
+  // couvre le cas courant ; l'index unique (event_id, lower(email)) tranche la course
+  // entre deux soumissions concurrentes — on retraduit la violation 23505 en 400.
   if (await existsJournalistByEventEmail(input.eventId, input.email)) {
     throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.');
   }
 
-  const journalist = await withTransaction((db) => insertJournalist({ ...input }, db));
+  let journalist: Journalist;
+  try {
+    journalist = await withTransaction((db) => insertJournalist({ ...input }, db));
+  } catch (e) {
+    if (e instanceof Error && 'code' in e && (e as { code?: string }).code === '23505') {
+      throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.');
+    }
+    throw e;
+  }
 
   // Envoi HORS transaction (I/O réseau en mode live) : accusé de réception.
   await sendNotification({

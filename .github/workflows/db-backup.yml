@@ -4,14 +4,18 @@ name: Sauvegarde base de données
 # GitHub (hors Railway — survit à une réinitialisation du service Postgres).
 #
 # Prérequis (une seule fois) :
-#   GitHub → Settings → Secrets and variables → Actions → New repository secret
-#     Nom   : BACKUP_DATABASE_URL
-#     Valeur: la chaîne de connexion PUBLIQUE de la base Railway
-#             (service Postgres → Variables → DATABASE_PUBLIC_URL, host en *.proxy.rlwy.net).
+#   1) Générer une paire de clés age EN LOCAL (le CI ne détient JAMAIS la clé privée) :
+#        age-keygen -o backup-age-key.txt
+#      → conserver backup-age-key.txt hors ligne (gestionnaire de secrets/coffre).
+#        La 1re ligne « # public key: age1... » est la clé publique.
+#   2) GitHub → Settings → Secrets and variables → Actions → New repository secret
+#        Nom : BACKUP_DATABASE_URL     Valeur : DATABASE_PUBLIC_URL de Railway (host *.proxy.rlwy.net)
+#        Nom : BACKUP_AGE_PUBLIC_KEY   Valeur : la clé publique age1... (PAS la clé privée)
 #   ⚠️ Pas l'URL interne (*.railway.internal), inaccessible depuis GitHub.
 #
-# Restauration d'une archive :
-#   pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" backup-AAAAMMJJ-HHMMSS.dump
+# Restauration d'une archive (nécessite la clé privée age, hors CI) :
+#   age -d -i backup-age-key.txt backup-AAAAMMJJ-HHMMSS.dump.age > backup.dump
+#   pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" backup.dump
 
 on:
   schedule:
@@ -22,12 +26,18 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Vérifier le secret
+      - name: Vérifier les secrets
         env:
           BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_AGE_PUBLIC_KEY: ${{ secrets.BACKUP_AGE_PUBLIC_KEY }}
         run: |
           if [ -z "$BACKUP_DATABASE_URL" ]; then
             echo "::error::Secret BACKUP_DATABASE_URL absent. Ajoutez-le (DATABASE_PUBLIC_URL de Railway)."
+            exit 1
+          fi
+          # Chiffrement OBLIGATOIRE : sans clé publique, on refuse plutôt que d'uploader un dump en clair.
+          if [ -z "$BACKUP_AGE_PUBLIC_KEY" ]; then
+            echo "::error::Secret BACKUP_AGE_PUBLIC_KEY absent. Le backup ne doit jamais être stocké en clair (RGPD/DPA)."
             exit 1
           fi
 
@@ -38,9 +48,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
 
-      - name: Dump de la base
+      - name: Installer age (chiffrement)
+        run: sudo apt-get update && sudo apt-get install -y age
+
+      - name: Dump + chiffrement de la base
         env:
           BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_AGE_PUBLIC_KEY: ${{ secrets.BACKUP_AGE_PUBLIC_KEY }}
         run: |
           # Choisit le pg_dump le plus récent installé (doit être >= version du serveur Postgres).
           PGDUMP=$(ls -d /usr/lib/postgresql/*/bin/pg_dump 2>/dev/null | sort -V | tail -1)
@@ -48,14 +62,17 @@ jobs:
           echo "Utilisation de : $("$PGDUMP" --version)"
           ts=$(date -u +%Y%m%d-%H%M%S)
           # Format custom (-Fc) : compressé + restaurable sélectivement via pg_restore.
+          # Dump dans un fichier temporaire jamais uploadé, chiffré immédiatement vers .age.
           "$PGDUMP" "$BACKUP_DATABASE_URL" --no-owner --no-privileges -Fc -f "backup-$ts.dump"
-          ls -lh backup-*.dump
-          echo "ARCHIVE=backup-$ts.dump" >> "$GITHUB_ENV"
+          age -r "$BACKUP_AGE_PUBLIC_KEY" -o "backup-$ts.dump.age" "backup-$ts.dump"
+          rm -f "backup-$ts.dump" # ne jamais conserver la version en clair
+          ls -lh backup-*.dump.age
+          echo "ARCHIVE=backup-$ts.dump.age" >> "$GITHUB_ENV"
 
-      - name: Conserver l'archive
+      - name: Conserver l'archive chiffrée
         uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ env.ARCHIVE }}
-          path: backup-*.dump
+          path: backup-*.dump.age
           retention-days: 30
           if-no-files-found: error

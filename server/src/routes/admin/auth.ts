@@ -2,10 +2,11 @@ import { Router, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
+import { AppError } from '../../http/AppError';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
-import { issueSession, clearSession } from '../../lib/session';
+import { issueSession, clearSession, csrfValid } from '../../lib/session';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
 
 /** Si le résultat contient un jeton, ouvre la session (cookie httpOnly + CSRF) avant de répondre. */
@@ -58,10 +59,13 @@ authRouter.get(
   }),
 );
 
-// Déconnexion : efface les cookies de session + CSRF.
+// Déconnexion : efface les cookies de session + CSRF. Garde CSRF (double-submit)
+// sans requireAuth : bloque le logout-CSRF forcé, mais laisse un compte suspendu ou
+// une session expirée nettoyer ses cookies (pas de relecture des droits en base).
 authRouter.post(
   '/logout',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    if (!csrfValid(req)) throw AppError.forbidden('Jeton CSRF manquant ou invalide');
     clearSession(res);
     sendData(res, { ok: true });
   }),
