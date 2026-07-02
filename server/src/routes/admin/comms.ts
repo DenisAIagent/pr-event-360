@@ -8,7 +8,7 @@ import { requireAuth, requireEventEditor } from '../../middleware/auth';
 import { getAccessibleEventOrThrow, getEventOrThrow, type AccessActor } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
 import { getBranding } from '../../db/repositories/eventRepo';
-import { signUpload } from '../../services/storageService';
+import { signUpload, MAX_UPLOAD_BYTES } from '../../services/storageService';
 import { sendNewsletter } from '../../services/newsletterService';
 import { sendPressReleaseEmail } from '../../services/pressReleaseService';
 import { createAsset, deleteAsset, listAssets } from '../../db/repositories/assetRepo';
@@ -72,7 +72,7 @@ const AssetSchema = z.object({
   url: httpsUrl(),
   thumbnailUrl: httpsUrl().nullish(),
   mime: z.string().nullish(),
-  bytes: z.number().int().nonnegative().nullish(),
+  bytes: z.number().int().nonnegative().max(MAX_UPLOAD_BYTES, 'Fichier trop volumineux').nullish(),
   source: z.enum(['upload', 'link']).optional(),
 });
 commsRouter.post(

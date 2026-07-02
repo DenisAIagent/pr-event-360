@@ -6,7 +6,7 @@ vi.mock('../src/services/settingsService', () => ({
   getStorageSettings: vi.fn(),
 }));
 import * as settings from '../src/services/settingsService';
-import { signUpload } from '../src/services/storageService';
+import { signUpload, ALLOWED_UPLOAD_FORMATS, MAX_UPLOAD_BYTES } from '../src/services/storageService';
 import { AppError } from '../src/http/AppError';
 
 afterEach(() => vi.clearAllMocks());
@@ -50,18 +50,29 @@ describe('renderBrandedEmail', () => {
 });
 
 describe('signUpload (Cloudinary)', () => {
-  it('génère une signature SHA-1 conforme et scope le dossier par événement', async () => {
+  it('signe allowed_formats + folder + timestamp (formats imposés côté Cloudinary)', async () => {
     vi.mocked(settings.getStorageSettings).mockResolvedValue({
       cloudName: 'demo',
       apiKey: '123',
       apiSecret: 'secret',
     });
     const sig = await signUpload('evt-1', 1700);
-    const expected = createHash('sha1').update('folder=pr-event-360/evt-1&timestamp=1700secret').digest('hex');
+    const formats = ALLOWED_UPLOAD_FORMATS.join(',');
+    // Paramètres triés alphabétiquement : allowed_formats < folder < timestamp.
+    const expected = createHash('sha1')
+      .update(`allowed_formats=${formats}&folder=pr-event-360/evt-1&timestamp=1700secret`)
+      .digest('hex');
     expect(sig.signature).toBe(expected);
+    expect(sig.allowedFormats).toBe(formats);
     expect(sig.folder).toBe('pr-event-360/evt-1');
+    expect(sig.maxBytes).toBe(MAX_UPLOAD_BYTES);
     expect(sig.uploadUrl).toContain('demo');
-    expect(sig.apiKey).toBe('123');
+  });
+
+  it('n’autorise pas les formats dangereux (SVG/HTML/exécutables) dans l’allowlist', () => {
+    for (const bad of ['svg', 'html', 'js', 'exe', 'sh']) {
+      expect(ALLOWED_UPLOAD_FORMATS).not.toContain(bad);
+    }
   });
 
   it('lève si Cloudinary n’est pas configuré', async () => {

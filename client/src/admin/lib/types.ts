@@ -110,8 +110,10 @@ export interface UploadSignature {
   apiKey: string;
   timestamp: number;
   folder: string;
+  allowedFormats: string;
   signature: string;
   uploadUrl: string;
+  maxBytes: number;
 }
 export type RequestStatus =
   | 'pas_encore_traite'
