@@ -146,5 +146,6 @@
   "space.coverage.cat.video": "Vídeo",
   "space.coverage.cat.autre": "Otro",
   "space.password.changeHint": "Ya hay una contraseña definida. Para cambiarla, usa «olvidé mi contraseña» — te enviaremos un enlace seguro por correo.",
-  "space.password.forgotLink": "Olvidé mi contraseña"
+  "space.password.forgotLink": "Olvidé mi contraseña",
+  "space.logout": "Cerrar sesión"
 }

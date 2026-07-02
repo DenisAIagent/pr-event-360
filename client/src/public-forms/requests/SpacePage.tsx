@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Inbox, CalendarDays, Newspaper, KeyRound, ExternalLink } from 'lucide-react';
+import { Inbox, CalendarDays, Newspaper, KeyRound, ExternalLink, LogOut } from 'lucide-react';
 import { useI18n, isLang } from '../../i18n';
 import { domainEvent } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
@@ -14,10 +13,10 @@ import { CoverageSection } from './CoverageSection';
 type SpaceTab = 'requests' | 'planning' | 'coverage' | 'account';
 
 /**
- * Espace journaliste. En mode normal, charge les données via le token de l'URL.
- * En mode aperçu (back-office), reçoit `previewData` et désactive l'envoi.
- * Mise en page « app-shell » : rail sombre à gauche (navigation journaliste) + contenu,
- * même allure que le back-office des attachés de presse.
+ * Espace journaliste. En mode normal, charge les données via la SESSION (cookie
+ * httpOnly, plus de token dans l'URL). En mode aperçu (back-office), reçoit
+ * `previewData` et désactive l'envoi. Mise en page « app-shell » : rail sombre à
+ * gauche (navigation journaliste) + contenu, même allure que le back-office.
  */
 export function SpacePage({
   previewData,
@@ -26,7 +25,6 @@ export function SpacePage({
   previewData?: SpaceResponse;
   readOnly?: boolean;
 } = {}) {
-  const { token = '' } = useParams();
   const { t, lang, setLang } = useI18n();
   const [data, setData] = useState<SpaceResponse | null>(previewData ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -47,7 +45,7 @@ export function SpacePage({
 
   async function load() {
     try {
-      const res = await api.get<SpaceResponse>(`/public/space/${token}`);
+      const res = await api.get<SpaceResponse>('/public/space');
       setData(res);
       if (isLang(res.journalist.lang)) setLang(res.journalist.lang);
     } catch (err) {
@@ -64,7 +62,7 @@ export function SpacePage({
     }
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, previewData]);
+  }, [previewData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +71,7 @@ export function SpacePage({
     setSent(false);
     setSubmitting(true);
     try {
-      await api.post(`/public/space/${token}/requests`, {
+      await api.post('/public/space/requests', {
         type,
         artistId: artistId || null,
         slotId: null,
@@ -91,6 +89,12 @@ export function SpacePage({
     }
   }
 
+  async function logout() {
+    await api.post('/public/journalist/logout').catch(() => undefined);
+    // Retour à la connexion de l'événement (mode domaine : racine du domaine).
+    window.location.href = domainEvent ? '/connexion' : `/evenement/${data?.event.id}/connexion`;
+  }
+
   async function savePassword(e: React.FormEvent) {
     e.preventDefault();
     if (readOnly) return;
@@ -106,7 +110,7 @@ export function SpacePage({
     }
     setPwdBusy(true);
     try {
-      await api.post(`/public/space/${token}/password`, { password: pwd });
+      await api.post('/public/space/password', { password: pwd });
       setPwdSaved(true);
       setPwd('');
       setPwdConfirm('');
@@ -201,8 +205,14 @@ export function SpacePage({
             <span>{t('space.eyebrow')}</span>
           </div>
         </div>
-        <div style={{ padding: '0 14px 14px' }}>
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <LanguageSwitcher available={data.event.languages.filter(isLang)} />
+          {!readOnly && (
+            <button type="button" className="jspace-nav-item" onClick={logout} style={{ width: '100%' }}>
+              <LogOut size={17} />
+              {t('space.logout')}
+            </button>
+          )}
         </div>
       </aside>
 
@@ -390,7 +400,6 @@ export function SpacePage({
 
           {tab === 'coverage' && (
             <CoverageSection
-              token={token}
               coverage={data.coverage ?? []}
               ended={data.event.ended ?? false}
               readOnly={readOnly}

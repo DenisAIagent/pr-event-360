@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/db/repositories/journalistRepo', () => ({
   findAcceptedJournalistByEmail: vi.fn(),
   findAcceptedJournalistByEmailForReset: vi.fn(),
-  findJournalistByToken: vi.fn(),
+  findJournalistById: vi.fn(),
   setJournalistPassword: vi.fn(),
 }));
 vi.mock('../src/db/repositories/journalistResetRepo', () => ({
@@ -40,25 +40,25 @@ afterEach(() => vi.clearAllMocks());
 
 describe('setSpacePassword — anti-détournement du lien magique', () => {
   it('autorise le PREMIER réglage (aucun mot de passe encore défini)', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted() as never);
-    await setSpacePassword('tok', 'motdepassefort');
+    vi.mocked(repo.findJournalistById).mockResolvedValue(accepted() as never);
+    await setSpacePassword('j1', 'motdepassefort');
     expect(repo.setJournalistPassword).toHaveBeenCalledOnce();
   });
 
   it('REFUSE de remplacer un mot de passe existant via le seul lien magique', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ passwordHash: 'argon2$hash' }) as never);
-    await expect(setSpacePassword('tok', 'nouveaumotdepasse')).rejects.toBeInstanceOf(AppError);
+    vi.mocked(repo.findJournalistById).mockResolvedValue(accepted({ passwordHash: 'argon2$hash' }) as never);
+    await expect(setSpacePassword('j1', 'nouveaumotdepasse')).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 
   it('refuse si le token est inconnu', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(null as never);
-    await expect(setSpacePassword('inconnu', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
+    vi.mocked(repo.findJournalistById).mockResolvedValue(null as never);
+    await expect(setSpacePassword('nope', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
   });
 
   it('refuse si l’accréditation n’est pas acceptée', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ accStatus: 'pas_encore_traite' }) as never);
-    await expect(setSpacePassword('tok', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
+    vi.mocked(repo.findJournalistById).mockResolvedValue(accepted({ accStatus: 'pas_encore_traite' }) as never);
+    await expect(setSpacePassword('j1', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 });

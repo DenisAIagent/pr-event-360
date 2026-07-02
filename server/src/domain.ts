@@ -131,7 +131,6 @@ export interface InterviewSlot {
 export interface Journalist {
   id: string;
   eventId: string;
-  token: string | null;
   firstName: string;
   lastName: string | null;
   email: string;

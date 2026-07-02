@@ -146,5 +146,6 @@
   "space.coverage.cat.video": "Vidéo",
   "space.coverage.cat.autre": "Autre",
   "space.password.changeHint": "Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié » — un lien sécurisé vous sera envoyé par email.",
-  "space.password.forgotLink": "Mot de passe oublié"
+  "space.password.forgotLink": "Mot de passe oublié",
+  "space.logout": "Se déconnecter"
 }

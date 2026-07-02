@@ -1,8 +1,7 @@
 import type { AccreditationType, Lang } from '@pr-event-360/core';
 import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
-import { loadEnv } from '../config/env';
-import { generateJournalistToken } from '../lib/token';
+import { accessLinkUrl, issueAccessToken } from './journalistAccessService';
 import { getEventOrThrow, isRegistrationClosed } from './eventService';
 import { findMediaType } from '../db/repositories/eventRepo';
 import {
@@ -15,8 +14,6 @@ import {
 import { sendNotification } from './notifications/notificationService';
 import { TRIGGERS } from './notifications/templates';
 import type { Journalist } from '../domain';
-
-const env = loadEnv();
 
 export interface SubmitAccreditationInput {
   eventId: string;
@@ -101,13 +98,13 @@ export async function processAccreditation(
   }
 
   if (action === 'accept') {
-    const token = journalist.token ?? generateJournalistToken();
     const updated = await withTransaction((db) =>
-      updateAccreditation(journalistId, 'acceptee', token, db),
+      updateAccreditation(journalistId, 'acceptee', db),
     );
     if (!updated) throw AppError.notFound('Journaliste introuvable');
 
-    const link = `${env.CLIENT_URL}/espace/${updated.token}`;
+    // Jeton d'accès haché + expirable : le brut n'existe que le temps de l'email.
+    const link = accessLinkUrl(await issueAccessToken(updated.id));
     const base = {
       eventId: event.id,
       eventName: event.name,
@@ -122,7 +119,7 @@ export async function processAccreditation(
   }
 
   const updated = await withTransaction((db) =>
-    updateAccreditation(journalistId, 'refusee', null, db),
+    updateAccreditation(journalistId, 'refusee', db),
   );
   if (!updated) throw AppError.notFound('Journaliste introuvable');
   await sendNotification({

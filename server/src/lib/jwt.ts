@@ -60,3 +60,25 @@ export function verifyGoogleChallenge(token: string): GoogleChallengeClaims {
   if (payload.typ !== 'google') throw new Error('Jeton de challenge Google invalide');
   return { googleId: payload.googleId, email: payload.email, name: payload.name };
 }
+
+// ── Session espace journaliste : JWT en cookie httpOnly (typ:'jspace'). Remplace
+// l'ancien token permanent-en-clair-dans-l'URL. Porte l'id du journaliste + son
+// événement ; les droits (accréditation acceptée) sont relus en base à chaque requête.
+const JSPACE_EXPIRES_IN = '30d';
+
+export interface JournalistSessionClaims {
+  jid: string; // journalist id
+  eid: string; // event id
+}
+
+export function signJournalistSession(claims: JournalistSessionClaims): string {
+  return jwt.sign({ ...claims, typ: 'jspace' }, env.JWT_SECRET, { expiresIn: JSPACE_EXPIRES_IN });
+}
+
+export function verifyJournalistSession(token: string): JournalistSessionClaims {
+  const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as JournalistSessionClaims & {
+    typ?: string;
+  };
+  if (payload.typ !== 'jspace') throw new Error('Jeton de session journaliste invalide');
+  return { jid: payload.jid, eid: payload.eid };
+}

@@ -9,8 +9,8 @@ import { brandingStyle } from '../../lib/branding';
 
 /**
  * Connexion du journaliste à son espace par email + mot de passe (compte par
- * événement). En cas de succès, le serveur renvoie le token d'espace et l'on
- * redirige vers /espace/:token. Le lien magique reste une alternative valable.
+ * événement). En cas de succès, le serveur pose le cookie de session et l'on
+ * redirige vers /espace. Le lien d'accès reçu par email reste une alternative valable.
  */
 export function JournalistLoginPage() {
   const eventId = useEventId();
@@ -40,12 +40,13 @@ export function JournalistLoginPage() {
     setError(null);
     setBusy(true);
     try {
-      const { token } = await api.post<{ token: string; firstName: string }>('/public/journalist/login', {
+      // Le login pose le cookie de session ; l'espace se charge sans token dans l'URL.
+      await api.post<{ firstName: string }>('/public/journalist/login', {
         eventId,
         email,
         password,
       });
-      navigate(`/espace/${token}`, { replace: true });
+      navigate('/espace', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('login.error'));
     } finally {

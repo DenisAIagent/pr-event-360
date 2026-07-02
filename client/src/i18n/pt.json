@@ -146,5 +146,6 @@
   "space.coverage.cat.video": "Vídeo",
   "space.coverage.cat.autre": "Outro",
   "space.password.changeHint": "Uma senha já está definida. Para alterá-la, use «esqueci a senha» — enviaremos um link seguro por email.",
-  "space.password.forgotLink": "Esqueci a senha"
+  "space.password.forgotLink": "Esqueci a senha",
+  "space.logout": "Sair"
 }

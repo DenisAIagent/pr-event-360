@@ -235,7 +235,6 @@ export interface Accreditation {
   lang: Lang;
   accreditationType: 'presse' | 'photo' | 'video' | null;
   accStatus: AccStatus;
-  token: string | null;
   createdAt: string;
 }
 

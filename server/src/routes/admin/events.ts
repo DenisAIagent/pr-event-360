@@ -44,7 +44,8 @@ import {
   deleteStage,
 } from '../../db/repositories/lineupRepo';
 import { listAccreditations, processAccreditation } from '../../services/accreditationService';
-import { deleteJournalist } from '../../db/repositories/journalistRepo';
+import { accessLinkUrl, issueAccessToken } from '../../services/journalistAccessService';
+import { deleteJournalist, findJournalistById } from '../../db/repositories/journalistRepo';
 import { changeRequestStatus } from '../../services/requestService';
 import { getDashboard, getQueue } from '../../services/queueService';
 import { generatePlanning } from '../../services/planningService';
@@ -507,6 +508,23 @@ eventsRouter.post(
       body.action,
     );
     sendData(res, journalist);
+  }),
+);
+
+// Génère un lien d'accès à l'espace journaliste (à renvoyer si l'email est perdu).
+// Le jeton n'est stocké que HACHÉ : le lien brut n'est disponible qu'ici, une fois.
+eventsRouter.post(
+  '/:eventId/accreditations/:journalistId/access-link',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const journalist = await findJournalistById(req.params.journalistId!);
+    if (!journalist || journalist.eventId !== req.params.eventId!) {
+      throw AppError.notFound('Journaliste introuvable pour cet événement');
+    }
+    if (journalist.accStatus !== 'acceptee') throw AppError.badRequest('Accréditation non acceptée');
+    const link = accessLinkUrl(await issueAccessToken(journalist.id));
+    sendData(res, { link });
   }),
 );
 

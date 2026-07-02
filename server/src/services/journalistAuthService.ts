@@ -5,9 +5,10 @@ import { generateResetToken, hashResetToken } from '../lib/token';
 import {
   findAcceptedJournalistByEmail,
   findAcceptedJournalistByEmailForReset,
-  findJournalistByToken,
+  findJournalistById,
   setJournalistPassword,
 } from '../db/repositories/journalistRepo';
+import type { JournalistSessionClaims } from '../lib/jwt';
 import {
   createJournalistReset,
   deletePendingForJournalist,
@@ -20,14 +21,13 @@ const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 /**
- * Le journaliste (accès par lien magique) définit son mot de passe d'espace la
- * PREMIÈRE fois. Une fois un mot de passe posé, il n'est plus remplaçable via le
- * seul lien magique : sinon tout porteur d'un lien fuité pourrait détourner le
- * compte. Le changement passe alors par le flux « mot de passe oublié » (email +
- * token de reset haché à usage unique — resetJournalistPassword).
+ * Le journaliste (authentifié par sa session d'espace) définit son mot de passe la
+ * PREMIÈRE fois. Une fois un mot de passe posé, il n'est plus remplaçable ainsi :
+ * sinon un accès de session détourné pourrait prendre le compte. Le changement passe
+ * par le flux « mot de passe oublié » (email + token de reset haché à usage unique).
  */
-export async function setSpacePassword(token: string, password: string): Promise<void> {
-  const journalist = await findJournalistByToken(token);
+export async function setSpacePassword(journalistId: string, password: string): Promise<void> {
+  const journalist = await findJournalistById(journalistId);
   if (!journalist) throw AppError.notFound('Espace introuvable');
   if (journalist.accStatus !== 'acceptee') {
     throw AppError.forbidden('Accréditation non encore acceptée');
@@ -46,13 +46,14 @@ export async function setSpacePassword(token: string, password: string): Promise
 
 /**
  * Login journaliste par email + mot de passe (compte par événement). En cas de succès,
- * renvoie le token d'espace existant : le client redirige alors vers /espace/:token.
+ * renvoie les claims de session (jid, eid) + le prénom : la route pose le cookie de
+ * session, le client va ensuite sur /espace (sans token dans l'URL).
  */
 export async function journalistLogin(
   eventId: string,
   email: string,
   password: string,
-): Promise<{ token: string; firstName: string }> {
+): Promise<JournalistSessionClaims & { firstName: string }> {
   const journalist = await findAcceptedJournalistByEmail(eventId, email);
   // Message générique : on ne révèle pas si un compte existe.
   const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
@@ -62,8 +63,8 @@ export async function journalistLogin(
     throw invalid;
   }
   const ok = await argon2.verify(journalist.passwordHash, password);
-  if (!ok || !journalist.token) throw invalid;
-  return { token: journalist.token, firstName: journalist.firstName };
+  if (!ok) throw invalid;
+  return { jid: journalist.id, eid: journalist.eventId, firstName: journalist.firstName };
 }
 
 /**

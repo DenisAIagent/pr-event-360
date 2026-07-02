@@ -38,13 +38,11 @@ function domainOf(url: string): string {
  * Pour tout média uploadé, l'autorisation d'archivage + usage promotionnel est obligatoire.
  */
 export function CoverageSection({
-  token,
   coverage,
   ended,
   readOnly,
   onChanged,
 }: {
-  token: string;
   coverage: PressCoverageItem[];
   ended: boolean;
   readOnly: boolean;
@@ -77,7 +75,7 @@ export function CoverageSection({
     setErr(null);
     setUploadBusy(true);
     try {
-      const sig = await api.post<UploadSignature>(`/public/space/${token}/assets/sign`);
+      const sig = await api.post<UploadSignature>('/public/space/assets/sign');
       const up = await uploadToCloudinary(file, sig);
       setUrl(up.url);
       setThumbnailUrl(up.thumbnailUrl);
@@ -94,7 +92,7 @@ export function CoverageSection({
     if (mode === 'upload' && (!archive || !promo)) return setErr(t('space.coverage.errConsent'));
     setBusy(true);
     try {
-      await api.post(`/public/space/${token}/coverage`, {
+      await api.post('/public/space/coverage', {
         mediaCategory,
         isUpload: mode === 'upload',
         url,
@@ -113,7 +111,7 @@ export function CoverageSection({
   }
 
   async function remove(id: string) {
-    await api.del(`/public/space/${token}/coverage/${id}`).catch(() => {});
+    await api.del(`/public/space/coverage/${id}`).catch(() => {});
     onChanged();
   }
 

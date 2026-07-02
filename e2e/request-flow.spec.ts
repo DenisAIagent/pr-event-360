@@ -8,7 +8,9 @@ import { apiLogin, uiLogin, api } from './helpers';
  *  - la page blanche « /requests » (StatusBadge sans I18nProvider) ;
  *  - le bug « refuser » (une demande refusée réaffichait Accepter/Refuser).
  */
-test('accréditation → acceptation → demande → refuser/rouvrir', async ({ page, request }) => {
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
+
+test('accréditation → acceptation → demande → refuser/rouvrir', async ({ page, request, playwright }) => {
   const auth = await apiLogin(request);
   const t = auth.csrf;
   const stamp = Date.now();
@@ -47,7 +49,7 @@ test('accréditation → acceptation → demande → refuser/rouvrir', async ({ 
     },
   });
 
-  // 3) Acceptation par l'attaché → génère le jeton d'espace.
+  // 3) Acceptation par l'attaché.
   const listBefore = (await api(request, t, 'get', `/admin/events/${event.id}/accreditations`)) as
     | Array<{ id: string; email: string }>
     | { journalists: Array<{ id: string; email: string }> };
@@ -57,15 +59,25 @@ test('accréditation → acceptation → demande → refuser/rouvrir', async ({ 
     action: 'accept',
   });
 
-  // 4) Récupère le jeton et soumet une demande d'interview via l'espace public.
-  const listAfter = (await api(request, t, 'get', `/admin/events/${event.id}/accreditations`)) as
-    | Array<{ email: string; token: string }>
-    | { journalists: Array<{ email: string; token: string }> };
-  const arrAfter = Array.isArray(listAfter) ? listAfter : listAfter.journalists;
-  const token = arrAfter.find((j) => j.email === email)!.token;
-  await request.post(`/api/public/space/${token}/requests`, {
+  // 4) Génère un lien d'accès (jeton haché au repos), échange le jeton brut contre
+  //    une SESSION journaliste (contexte dédié pour ne pas mêler les cookies admin),
+  //    puis soumet une demande d'interview via l'espace (cookie + CSRF).
+  const { link } = (await api(
+    request,
+    t,
+    'post',
+    `/admin/events/${event.id}/accreditations/${journalist.id}/access-link`,
+  )) as { link: string };
+  const rawToken = link.split('/espace/')[1]!;
+
+  const jctx = await playwright.request.newContext({ baseURL: BASE_URL });
+  await jctx.post('/api/public/journalist/access', { data: { token: rawToken } });
+  const jcsrf = (await jctx.storageState()).cookies.find((c) => c.name === 'pr360_csrf')!.value;
+  await jctx.post('/api/public/space/requests', {
+    headers: { 'x-csrf-token': jcsrf },
     data: { type: 'interview', artistId, slotId: null, stageId: null, message: 'Demande E2E' },
   });
+  await jctx.dispose();
 
   // 5) Back-office : connexion réelle (pose le cookie de session) puis la file des demandes
   // se charge (PAS de page blanche) et affiche la demande.

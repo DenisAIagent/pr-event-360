@@ -5,6 +5,7 @@ import { JournalistLoginPage } from './public-forms/auth/JournalistLoginPage';
 import { JournalistForgotPasswordPage } from './public-forms/auth/JournalistForgotPasswordPage';
 import { JournalistResetPasswordPage } from './public-forms/auth/JournalistResetPasswordPage';
 import { SpacePage } from './public-forms/requests/SpacePage';
+import { AccessExchangePage } from './public-forms/requests/AccessExchangePage';
 import { SpacePreviewPage } from './public-forms/requests/SpacePreviewPage';
 import { NewsroomPage } from './public-forms/newsroom/NewsroomPage';
 import { PressReleasePage } from './public-forms/newsroom/PressReleasePage';
@@ -52,7 +53,8 @@ export function App() {
           <Route path="/connexion" element={<L><JournalistLoginPage /></L>} />
           <Route path="/mot-de-passe-oublie" element={<L><JournalistForgotPasswordPage /></L>} />
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
-          <Route path="/espace/:token" element={<L><SpacePage /></L>} />
+          <Route path="/espace" element={<L><SpacePage /></L>} />
+          <Route path="/espace/:token" element={<L><AccessExchangePage /></L>} />
           <Route path="/confidentialite" element={<PrivacyPage />} />
           <Route path="/mentions-legales" element={<LegalNoticePage />} />
           <Route path="/cgv" element={<TermsPage />} />
@@ -105,10 +107,18 @@ export function App() {
           }
         />
         <Route
-          path="/espace/:token"
+          path="/espace"
           element={
             <I18nProvider>
               <SpacePage />
+            </I18nProvider>
+          }
+        />
+        <Route
+          path="/espace/:token"
+          element={
+            <I18nProvider>
+              <AccessExchangePage />
             </I18nProvider>
           }
         />

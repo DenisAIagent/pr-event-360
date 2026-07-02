@@ -222,18 +222,8 @@ export function AccreditationsTab() {
                       Refuser
                     </button>
                   </div>
-                ) : a.accStatus === 'acceptee' && a.token ? (
-                  <div style={{ minWidth: 280 }}>
-                    <CopyLink url={`${window.location.origin}/espace/${a.token}`} compact />
-                    <span className="muted" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      Lien personnel (déjà envoyé par email)
-                      <InfoBubble title="Le lien personnel">
-                        Adresse <strong>unique et secrète</strong> de l'espace de ce journaliste, envoyée
-                        automatiquement par email à l'acceptation. C'est par là qu'il soumet ses demandes et
-                        suit son planning. S'il dit ne pas l'avoir reçue, copiez-la ici et renvoyez-la-lui.
-                      </InfoBubble>
-                    </span>
-                  </div>
+                ) : a.accStatus === 'acceptee' ? (
+                  <AccessLinkButton eventId={eventId} journalistId={a.id} />
                 ) : (
                   <span className="muted">—</span>
                 )}
@@ -272,5 +262,52 @@ export function AccreditationsTab() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Génère à la demande un lien d'accès à l'espace du journaliste (le jeton n'est
+ * stocké que haché : le lien brut n'existe qu'à la génération). À renvoyer si
+ * l'email d'acceptation est perdu.
+ */
+function AccessLinkButton({ eventId, journalistId }: { eventId: string; journalistId: string }) {
+  const apiAuthed = useAuthedApi();
+  const toast = useToast();
+  const [link, setLink] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function generate() {
+    setBusy(true);
+    try {
+      const r = await apiAuthed.post<{ link: string }>(
+        `/admin/events/${eventId}/accreditations/${journalistId}/access-link`,
+      );
+      setLink(r.link);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Échec de génération du lien');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (link) {
+    return (
+      <div style={{ minWidth: 280 }}>
+        <CopyLink url={link} compact />
+        <span className="muted" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          Lien d'accès valable 90 jours
+          <InfoBubble title="Le lien d'accès">
+            Ce lien ouvre l'espace du journaliste puis établit une session sécurisée. Il est valable
+            90 jours et n'est affiché qu'une fois. Un lien est déjà envoyé automatiquement par email à
+            l'acceptation ; générez-en un nouveau ici seulement si le journaliste ne l'a pas reçu.
+          </InfoBubble>
+        </span>
+      </div>
+    );
+  }
+  return (
+    <button type="button" className="btn btn-ghost btn-sm" onClick={generate} disabled={busy}>
+      {busy ? 'Génération…' : 'Générer un lien d’accès'}
+    </button>
   );
 }
