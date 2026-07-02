@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck · tests · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      # Les tests serveur chargent ../.env (dotenv) et env.ts est fail-fast :
+      # on fournit des valeurs factices — les tests unitaires mockent la DB.
+      - name: Environnement de test factice
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL=postgres://ci:ci@localhost:5432/ci
+          JWT_SECRET=ci-secret-0123456789abcdef0123456789abcdef
+          APP_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+          NODE_ENV=test
+          EOF
+
+      - name: Typecheck serveur
+        run: npm --workspace server run typecheck
+
+      - name: Tests moteur métier (packages/core)
+        run: npm --workspace packages/core run test
+
+      - name: Tests serveur
+        run: npm --workspace server run test
+
+      - name: Build client (typecheck + vite)
+        run: npm --workspace client run build
+
+  e2e:
+    name: E2E Playwright (parcours critiques)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pr360
+          POSTGRES_PASSWORD: pr360
+          POSTGRES_DB: pr360
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pr360"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      DATABASE_URL: postgres://pr360:pr360@localhost:5432/pr360
+      JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+      APP_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      NODE_ENV: test
+      NOTIFICATIONS_MODE: simulation
+      PUBLIC_BASE_URL: http://localhost:4000
+      CLIENT_URL: http://localhost:4000
+      ADMIN_EMAIL: e2e-admin@test.local
+      ADMIN_PASSWORD: E2eAdmin!2026seed
+      E2E_EMAIL: e2e-admin@test.local
+      E2E_PASSWORD: E2eAdmin!2026seed
+      E2E_BASE_URL: http://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Installer le navigateur Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Migrations + compte admin de test
+        run: |
+          npm --workspace server run migrate:deploy
+          npm --workspace server run bootstrap:admin
+
+      - name: Build client (SPA servi par le serveur)
+        run: npm --workspace client run build
+
+      - name: Démarrer le serveur + attendre le health
+        run: |
+          npm --workspace server run start &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4000/api/health >/dev/null && echo "serveur prêt" && break
+            sleep 1
+          done
+
+      - name: Tests E2E
+        run: npx playwright test
+
+      - name: Rapport Playwright (si échec)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

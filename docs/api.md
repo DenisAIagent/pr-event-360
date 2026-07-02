@@ -7,14 +7,14 @@ Base : `/api`. Réponses au format enveloppe `{ success, data }` / `{ success, e
 | Marqueur | Signification |
 |---|---|
 | **public** | Aucune authentification |
-| **auth** | JWT Bearer valide requis (`Authorization: Bearer <token>`) |
+| **auth** | Session cookie `pr360_session` valide ou JWT Bearer explicite (`Authorization: Bearer <token>`) |
 | **accès événement** | auth + l'utilisateur doit avoir accès à l'événement (admin = tout, sinon membre) |
 | **éditeur** | accès événement **et** rôle `admin` ou `attache` (l'`assistant` est en lecture/traitement) |
 | **admin** | auth + rôle `admin` |
 
-Le JWT (12 h, HS256) porte `{ sub, email, role, organizationId }`. Obtenu via
-`POST /api/admin/auth/login`. Le statut super-admin (`is_platform_admin`) est relu en base
-à chaque requête, pas porté par le jeton.
+Le JWT (12 h, HS256) est posé en cookie `HttpOnly` par les routes de connexion. Le rôle,
+l'activation du compte, le statut super-admin et l'abonnement sont relus en base à chaque
+requête ; ils ne restent pas figés dans la session.
 
 ## Santé
 
@@ -27,12 +27,12 @@ Le JWT (12 h, HS256) porte `{ sub, email, role, organizationId }`. Obtenu via
 | Méthode | Chemin | Accès | Description |
 |---|---|---|---|
 | GET | `/config` | public | `{googleEnabled, googleClientId}` — indique si « Continuer avec Google » est disponible |
-| POST | `/google` | public · rate-limité | **Connexion** via ID token Google → `{token, user}` (connexion/liaison) **ou** `{needsSignup:true}` si le compte n'existe pas (inscription via paiement) |
-| POST | `/login` | public | `{email, password}` → `{token, user}` **ou** `{mfaRequired, challenge}` si 2FA active. Refusé si l'abonnement de l'organisation est inactif |
+| POST | `/google` | public · rate-limité | **Connexion** via ID token Google → pose le cookie de session et renvoie `{user}` (connexion/liaison) **ou** `{needsSignup:true}` si le compte n'existe pas (inscription via paiement) |
+| POST | `/login` | public | `{email, password}` → pose le cookie de session et renvoie `{user}` **ou** `{mfaRequired, challenge}` si 2FA active. Refusé si l'abonnement de l'organisation est inactif |
 
 > L'inscription n'est plus libre : elle passe par le paiement (voir **Facturation**). La connexion
 > (email ou Google) est réservée aux comptes **inscrits et à l'abonnement actif**.
-| POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → `{token, user}` (échange du challenge contre un code TOTP) |
+| POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → pose le cookie de session et renvoie `{user}` |
 | GET | `/mfa/status` | auth | État de la 2FA du compte |
 | POST | `/mfa/setup` | auth | Génère un secret TOTP + QR (provisionnement) |
 | POST | `/mfa/enable` | auth | Active la 2FA après vérification d'un code |
@@ -45,7 +45,7 @@ Le JWT (12 h, HS256) porte `{ sub, email, role, organizationId }`. Obtenu via
 
 > Rate limiting : 10 requêtes / 15 min sur les routes de réinitialisation/invitation/MFA.
 > **2FA (TOTP)** optionnelle par compte : si activée, `login` renvoie un challenge court à
-> échanger via `login/mfa` contre un jeton de session.
+> échanger via `login/mfa` contre une session cookie.
 
 ## Événements & configuration — `/api/admin/events`
 
@@ -149,7 +149,7 @@ Onboarding (super-admin) — **invitation à s'inscrire** (accès offert, sans p
 |---|---|---|---|
 | POST | `/api/admin/organizations/invite` | super-admin | `{email}` → `{inviteUrl}` — **lien copiable** à partager soi-même (14 j, usage unique) |
 | GET | `/api/admin/auth/org-invite?token=` | public | Pré-remplissage (`{email}`) |
-| POST | `/api/admin/auth/org-invite/accept` | public · rate-limité | `{token, orgName, fullName, password}` **ou** `{token, orgName, googleCredential}` → l'invité crée son organisation (active) → `{token, user}` |
+| POST | `/api/admin/auth/org-invite/accept` | public · rate-limité | `{token, orgName, fullName, password}` **ou** `{token, orgName, googleCredential}` → l'invité crée son organisation (active), pose le cookie de session et renvoie `{user}` |
 
 Variante directe : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée l'organisation + invite l'admin (l'opérateur nomme l'orga).
 

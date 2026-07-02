@@ -55,7 +55,7 @@ sans infrastructure (voir [business-logic.md](business-logic.md)).
 Requête HTTP
   └─ helmet / CORS / express.json
   └─ Router /api/admin/...
-       └─ requireAuth            (vérifie le JWT Bearer → req.user)
+       └─ requireAuth            (vérifie session/Bearer + droits courants → req.user)
        └─ requireRole / requireEventEditor   (selon la route)
        └─ validateBody(schema)   (zod → req.body typé, sinon ZodError)
        └─ asyncHandler(handler)

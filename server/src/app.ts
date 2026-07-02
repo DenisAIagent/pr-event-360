@@ -84,6 +84,11 @@ async function renderSpa(hostname: string, pathName: string, indexHtml: string):
 export function createApp(): Express {
   const env = loadEnv();
   const app = express();
+  if (env.NODE_ENV === 'production') {
+    // Railway termine TLS et transmet l'IP client via X-Forwarded-For.
+    // `1` évite de faire confiance à une chaîne de proxies arbitraire.
+    app.set('trust proxy', 1);
+  }
 
   // CSP adaptée au front servi en production : styles inline (props React), polices
   // AUTO-HÉBERGÉES ('self'), images data:/https (logos en data URL, médias Cloudinary).

@@ -50,8 +50,9 @@ autre rôle       → exige une ligne event_members (sinon 403)
 | Gérer l'équipe (inviter, rôles, désactiver) | ✅ | — | — |
 | Gérer les clés API (Intégrations) | ✅ | — | — |
 
-Application côté serveur (le JWT porte `organizationId` ; `isPlatformAdmin` est relu en base à chaque requête) :
-- `requireAuth` → JWT valide.
+Application côté serveur (le JWT prouve l'identité ; le rôle, l'activation du compte,
+`isPlatformAdmin` et l'abonnement sont relus en base à chaque requête) :
+- `requireAuth` → JWT valide + droits courants en base.
 - `requireRole('admin')` → `/api/admin/team` (scopé à l'organisation de l'admin).
 - `requirePlatformAdmin` → `/api/admin/settings` (intégrations partagées, super-admin uniquement).
 - `requireEventEditor` → routes d'édition (admin ou attache).
@@ -73,7 +74,7 @@ la source de vérité (un `assistant` qui force une route d'édition reçoit `40
    l'acceptation (le collaborateur choisit son mot de passe).
 3. **Rôle / activation** : modifiables par un admin. Garde-fou : impossible de
    rétrograder ou désactiver le **dernier admin actif**.
-4. **Désactivation** : `users.active = false` → connexion refusée même avec le bon mot de passe.
+4. **Désactivation** : `users.active = false` → connexion et session existante refusées.
 
-> Un changement de rôle ne prend effet qu'à la **reconnexion** : le rôle est figé dans
-> le JWT au moment du login.
+> Un changement de rôle, une désactivation ou le retrait du statut super-admin prend effet
+> dès la requête suivante : les droits ne restent pas figés jusqu'à l'expiration du JWT.

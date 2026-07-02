@@ -4,7 +4,9 @@
 
 - **Mots de passe** hachés avec **argon2** (jamais en clair, jamais loggés) — back-office **et**
   comptes journalistes.
-- **JWT** (`HS256`, expiration 12 h) signé avec `JWT_SECRET`, porte `{ sub, email, role, organizationId }`.
+- **JWT** (`HS256`, expiration 12 h) signé avec `JWT_SECRET`, porte l'identité et le contexte
+  d'organisation. À chaque requête, le rôle, l'activation du compte, le statut super-admin et
+  l'abonnement sont relus en base avant d'autoriser l'action.
 - **Session en cookie `httpOnly`** : le JWT est déposé dans un cookie `pr360_session`
   `HttpOnly` + `Secure` (prod) + `SameSite=Lax` — **inaccessible au JavaScript**, donc non
   volable par une éventuelle XSS (contrairement à un stockage en `localStorage`). Le repli

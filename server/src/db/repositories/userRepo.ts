@@ -18,11 +18,18 @@ interface UserRow {
 interface UserWithHashRow extends UserRow {
   password_hash: string | null;
 }
+interface AuthStateRow extends UserRow {
+  password_changed_at: Date | null;
+}
 
 // Toutes les lectures joignent l'organisation pour exposer son nom + statut d'abonnement.
 const SELECT_USER = `SELECT u.id, u.email, u.full_name, u.role, u.active,
   u.organization_id, o.name AS organization_name, u.is_platform_admin,
   o.subscription_status AS subscription_status, u.created_at
+  FROM users u JOIN organizations o ON o.id = u.organization_id`;
+const SELECT_AUTH_USER = `SELECT u.id, u.email, u.full_name, u.role, u.active,
+  u.organization_id, o.name AS organization_name, u.is_platform_admin,
+  o.subscription_status AS subscription_status, u.created_at, u.password_changed_at
   FROM users u JOIN organizations o ON o.id = u.organization_id`;
 
 const map = (r: UserRow): User => ({
@@ -105,6 +112,23 @@ export async function findUserByEmail(email: string, db: Queryable = pool): Prom
 export async function findUserById(id: string, db: Queryable = pool): Promise<User | null> {
   const { rows } = await db.query<UserRow>(`${SELECT_USER} WHERE u.id = $1`, [id]);
   return rows[0] ? map(rows[0]) : null;
+}
+
+/**
+ * État d'autorisation relu à chaque requête authentifiée. Le JWT prouve l'identité,
+ * mais les droits opérationnels restent ceux de la base (désactivation, rôle,
+ * super-admin, abonnement, révocation après changement de mot de passe).
+ */
+export async function findUserAuthState(
+  id: string,
+  db: Queryable = pool,
+): Promise<(User & { passwordChangedAt: Date | null }) | null> {
+  const { rows } = await db.query<AuthStateRow>(
+    `${SELECT_AUTH_USER} WHERE u.id = $1`,
+    [id],
+  );
+  const row = rows[0];
+  return row ? { ...map(row), passwordChangedAt: row.password_changed_at } : null;
 }
 
 /** Comptes d'une organisation (écran d'équipe, scopé à l'org de l'admin). */

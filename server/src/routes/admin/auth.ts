@@ -12,6 +12,11 @@ import { login, completeMfaLogin, registerUser } from '../../services/authServic
 function withSession<T extends object>(res: Response, result: T, status = 200): void {
   const token = (result as { token?: unknown }).token;
   if (typeof token === 'string') issueSession(res, token);
+  if (typeof token === 'string') {
+    const { token: _token, ...safeResult } = result as T & { token: string };
+    sendData(res, safeResult, status);
+    return;
+  }
   sendData(res, result, status);
 }
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
@@ -179,7 +184,8 @@ authRouter.post(
   validateBody(GoogleLoginSchema),
   asyncHandler(async (req, res) => {
     const { credential } = req.body as z.infer<typeof GoogleLoginSchema>;
-    // Résultat = { token, user } (compte lié) OU { needsSignup } (aucun token → pas de session).
+    // Résultat service = { token, user } (compte lié) OU { needsSignup }.
+    // Le token est posé en cookie httpOnly par withSession, jamais renvoyé au JS.
     withSession(res, (await loginWithGoogle(credential)) as { token?: string });
   }),
 );

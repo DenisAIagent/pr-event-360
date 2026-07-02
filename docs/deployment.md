@@ -9,7 +9,7 @@ requise manque ou est invalide.
 | Variable | Requis | Défaut | Rôle |
 |---|:--:|---|---|
 | `DATABASE_URL` | ✅ | — | Connexion PostgreSQL |
-| `JWT_SECRET` | ✅ | — | Signature des JWT (≥ 8 caractères ; fort en prod) |
+| `JWT_SECRET` | ✅ | — | Signature des JWT (≥ 32 caractères ; fort en prod) |
 | `APP_ENCRYPTION_KEY` | — | — | Clé maîtresse AES-256-GCM (32 octets base64) pour les clés API en base |
 | `NODE_ENV` | — | `development` | `development` / `test` / `production` |
 | `PORT` | — | `4000` | Port d'écoute de l'API |

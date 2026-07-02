@@ -1,15 +1,42 @@
 /**
  * Banc d'essai LOCAL — concurrence / débit HTTP (autocannon) contre le serveur local.
  * Prérequis : serveur lancé sur :4000 + données BENCH BigEvent seedées (via stress.ts).
- * Usage : npx dotenv -e .env -- tsx src/bench/concurrency.ts
+ * Usage : npm install -D autocannon && npx dotenv -e .env -- tsx src/bench/concurrency.ts
  */
-import autocannon from 'autocannon';
 import { pool } from '../db/pool';
 import { signToken } from '../lib/jwt';
 
 const BASE = 'http://localhost:4000';
+type Autocannon = (opts: {
+  url: string;
+  connections: number;
+  duration: number;
+  headers?: Record<string, string>;
+  timeout: number;
+}) => Promise<{
+  requests: { average: number };
+  latency: { p50: number; p99: number };
+  '2xx': number;
+  non2xx: number;
+  errors: number;
+  timeouts: number;
+}>;
+
+let cannon: Autocannon | null = null;
+
+async function loadAutocannon(): Promise<Autocannon> {
+  if (cannon) return cannon;
+  try {
+    const mod = await import('autocannon');
+    cannon = (mod.default ?? mod) as Autocannon;
+    return cannon;
+  } catch {
+    throw new Error('Benchmark HTTP indisponible : installez autocannon localement avec `npm install -D autocannon`.');
+  }
+}
 
 async function run(name: string, url: string, connections: number, headers?: Record<string, string>) {
+  const autocannon = await loadAutocannon();
   const r = await autocannon({ url, connections, duration: 8, headers, timeout: 30 });
   const reqs = Math.round(r.requests.average);
   console.log(

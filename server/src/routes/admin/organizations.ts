@@ -108,6 +108,6 @@ organizationsRouter.post(
     // Nouvelle session (org active différente) → on remplace le cookie httpOnly.
     issueSession(res, token);
     // Le DTO renvoyé reflète l'organisation active (pour l'affichage du rail).
-    sendData(res, { token, user: { ...user, organizationId: org.id, organizationName: org.name } });
+    sendData(res, { user: { ...user, organizationId: org.id, organizationName: org.name } });
   }),
 );

@@ -145,7 +145,9 @@ async function deliverInvite(toEmail: string, rawToken: string): Promise<void> {
 
   const result = await sendBrandedEmail({ to: toEmail, subject, innerHtml });
   if (result.status === 'simulated') {
-    console.info(`[invitation][simulation] lien pour ${toEmail} : ${acceptUrl}`);
+    // Lien complet seulement hors production (confort de dev) ; jamais de token en logs prod.
+    if (env.NODE_ENV === 'production') console.info(`[invitation][simulation] lien généré pour ${toEmail} (token omis en production)`);
+    else console.info(`[invitation][simulation] lien pour ${toEmail} : ${acceptUrl}`);
   } else if (result.status === 'failed') {
     console.error(`[invitation] échec d'envoi à ${toEmail} via ${result.provider}: ${result.error ?? ''}`);
   }

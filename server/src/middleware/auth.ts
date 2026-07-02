@@ -4,7 +4,7 @@ import { EVENT_EDITOR_ROLES } from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
 import { verifyToken, type AuthClaims } from '../lib/jwt';
 import { csrfValid, sessionTokenFromCookie } from '../lib/session';
-import { findPasswordChangedAt } from '../db/repositories/userRepo';
+import { findUserAuthState } from '../db/repositories/userRepo';
 
 // Étend Request avec l'utilisateur authentifié (back-office).
 declare global {
@@ -18,6 +18,7 @@ declare global {
 }
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const ACTIVE_SUBSCRIPTIONS = new Set(['active', 'trialing']);
 
 /**
  * Protège les routes du back-office : exige un JWT valide, lu en PRIORITÉ dans le cookie
@@ -44,14 +45,32 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       throw AppError.unauthorized('Jeton invalide ou expiré');
     }
 
+    // Le JWT prouve l'identité, mais les droits doivent être relus en base :
+    // désactivation, changement de rôle, révocation super-admin et abonnement actif
+    // prennent effet immédiatement, sans attendre l'expiration du jeton.
+    const current = await findUserAuthState(claims.sub);
+    if (!current) throw AppError.unauthorized('Compte introuvable');
+    if (!current.active) throw AppError.unauthorized('Compte désactivé. Reconnectez-vous avec un compte actif.');
+    if (!ACTIVE_SUBSCRIPTIONS.has(current.subscriptionStatus)) {
+      throw AppError.forbidden('Abonnement inactif. Renouvelez votre abonnement pour accéder à votre espace.');
+    }
+
     // Révocation de session : un jeton émis AVANT le dernier changement de mot de passe
     // est refusé (un reset invalide immédiatement les sessions ouvertes avec l'ancien).
-    const changedAt = await findPasswordChangedAt(claims.sub);
-    if (changedAt && claims.iat && claims.iat * 1000 < changedAt.getTime()) {
+    if (current.passwordChangedAt && claims.iat && claims.iat * 1000 < current.passwordChangedAt.getTime()) {
       throw AppError.unauthorized('Session expirée (mot de passe modifié). Reconnectez-vous.');
     }
 
-    req.user = claims;
+    req.user = {
+      sub: current.id,
+      email: current.email,
+      role: current.role,
+      // Le super-admin peut travailler dans une organisation cible via /switch.
+      // Si son statut super-admin est retiré, on revient immédiatement à son org réelle.
+      organizationId: current.isPlatformAdmin ? claims.organizationId : current.organizationId,
+      isPlatformAdmin: current.isPlatformAdmin,
+      iat: claims.iat,
+    };
     req.authVia = bearer ? 'bearer' : 'cookie';
 
     if (req.authVia === 'cookie' && MUTATING.has(req.method) && !csrfValid(req)) {
