@@ -147,5 +147,14 @@
   "space.coverage.cat.autre": "Autre",
   "space.password.changeHint": "Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié » — un lien sécurisé vous sera envoyé par email.",
   "space.password.forgotLink": "Mot de passe oublié",
-  "space.logout": "Se déconnecter"
+  "space.logout": "Se déconnecter",
+  "space.card.accreditation": "Mon accréditation",
+  "space.card.type": "Type",
+  "space.card.lang": "Langue de contact",
+  "space.card.nextSlot": "Mon prochain créneau",
+  "space.card.noSlot": "Aucun créneau confirmé pour l’instant.",
+  "space.newRequest": "Nouvelle demande",
+  "space.acctype.presse": "Presse",
+  "space.acctype.photo": "Photographe",
+  "space.acctype.video": "Vidéaste"
 }

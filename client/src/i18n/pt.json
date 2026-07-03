@@ -147,5 +147,14 @@
   "space.coverage.cat.autre": "Outro",
   "space.password.changeHint": "Uma senha já está definida. Para alterá-la, use «esqueci a senha» — enviaremos um link seguro por email.",
   "space.password.forgotLink": "Esqueci a senha",
-  "space.logout": "Sair"
+  "space.logout": "Sair",
+  "space.card.accreditation": "Minha credencial",
+  "space.card.type": "Tipo",
+  "space.card.lang": "Idioma de contato",
+  "space.card.nextSlot": "Meu próximo horário",
+  "space.card.noSlot": "Nenhum horário confirmado ainda.",
+  "space.newRequest": "Nova solicitação",
+  "space.acctype.presse": "Imprensa",
+  "space.acctype.photo": "Fotógrafo",
+  "space.acctype.video": "Videomaker"
 }

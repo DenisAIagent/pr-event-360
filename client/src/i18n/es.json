@@ -147,5 +147,14 @@
   "space.coverage.cat.autre": "Otro",
   "space.password.changeHint": "Ya hay una contraseña definida. Para cambiarla, usa «olvidé mi contraseña» — te enviaremos un enlace seguro por correo.",
   "space.password.forgotLink": "Olvidé mi contraseña",
-  "space.logout": "Cerrar sesión"
+  "space.logout": "Cerrar sesión",
+  "space.card.accreditation": "Mi acreditación",
+  "space.card.type": "Tipo",
+  "space.card.lang": "Idioma de contacto",
+  "space.card.nextSlot": "Mi próxima cita",
+  "space.card.noSlot": "Aún no hay cita confirmada.",
+  "space.newRequest": "Nueva solicitud",
+  "space.acctype.presse": "Prensa",
+  "space.acctype.photo": "Fotógrafo",
+  "space.acctype.video": "Videógrafo"
 }

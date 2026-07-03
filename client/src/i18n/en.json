@@ -147,5 +147,14 @@
   "space.coverage.cat.autre": "Other",
   "space.password.changeHint": "A password is already set. To change it, use “forgot password” — a secure link will be emailed to you.",
   "space.password.forgotLink": "Forgot password",
-  "space.logout": "Log out"
+  "space.logout": "Log out",
+  "space.card.accreditation": "My accreditation",
+  "space.card.type": "Type",
+  "space.card.lang": "Contact language",
+  "space.card.nextSlot": "My next slot",
+  "space.card.noSlot": "No confirmed slot yet.",
+  "space.newRequest": "New request",
+  "space.acctype.presse": "Press",
+  "space.acctype.photo": "Photographer",
+  "space.acctype.video": "Videographer"
 }
