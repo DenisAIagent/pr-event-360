@@ -6,6 +6,7 @@ import { verifyToken, type AuthClaims } from '../lib/jwt';
 import { csrfValid, sessionTokenFromCookie } from '../lib/session';
 import { findUserAuthState, getUserMfa } from '../db/repositories/userRepo';
 import { mfaRequiredFor } from '../lib/mfaPolicy';
+import { ERROR_CODES } from '../http/errorCodes';
 
 // Endpoints accessibles à une session « MFA obligatoire non encore activée » :
 // juste de quoi s'enrôler (ou se déconnecter). Tout le reste est bloqué tant que
@@ -62,15 +63,15 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     // prennent effet immédiatement, sans attendre l'expiration du jeton.
     const current = await findUserAuthState(claims.sub);
     if (!current) throw AppError.unauthorized('Compte introuvable');
-    if (!current.active) throw AppError.unauthorized('Compte désactivé. Reconnectez-vous avec un compte actif.');
+    if (!current.active) throw AppError.unauthorized('Compte désactivé. Reconnectez-vous avec un compte actif.', ERROR_CODES.AUTH_ACCOUNT_DISABLED);
     if (!ACTIVE_SUBSCRIPTIONS.has(current.subscriptionStatus)) {
-      throw AppError.forbidden('Abonnement inactif. Renouvelez votre abonnement pour accéder à votre espace.');
+      throw AppError.forbidden('Abonnement inactif. Renouvelez votre abonnement pour accéder à votre espace.', ERROR_CODES.SUBSCRIPTION_INACTIVE);
     }
 
     // Révocation de session : un jeton émis AVANT le dernier changement de mot de passe
     // est refusé (un reset invalide immédiatement les sessions ouvertes avec l'ancien).
     if (current.passwordChangedAt && claims.iat && claims.iat * 1000 < current.passwordChangedAt.getTime()) {
-      throw AppError.unauthorized('Session expirée (mot de passe modifié). Reconnectez-vous.');
+      throw AppError.unauthorized('Session expirée (mot de passe modifié). Reconnectez-vous.', ERROR_CODES.AUTH_SESSION_EXPIRED);
     }
 
     req.user = {
@@ -86,7 +87,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     req.authVia = bearer ? 'bearer' : 'cookie';
 
     if (req.authVia === 'cookie' && MUTATING.has(req.method) && !csrfValid(req)) {
-      throw AppError.forbidden('Jeton CSRF manquant ou invalide');
+      throw AppError.forbidden('Jeton CSRF manquant ou invalide', ERROR_CODES.CSRF_INVALID);
     }
 
     // MFA obligatoire : un compte à privilèges élevés sans MFA active ne peut
@@ -97,9 +98,12 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       if (!MFA_ENROLLMENT_ALLOWLIST.has(path)) {
         const mfa = await getUserMfa(current.id);
         if (!mfa?.enabled) {
-          throw new AppError(403, 'Double authentification obligatoire : activez-la pour continuer.', {
-            code: 'MFA_SETUP_REQUIRED',
-          });
+          throw new AppError(
+            403,
+            'Double authentification obligatoire : activez-la pour continuer.',
+            { code: 'MFA_SETUP_REQUIRED' },
+            ERROR_CODES.AUTH_MFA_SETUP_REQUIRED,
+          );
         }
       }
     }

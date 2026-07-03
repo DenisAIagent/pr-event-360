@@ -7,6 +7,7 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/jetbrains-mono';
 import { App } from './App';
+import { ErrorNotifier } from './components/ErrorNotifier';
 import './styles/global.css';
 
 // Sentry — dormant sans VITE_SENTRY_DSN (même pattern que Stripe côté serveur).
@@ -41,6 +42,7 @@ createRoot(rootEl).render(
   <StrictMode>
     <Sentry.ErrorBoundary fallback={<CrashFallback />}>
       <App />
+      <ErrorNotifier />
     </Sentry.ErrorBoundary>
   </StrictMode>,
 );

@@ -19,6 +19,7 @@ import {
 } from '../../db/repositories/coverageRepo';
 import { signUpload } from '../../services/storageService';
 import { journalistSessionFromReq, csrfValid } from '../../lib/journalistSession';
+import { ERROR_CODES } from '../../http/errorCodes';
 
 export const publicSpaceRouter = Router();
 
@@ -42,12 +43,16 @@ const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 async function requireJournalistSession(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const claims = journalistSessionFromReq(req);
-    if (!claims) throw AppError.unauthorized('Session expirée. Reconnectez-vous.');
+    if (!claims) throw AppError.unauthorized('Session expirée. Reconnectez-vous.', ERROR_CODES.JSPACE_SESSION_EXPIRED);
     const journalist = await findJournalistById(claims.jid);
-    if (!journalist || journalist.eventId !== claims.eid) throw AppError.unauthorized('Espace introuvable');
-    if (journalist.accStatus !== 'acceptee') throw AppError.forbidden('Accréditation non encore acceptée');
+    if (!journalist || journalist.eventId !== claims.eid) {
+      throw AppError.unauthorized('Session expirée. Reconnectez-vous.', ERROR_CODES.JSPACE_SESSION_EXPIRED);
+    }
+    if (journalist.accStatus !== 'acceptee') {
+      throw AppError.forbidden('Accréditation non encore acceptée', ERROR_CODES.JSPACE_NOT_ACCEPTED);
+    }
     if (MUTATING.has(req.method) && !csrfValid(req)) {
-      throw AppError.forbidden('Jeton CSRF manquant ou invalide');
+      throw AppError.forbidden('Jeton CSRF manquant ou invalide', ERROR_CODES.CSRF_INVALID);
     }
     req.journalist = journalist;
     next();

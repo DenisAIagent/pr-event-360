@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
+import { ERROR_CODES } from '../http/errorCodes';
 import { generateResetToken, hashResetToken } from '../lib/token';
 import {
   findAcceptedJournalistByEmail,
@@ -56,7 +57,7 @@ export async function journalistLogin(
 ): Promise<JournalistSessionClaims & { firstName: string }> {
   const journalist = await findAcceptedJournalistByEmail(eventId, email);
   // Message générique : on ne révèle pas si un compte existe.
-  const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
+  const invalid = AppError.unauthorized('Email ou mot de passe incorrect', ERROR_CODES.AUTH_INVALID_CREDENTIALS);
   if (!journalist || !journalist.passwordHash) {
     // Hachage factice anti-timing pour ne pas divulguer l'existence du compte.
     await argon2.hash(password).catch(() => undefined);

@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import type { UserRole } from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
+import { ERROR_CODES } from '../http/errorCodes';
 import { signToken, signMfaChallenge, verifyMfaChallenge } from '../lib/jwt';
 import {
   createUser,
@@ -59,7 +60,7 @@ export async function registerUser(input: {
 export async function login(email: string, password: string): Promise<LoginResult> {
   const found = await findUserByEmailWithHash(email.toLowerCase());
   // Message générique : on ne révèle pas si l'email existe.
-  const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
+  const invalid = AppError.unauthorized('Email ou mot de passe incorrect', ERROR_CODES.AUTH_INVALID_CREDENTIALS);
   if (!found || !found.passwordHash) {
     // Pas de compte, ou compte sans mot de passe (lié à Google uniquement) :
     // hachage factice pour éviter de divulguer l'existence du compte par timing.
@@ -108,7 +109,7 @@ export async function completeMfaLogin(
     throw AppError.unauthorized('Session de connexion expirée, recommencez.');
   }
   if (!(await verifyMfaCode(userId, code))) {
-    throw AppError.unauthorized('Code de double authentification incorrect.');
+    throw AppError.unauthorized('Code de double authentification incorrect.', ERROR_CODES.AUTH_MFA_CODE_INVALID);
   }
   const user = await findUserById(userId);
   if (!user || !user.active) throw AppError.unauthorized('Compte indisponible.');

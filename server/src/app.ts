@@ -40,6 +40,7 @@ import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
 import { publicReviewsRouter } from './routes/public/reviews';
 import { reviewRouter, reviewAdminRouter } from './routes/admin/reviews';
 import { requireAuth } from './middleware/auth';
+import { requestId } from './middleware/requestId';
 import { getNotifSettings } from './services/settingsService';
 
 /**
@@ -191,6 +192,8 @@ export function createApp(): Express {
   // (5173 → 4000). credentials:true impose une origine explicite (pas de '*').
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
   app.use(cookieParser());
+  // Identifiant de requête (X-Request-Id) : corrèle notifications d'erreur et logs.
+  app.use(requestId);
 
   // Webhook Stripe : la vérification de signature exige le CORPS BRUT → déclaré AVANT
   // express.json (qui consommerait/parserait le corps).

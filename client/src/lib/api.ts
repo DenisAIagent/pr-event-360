@@ -1,10 +1,15 @@
 /** Client HTTP minimal vers l'API. Déballe l'enveloppe { success, data, error }. */
+import { reportError } from './errorBus';
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
     public readonly details?: unknown,
+    /** Code d'erreur stable (`PRE-####`) renvoyé par le serveur. */
+    public readonly code?: string,
+    /** Identifiant de la requête (corrèle aux logs serveur). */
+    public readonly requestId?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -16,6 +21,8 @@ interface Envelope<T> {
   data?: T;
   error?: string;
   details?: unknown;
+  code?: string;
+  requestId?: string;
 }
 
 const BASE = '/api';
@@ -54,7 +61,10 @@ async function request<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new ApiError(0, 'Réseau indisponible');
+    // Réseau indisponible : incident technique → notification globale.
+    const netErr = new ApiError(0, 'Connexion au serveur impossible. Vérifiez votre réseau.', undefined, 'PRE-0000');
+    void reportError(netErr);
+    throw netErr;
   }
 
   let payload: Envelope<T> | null = null;
@@ -65,7 +75,19 @@ async function request<T>(
   }
 
   if (!res.ok || !payload?.success) {
-    throw new ApiError(res.status, payload?.error ?? `Erreur ${res.status}`, payload?.details);
+    const requestId = payload?.requestId ?? res.headers.get('X-Request-Id') ?? undefined;
+    const err = new ApiError(
+      res.status,
+      payload?.error ?? `Erreur ${res.status}`,
+      payload?.details,
+      payload?.code,
+      requestId,
+    );
+    // Erreurs TECHNIQUES (serveur / non identifiées) → notification globale avec code
+    // + « copier les détails ». Les erreurs attendues (4xx métier) restent gérées en
+    // ligne par l'appelant (le code reste disponible sur l'ApiError).
+    if (res.status >= 500 || res.status === 0) void reportError(err);
+    throw err;
   }
   return payload.data as T;
 }

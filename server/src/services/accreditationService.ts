@@ -1,6 +1,7 @@
 import type { AccreditationType, Lang } from '@pr-event-360/core';
 import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
+import { ERROR_CODES } from '../http/errorCodes';
 import { accessLinkUrl, issueAccessToken } from './journalistAccessService';
 import { getEventOrThrow, isRegistrationClosed } from './eventService';
 import { findMediaType } from '../db/repositories/eventRepo';
@@ -52,7 +53,7 @@ export async function submitAccreditation(input: SubmitAccreditationInput): Prom
   // couvre le cas courant ; l'index unique (event_id, lower(email)) tranche la course
   // entre deux soumissions concurrentes — on retraduit la violation 23505 en 400.
   if (await existsJournalistByEventEmail(input.eventId, input.email)) {
-    throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.');
+    throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.', undefined, ERROR_CODES.ACCREDITATION_DUPLICATE);
   }
 
   let journalist: Journalist;
@@ -60,7 +61,7 @@ export async function submitAccreditation(input: SubmitAccreditationInput): Prom
     journalist = await withTransaction((db) => insertJournalist({ ...input }, db));
   } catch (e) {
     if (e instanceof Error && 'code' in e && (e as { code?: string }).code === '23505') {
-      throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.');
+      throw AppError.badRequest('Une demande d’accréditation existe déjà pour cet email sur cet événement.', undefined, ERROR_CODES.ACCREDITATION_DUPLICATE);
     }
     throw e;
   }

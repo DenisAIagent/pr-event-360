@@ -1,5 +1,6 @@
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
+import { ERROR_CODES } from '../http/errorCodes';
 import { generateResetToken, hashResetToken } from '../lib/token';
 import type { JournalistSessionClaims } from '../lib/jwt';
 import {
@@ -39,8 +40,8 @@ export function accessLinkUrl(rawToken: string): string {
  */
 export async function exchangeAccessToken(rawToken: string): Promise<JournalistSessionClaims> {
   const journalist = await findJournalistByAccessTokenHash(hashResetToken(rawToken));
-  if (!journalist) throw AppError.unauthorized('Lien d’accès invalide ou expiré. Demandez-en un nouveau.');
-  if (journalist.accStatus !== 'acceptee') throw AppError.forbidden('Accréditation non encore acceptée');
+  if (!journalist) throw AppError.unauthorized('Lien d’accès invalide ou expiré. Demandez-en un nouveau.', ERROR_CODES.JSPACE_ACCESS_LINK_INVALID);
+  if (journalist.accStatus !== 'acceptee') throw AppError.forbidden('Accréditation non encore acceptée', ERROR_CODES.JSPACE_NOT_ACCEPTED);
   return { jid: journalist.id, eid: journalist.eventId };
 }
 
