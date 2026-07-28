@@ -40,6 +40,11 @@ export async function isStorageConfigured(): Promise<boolean> {
 
 let validatedPreset: { key: string; expiresAt: number } | null = null;
 
+/** Oublie la validation mise en cache (après modification des réglages). */
+export function resetPresetValidationCache(): void {
+  validatedPreset = null;
+}
+
 /** Vérifie côté fournisseur que le plafond n'est pas seulement une indication UI. */
 async function requireSafeUploadPreset(s: {
   cloudName: string;
@@ -75,6 +80,179 @@ async function requireSafeUploadPreset(s: {
     );
   }
   validatedPreset = { key, expiresAt: Date.now() + 60_000 };
+}
+
+export interface StorageCheck {
+  id: string;
+  label: string;
+  status: 'ok' | 'failed' | 'skipped';
+  detail: string;
+}
+
+/** Authentification Admin API Cloudinary (clé publique + secret, jamais exposée au client). */
+function adminAuthHeader(apiKey: string, apiSecret: string): string {
+  return `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`;
+}
+
+/**
+ * Diagnostic complet de la configuration Cloudinary, destiné au bouton « Tester la
+ * connexion » du back-office. Contrairement à `signUpload`, ne lève pas à la première
+ * erreur : chaque contrainte est évaluée séparément pour dire précisément CE QUI cloche.
+ * Aucun secret n'apparaît dans les messages renvoyés.
+ */
+export async function checkStorageConfiguration(): Promise<{ ok: boolean; checks: StorageCheck[] }> {
+  const s = await getStorageSettings();
+  const checks: StorageCheck[] = [];
+  const skipRest = (reason: string): { ok: boolean; checks: StorageCheck[] } => {
+    for (const [id, label] of [
+      ['credentials', 'Clés API acceptées par Cloudinary'],
+      ['preset', 'Preset d’upload trouvé'],
+      ['preset-signed', 'Preset en mode « Signed »'],
+      ['preset-size', 'Plafond de taille conforme (≤ 200 Mio)'],
+    ] as const) {
+      if (!checks.some((c) => c.id === id)) checks.push({ id, label, status: 'skipped', detail: reason });
+    }
+    return { ok: false, checks };
+  };
+
+  // 1. Complétude de la configuration.
+  const missing = (
+    [
+      ['CLOUDINARY_CLOUD_NAME', s.cloudName],
+      ['CLOUDINARY_API_KEY', s.apiKey],
+      ['CLOUDINARY_API_SECRET', s.apiSecret],
+      ['CLOUDINARY_UPLOAD_PRESET', s.uploadPreset],
+    ] as const
+  )
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    checks.push({
+      id: 'config',
+      label: 'Configuration complète',
+      status: 'failed',
+      detail: `Valeur(s) manquante(s) : ${missing.join(', ')}.`,
+    });
+    return skipRest('Configuration incomplète.');
+  }
+  checks.push({
+    id: 'config',
+    label: 'Configuration complète',
+    status: 'ok',
+    detail: 'Les quatre valeurs sont renseignées.',
+  });
+
+  const cloudName = s.cloudName!;
+  const auth = adminAuthHeader(s.apiKey!, s.apiSecret!);
+
+  // 2. Les identifiants sont-ils acceptés ? (Admin API « ping »)
+  try {
+    const ping = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/ping`, {
+      headers: { Authorization: auth },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (ping.status === 401 || ping.status === 403) {
+      checks.push({
+        id: 'credentials',
+        label: 'Clés API acceptées par Cloudinary',
+        status: 'failed',
+        detail: 'Cloudinary refuse ces identifiants. Vérifiez l’API Key et l’API Secret.',
+      });
+      return skipRest('Identifiants refusés.');
+    }
+    if (!ping.ok) {
+      checks.push({
+        id: 'credentials',
+        label: 'Clés API acceptées par Cloudinary',
+        status: 'failed',
+        detail: `Cloudinary a répondu ${ping.status}. Vérifiez le Cloud name.`,
+      });
+      return skipRest('Compte injoignable.');
+    }
+    checks.push({
+      id: 'credentials',
+      label: 'Clés API acceptées par Cloudinary',
+      status: 'ok',
+      detail: `Compte « ${cloudName} » joignable.`,
+    });
+  } catch {
+    checks.push({
+      id: 'credentials',
+      label: 'Clés API acceptées par Cloudinary',
+      status: 'failed',
+      detail: 'Cloudinary injoignable (délai dépassé ou réseau bloqué).',
+    });
+    return skipRest('Cloudinary injoignable.');
+  }
+
+  // 3/4/5. Le preset existe-t-il, est-il signé, et borne-t-il la taille ?
+  let preset: { unsigned?: boolean; settings?: { max_file_size?: number | string } };
+  try {
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}` +
+        `/upload_presets/${encodeURIComponent(s.uploadPreset!)}`,
+      { headers: { Authorization: auth }, signal: AbortSignal.timeout(5_000) },
+    );
+    if (!response.ok) {
+      checks.push({
+        id: 'preset',
+        label: 'Preset d’upload trouvé',
+        status: 'failed',
+        detail: `Aucun preset nommé « ${s.uploadPreset} » (réponse ${response.status}). Créez-le dans Settings → Upload.`,
+      });
+      return skipRest('Preset introuvable.');
+    }
+    preset = (await response.json()) as typeof preset;
+  } catch {
+    checks.push({
+      id: 'preset',
+      label: 'Preset d’upload trouvé',
+      status: 'failed',
+      detail: 'Lecture du preset impossible (délai dépassé).',
+    });
+    return skipRest('Preset illisible.');
+  }
+  checks.push({
+    id: 'preset',
+    label: 'Preset d’upload trouvé',
+    status: 'ok',
+    detail: `Preset « ${s.uploadPreset} » trouvé.`,
+  });
+
+  checks.push(
+    preset.unsigned
+      ? {
+          id: 'preset-signed',
+          label: 'Preset en mode « Signed »',
+          status: 'failed',
+          detail:
+            'Le preset est en mode « Unsigned » : n’importe qui pourrait y déposer des fichiers. Basculez-le sur « Signed ».',
+        }
+      : {
+          id: 'preset-signed',
+          label: 'Preset en mode « Signed »',
+          status: 'ok',
+          detail: 'Seules les signatures émises par le serveur sont acceptées.',
+        },
+  );
+
+  const maxFileSize = Number(preset.settings?.max_file_size);
+  const sizeOk = Number.isFinite(maxFileSize) && maxFileSize > 0 && maxFileSize <= MAX_UPLOAD_BYTES;
+  checks.push({
+    id: 'preset-size',
+    label: 'Plafond de taille conforme (≤ 200 Mio)',
+    status: sizeOk ? 'ok' : 'failed',
+    detail: sizeOk
+      ? `Max file size : ${Math.round(maxFileSize / 1024 / 1024)} Mio.`
+      : `Le preset doit définir un Max file size compris entre 1 et ${MAX_UPLOAD_BYTES} octets (200 Mio). Valeur actuelle : ${preset.settings?.max_file_size ?? 'non définie'}.`,
+  });
+
+  const ok = checks.every((c) => c.status === 'ok');
+  // Un diagnostic réussi vaut validation : les envois suivants ne re-testent pas le preset.
+  if (ok) validatedPreset = { key: `${cloudName}:${s.apiKey}:${s.uploadPreset}`, expiresAt: Date.now() + 60_000 };
+  else validatedPreset = null;
+  return { ok, checks };
 }
 
 /**

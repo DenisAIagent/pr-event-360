@@ -3,22 +3,113 @@ import { AppError } from '../http/AppError';
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from '../lib/crypto';
 import { deleteSecret, getAllSecrets, upsertSecret } from '../db/repositories/secretRepo';
 
-/** Clés de configuration gérables via l'UI. `secret` = valeur masquée à l'affichage. */
+/**
+ * Groupes d'intégration présentés comme autant de cartes dans le back-office.
+ * L'ordre fait foi côté interface.
+ */
+export const SETTINGS_GROUPS = [
+  {
+    id: 'notifications',
+    label: 'Envoi des notifications',
+    description:
+      'Mode d’envoi global et fournisseurs utilisés. En simulation, aucun message ne part réellement.',
+  },
+  {
+    id: 'cloudinary',
+    label: 'Cloudinary — photos, vidéos et dossiers de presse',
+    description:
+      'Stockage des médias. Sans ces clés, l’envoi de fichiers est désactivé : les organisateurs ne peuvent déposer ni visuel ni dossier de presse.',
+  },
+  {
+    id: 'brevo',
+    label: 'Brevo — emails et SMS',
+    description: 'Acheminement des emails transactionnels (accréditations, liens d’accès, récapitulatifs).',
+  },
+  {
+    id: 'twilio',
+    label: 'Twilio — SMS',
+    description: 'Alternative à Brevo pour l’envoi des SMS.',
+  },
+] as const;
+
+export type SettingsGroupId = (typeof SETTINGS_GROUPS)[number]['id'];
+
+/**
+ * Clés de configuration gérables via l'UI. `secret` = valeur masquée à l'affichage,
+ * `hint` = aide affichée sous le champ (où trouver la valeur, contraintes à respecter).
+ */
 export const MANAGED_KEYS = [
-  { key: 'NOTIFICATIONS_MODE', label: 'Mode d’envoi (simulation/live)', secret: false },
-  { key: 'EMAIL_PROVIDER', label: 'Fournisseur email', secret: false },
-  { key: 'SMS_PROVIDER', label: 'Fournisseur SMS', secret: false },
-  { key: 'BREVO_API_KEY', label: 'Brevo — clé API', secret: true },
-  { key: 'BREVO_SENDER_EMAIL', label: 'Brevo — email expéditeur', secret: false },
-  { key: 'BREVO_SENDER_NAME', label: 'Brevo — nom expéditeur', secret: false },
-  { key: 'BREVO_SMS_SENDER', label: 'Brevo — émetteur SMS', secret: false },
-  { key: 'TWILIO_ACCOUNT_SID', label: 'Twilio — Account SID', secret: true },
-  { key: 'TWILIO_AUTH_TOKEN', label: 'Twilio — Auth Token', secret: true },
-  { key: 'TWILIO_FROM', label: 'Twilio — numéro émetteur', secret: false },
-  { key: 'CLOUDINARY_CLOUD_NAME', label: 'Cloudinary — Cloud name', secret: false },
-  { key: 'CLOUDINARY_API_KEY', label: 'Cloudinary — API Key', secret: false },
-  { key: 'CLOUDINARY_API_SECRET', label: 'Cloudinary — API Secret', secret: true },
-  { key: 'CLOUDINARY_UPLOAD_PRESET', label: 'Cloudinary — preset signé (max 200 Mio)', secret: false },
+  {
+    key: 'NOTIFICATIONS_MODE',
+    label: 'Mode d’envoi',
+    group: 'notifications',
+    secret: false,
+    hint: '« simulation » (rien ne part, tout est journalisé) ou « live » (envois réels).',
+  },
+  { key: 'EMAIL_PROVIDER', label: 'Fournisseur email', group: 'notifications', secret: false, hint: 'brevo' },
+  {
+    key: 'SMS_PROVIDER',
+    label: 'Fournisseur SMS',
+    group: 'notifications',
+    secret: false,
+    hint: 'brevo ou twilio',
+  },
+
+  {
+    key: 'CLOUDINARY_CLOUD_NAME',
+    label: 'Cloud name',
+    group: 'cloudinary',
+    secret: false,
+    hint: 'Tableau de bord Cloudinary → Programmable Media → Dashboard, champ « Cloud name ».',
+  },
+  {
+    key: 'CLOUDINARY_API_KEY',
+    label: 'API Key',
+    group: 'cloudinary',
+    secret: false,
+    hint: 'Même écran, champ « API Key ». Cette valeur est publique (elle voyage jusqu’au navigateur).',
+  },
+  {
+    key: 'CLOUDINARY_API_SECRET',
+    label: 'API Secret',
+    group: 'cloudinary',
+    secret: true,
+    hint: 'Même écran, champ « API Secret ». Ne quitte jamais le serveur : il sert à signer les envois.',
+  },
+  {
+    key: 'CLOUDINARY_UPLOAD_PRESET',
+    label: 'Nom du preset d’upload',
+    group: 'cloudinary',
+    secret: false,
+    hint: 'Settings → Upload → Upload presets. Le preset doit être en mode « Signed » et imposer un Max file size ≤ 209 715 200 octets (200 Mio), sinon les envois sont refusés.',
+  },
+
+  {
+    key: 'BREVO_API_KEY',
+    label: 'Clé API',
+    group: 'brevo',
+    secret: true,
+    hint: 'Brevo → SMTP & API → clé de type « API key » (commence par xkeysib-).',
+  },
+  {
+    key: 'BREVO_SENDER_EMAIL',
+    label: 'Email expéditeur',
+    group: 'brevo',
+    secret: false,
+    hint: 'Doit être un expéditeur vérifié dans Brevo, sinon les emails sont rejetés silencieusement.',
+  },
+  { key: 'BREVO_SENDER_NAME', label: 'Nom expéditeur', group: 'brevo', secret: false, hint: '' },
+  { key: 'BREVO_SMS_SENDER', label: 'Émetteur SMS', group: 'brevo', secret: false, hint: '11 caractères maximum.' },
+
+  { key: 'TWILIO_ACCOUNT_SID', label: 'Account SID', group: 'twilio', secret: true, hint: '' },
+  { key: 'TWILIO_AUTH_TOKEN', label: 'Auth Token', group: 'twilio', secret: true, hint: '' },
+  {
+    key: 'TWILIO_FROM',
+    label: 'Numéro émetteur',
+    group: 'twilio',
+    secret: false,
+    hint: 'Au format international, ex. +33612345678.',
+  },
 ] as const;
 
 type ManagedKey = (typeof MANAGED_KEYS)[number]['key'];
@@ -111,26 +202,47 @@ export async function getStorageSettings(): Promise<StorageSettings> {
 export interface SecretStatus {
   key: string;
   label: string;
+  group: string;
+  hint: string;
   secret: boolean;
   source: 'db' | 'env' | 'none';
   preview: string | null; // valeur (non secrète) ou masque (secrète)
 }
 
+export interface SettingsGroupStatus {
+  id: string;
+  label: string;
+  description: string;
+  /** Toutes les clés du groupe sont renseignées (l'intégration est donc exploitable). */
+  configured: boolean;
+}
+
+export interface SettingsStatus {
+  encryptionReady: boolean;
+  groups: SettingsGroupStatus[];
+  items: SecretStatus[];
+}
+
 /** État des réglages pour l'UI : source effective + aperçu masqué des secrets. */
-export async function getSettingsStatus(): Promise<{ encryptionReady: boolean; items: SecretStatus[] }> {
+export async function getSettingsStatus(): Promise<SettingsStatus> {
   const env = loadEnv() as unknown as Record<string, string | undefined>;
   const o = await dbOverrides();
 
-  const items = MANAGED_KEYS.map(({ key, label, secret }): SecretStatus => {
+  const items = MANAGED_KEYS.map(({ key, label, group, hint, secret }): SecretStatus => {
     const inDb = o.has(key);
     const value = inDb ? o.get(key) : env[key];
     const source: SecretStatus['source'] = inDb ? 'db' : value ? 'env' : 'none';
     let preview: string | null = null;
     if (value) preview = secret ? maskSecret(value) : value;
-    return { key, label, secret, source, preview };
+    return { key, label, group, hint, secret, source, preview };
   });
 
-  return { encryptionReady: isEncryptionAvailable(), items };
+  const groups = SETTINGS_GROUPS.map(({ id, label, description }): SettingsGroupStatus => {
+    const own = items.filter((it) => it.group === id);
+    return { id, label, description, configured: own.every((it) => it.source !== 'none') };
+  });
+
+  return { encryptionReady: isEncryptionAvailable(), groups, items };
 }
 
 function maskSecret(value: string): string {

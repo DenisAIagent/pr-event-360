@@ -61,14 +61,37 @@ export interface Team {
 export interface SecretStatus {
   key: string;
   label: string;
+  group: string;
+  hint: string;
   secret: boolean;
   source: 'db' | 'env' | 'none';
   preview: string | null;
 }
 
+export interface SettingsGroupStatus {
+  id: string;
+  label: string;
+  description: string;
+  configured: boolean;
+}
+
 export interface SettingsStatus {
   encryptionReady: boolean;
+  groups: SettingsGroupStatus[];
   items: SecretStatus[];
+}
+
+/** Résultat du diagnostic Cloudinary (une ligne par contrainte vérifiée). */
+export interface StorageCheck {
+  id: string;
+  label: string;
+  status: 'ok' | 'failed' | 'skipped';
+  detail: string;
+}
+
+export interface StorageCheckResult {
+  ok: boolean;
+  checks: StorageCheck[];
 }
 
 export type AssetKind = 'photo' | 'video' | 'logo' | 'press_kit' | 'other';
