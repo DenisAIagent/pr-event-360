@@ -15,7 +15,9 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
-  timeout: 30_000,
+  // Une connexion peut devoir attendre la fenêtre TOTP suivante (anti-rejeu) : 30 s
+  // de marge ne suffiraient pas. Les tests eux-mêmes restent rapides.
+  timeout: 90_000,
   expect: { timeout: 10_000 },
   use: {
     baseURL,

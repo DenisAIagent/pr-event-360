@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiLogin, uiLogin, api } from './helpers';
+import { apiLogin, attachApiSession, api } from './helpers';
 
 /**
  * Parcours critique de bout en bout : création d'événement → accréditation publique →
@@ -17,6 +17,9 @@ test('accréditation → acceptation → demande → refuser/rouvrir', async ({ 
   // 1) Événement + artiste (fixtures via API).
   const event = (await api(request, t, 'post', '/admin/events', {
     name: `E2E ${stamp}`,
+    // Le type d'événement conditionne le profil (onglets et champs disponibles) :
+    // « music » est celui qui expose la programmation artistes utilisée plus bas.
+    eventType: 'music',
     location: 'Test',
     startDate: '2027-08-01',
     endDate: '2027-08-03',
@@ -53,23 +56,32 @@ test('accréditation → acceptation → demande → refuser/rouvrir', async ({ 
     | { journalists: Array<{ id: string; email: string }> };
   const arrBefore = Array.isArray(listBefore) ? listBefore : listBefore.journalists;
   const journalist = arrBefore.find((j) => j.email === email)!;
-  await api(request, t, 'post', `/admin/events/${event.id}/accreditations/${journalist.id}/process`, {
-    action: 'accept',
-  });
+  // Le jeton d'espace n'est stocké qu'en empreinte et le corps des notifications redacte
+  // volontairement le lien : la réponse de l'acceptation est le seul endroit où il existe
+  // en clair, et uniquement sous NODE_ENV=test.
+  const accepted = (await api(
+    request,
+    t,
+    'post',
+    `/admin/events/${event.id}/accreditations/${journalist.id}/process`,
+    { action: 'accept' },
+  )) as { accessToken?: string };
+  const token = accepted.accessToken;
+  expect(token, 'jeton d’espace absent de la réponse d’acceptation').toBeTruthy();
 
-  // 4) Récupère le jeton et soumet une demande d'interview via l'espace public.
-  const listAfter = (await api(request, t, 'get', `/admin/events/${event.id}/accreditations`)) as
-    | Array<{ email: string; token: string }>
-    | { journalists: Array<{ email: string; token: string }> };
-  const arrAfter = Array.isArray(listAfter) ? listAfter : listAfter.journalists;
-  const token = arrAfter.find((j) => j.email === email)!.token;
-  await request.post(`/api/public/space/${token}/requests`, {
+  // 4) Soumet une demande d'interview via l'espace public.
+
+  const submitted = await request.post(`/api/public/space/${token}/requests`, {
     data: { type: 'interview', artistId, slotId: null, stageId: null, message: 'Demande E2E' },
   });
+  // Sans cette assertion, un échec ici passait inaperçu et se manifestait plus loin
+  // par une file de demandes vide — diagnostic bien plus coûteux.
+  expect(submitted.ok(), `soumission refusée : ${submitted.status()}`).toBe(true);
 
-  // 5) Back-office : connexion réelle (pose le cookie de session) puis la file des demandes
+  // 5) Back-office : on transpose la session API dans le navigateur (le parcours de
+  // connexion lui-même est couvert par admin-login.spec), puis la file des demandes
   // se charge (PAS de page blanche) et affiche la demande.
-  await uiLogin(page);
+  await attachApiSession(page, auth, request);
   await page.goto(`/admin/events/${event.id}/requests`);
 
   await expect(page.getByRole('heading', { name: `E2E ${stamp}` })).toBeVisible();

@@ -8,6 +8,8 @@ import {
 } from '@pr-event-360/core';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
+import { loadEnv } from '../../config/env';
+import type { Journalist } from '../../domain';
 import { AppError } from '../../http/AppError';
 import { validateBody } from '../../middleware/validate';
 import { scopedRateLimit } from '../../middleware/rateLimit';
@@ -70,6 +72,8 @@ import {
   removePressConference,
   setConferenceRegistrationStatus,
 } from '../../services/pressConferenceService';
+
+const env = loadEnv();
 
 export const eventsRouter = Router();
 eventsRouter.use(requireAuth);
@@ -637,16 +641,21 @@ eventsRouter.post(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof ProcessSchema>;
-    const journalist = await processAccreditation(
+    const { journalist, accessToken } = await processAccreditation(
       req.params.eventId!,
       req.params.journalistId!,
       body.action,
     );
-    sendData(res, toAccreditationDto(journalist));
+    // Le jeton d'espace n'est JAMAIS renvoyé au client en dehors des tests : il n'existe
+    // en clair que dans le lien envoyé par email, et la base n'en garde que l'empreinte.
+    // Les tests de bout en bout, eux, n'ont aucun autre moyen d'atteindre l'espace
+    // journaliste — le corps des notifications redacte volontairement le lien.
+    const testOnly = env.NODE_ENV === 'test' && accessToken ? { accessToken } : {};
+    sendData(res, { ...toAccreditationDto(journalist), ...testOnly });
   }),
 );
 
-export function toAccreditationDto(journalist: Awaited<ReturnType<typeof processAccreditation>>) {
+export function toAccreditationDto(journalist: Journalist) {
   const { passwordHash: _passwordHash, ...safe } = journalist;
   return { ...safe, hasPassword: Boolean(journalist.passwordHash) };
 }

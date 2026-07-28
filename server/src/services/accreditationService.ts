@@ -83,6 +83,16 @@ export async function listAccreditations(eventId: string): Promise<Journalist[]>
   return listJournalistsByEvent(eventId);
 }
 
+export interface ProcessedAccreditation {
+  journalist: Journalist;
+  /**
+   * Jeton d'espace en clair, connu du serveur le temps d'une requête seulement (la base
+   * n'en conserve que l'empreinte). Renseigné uniquement sur « accept ». L'appelant ne
+   * doit ni le journaliser ni le renvoyer au client en production.
+   */
+  accessToken: string | null;
+}
+
 /**
  * Traitement back-office de l'accréditation.
  *  - « accept » : génère un token unique, passe à « acceptée », email avec lien.
@@ -93,7 +103,7 @@ export async function processAccreditation(
   eventId: string,
   journalistId: string,
   action: 'accept' | 'reject',
-): Promise<Journalist> {
+): Promise<ProcessedAccreditation> {
   const event = await getEventOrThrow(eventId);
   const journalist = await findJournalistById(journalistId);
   if (!journalist || journalist.eventId !== eventId) {
@@ -123,7 +133,7 @@ export async function processAccreditation(
     // Email + SMS urgent à l'acceptation (le SMS ne part que si un téléphone existe).
     await sendNotification(base);
     await sendNotification({ ...base, channel: 'sms' });
-    return updated;
+    return { journalist: updated, accessToken: token.rawToken };
   }
 
   const updated = await withTransaction((db) =>
@@ -136,7 +146,7 @@ export async function processAccreditation(
     journalist: updated,
     triggerKey: TRIGGERS.ACCREDITATION_REJECTED,
   });
-  return updated;
+  return { journalist: updated, accessToken: null };
 }
 
 /** Régénère et renvoie par email un lien court pour une accréditation acceptée. */

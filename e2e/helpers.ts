@@ -175,6 +175,35 @@ export async function apiLogin(request: APIRequestContext): Promise<Auth> {
 }
 
 /**
+ * Transpose dans le navigateur la session déjà ouverte côté API, SANS repasser par le
+ * formulaire ni par un second code TOTP.
+ *
+ * Chaque code TOTP n'étant utilisable qu'une fois (anti-rejeu serveur), une spec qui
+ * s'authentifie deux fois doit attendre la fenêtre de 30 s suivante. Les specs qui ne
+ * testent pas la connexion elle-même n'ont aucune raison de payer ce prix :
+ * `admin-login.spec` couvre déjà le parcours de connexion complet.
+ *
+ * On recopie le cookie de session httpOnly ET le profil en localStorage, dont
+ * l'AuthProvider se sert pour s'hydrater au chargement.
+ */
+export async function attachApiSession(page: Page, auth: Auth, request: APIRequestContext): Promise<void> {
+  const { cookies } = await request.storageState();
+  await page.context().addCookies(cookies.filter((c) => c.name.startsWith('pr360')));
+  // Charger l'origine avant d'écrire dans localStorage (stockage par origine).
+  await page.goto('/');
+  await page.evaluate(
+    ([user]) => {
+      window.localStorage.setItem('pr360.user', user!);
+      // Le tour d'introduction s'ouvre au premier passage et capte tous les clics.
+      window.localStorage.setItem('pr360.introSeen', '1');
+    },
+    [JSON.stringify(auth.user)],
+  );
+  await page.goto('/admin');
+  await page.waitForURL('**/admin');
+}
+
+/**
  * Connexion via le formulaire (pose le cookie de session dans le contexte du navigateur).
  * Franchit l'étape MFA si elle apparaît (compte à privilèges déjà enrôlé via apiLogin).
  */
