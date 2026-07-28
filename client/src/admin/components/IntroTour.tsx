@@ -32,7 +32,7 @@ const STEPS: Step[] = [
   {
     icon: Mic,
     title: 'Demandes d’interviews & reportages',
-    body: 'Gérez les demandes par artiste ou par scène, appliquez vos quotas, et exportez des PDF prêts à remettre aux régisseurs.',
+    body: 'Gérez les demandes par participant ou par espace, appliquez vos quotas, et exportez des PDF prêts pour les équipes terrain.',
   },
   {
     icon: Newspaper,

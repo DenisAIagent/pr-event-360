@@ -1,46 +1,64 @@
-# Transferts internationaux & analyse d'impact (TIA) — RGPD Chap. V (art. 44-49)
+# Transferts internationaux et TIA
 
-> Objectif : supprimer ou encadrer tout transfert de données personnelles hors EEE.
-> Priorité **#1 de conformité avant lancement** : les données journalistes ne doivent pas transiter/résider
-> hors UE sans mécanisme valide.
+**Version 1.1 — 18 juillet 2026.**
 
-## Cartographie des transferts
-| Sous-traitant | Donnée transférée | Localisation | Mécanisme requis | Statut / action |
-|---|---|---|---|---|
-| **Railway** (hébergement + base PostgreSQL) | **Tout le PII journalistes** | ⚠️ US | Région UE **ou** DPF/CCT + TIA | **Migrer en région UE** (action prioritaire) |
-| **Cloudinary** (médias) | Photos/vidéos (personnes visibles possibles) | US par défaut | Région UE **ou** DPF + TIA | Choisir **région UE** + vérifier DPF |
-| **Stripe** (paiement) | Email, nom facturation | US / Irlande | DPF (Stripe certifié) / CCT | Vérifier certification DPF + accepter DPA |
-| **Twilio** (SMS, si activé) | Téléphone, contenu SMS | US | DPF / CCT + TIA | Vérifier DPF ; sinon désactiver le canal SMS |
-| **Google** (OAuth « Continuer avec Google ») | Email, identifiant Google | US | DPF (Google certifié) | Vérifier certification DPF |
-| **Brevo** (emails) | Email, contenu | 🇪🇺 UE | — | Aucun transfert |
+Objectif : savoir où passent les données et encadrer tout transfert hors EEE. Les régions ci-dessous doivent être renseignées depuis les comptes réels, pas supposées.
 
-## Priorité absolue : héberger en UE
-La bascule de **Railway en région UE (West Europe)** supprime le transfert **principal** (toute la base).
-C'est la mesure la plus efficace et la moins coûteuse.
+## Cartographie à compléter
 
-### Runbook migration Railway → région UE (ops)
-1. Dans Railway, créer/le service Postgres en **région EU West** (ou activer la région UE du projet).
-2. **Sauvegarder** la base actuelle (`pg_dump` — cf. workflow de backup).
-3. **Restaurer** dans la base UE (`pg_restore`), vérifier l'intégrité (comptages, migrations).
-4. Basculer `DATABASE_URL` (+ `BACKUP_DATABASE_URL`) vers l'instance UE, redéployer, vérifier la santé.
-5. Confirmer la région du service applicatif (UE) et **supprimer** l'ancienne instance US après contrôle.
-6. Mettre à jour `sous-traitants-dpa.md` (Railway → UE, transfert supprimé).
+| Fournisseur | Données | Région effective | Transfert hors EEE | Mécanisme | TIA | Statut |
+|---|---|---|---|---|---|---|
+| Railway app | trafic et application | à confirmer | à déterminer | à compléter | à compléter | ouvert |
+| Railway PostgreSQL | base complète | à confirmer | à déterminer | à compléter | à compléter | critique |
+| Cloudinary | médias | à confirmer | à déterminer | à compléter | à compléter | ouvert |
+| Stripe | client/facturation | à confirmer | à déterminer | à compléter | à compléter | ouvert |
+| Twilio | téléphone/SMS | à confirmer | à déterminer | à compléter | à compléter | si activé |
+| Google Identity | email/identifiant | à confirmer | à déterminer | à compléter | à compléter | si activé |
+| Sentry | erreurs | à confirmer | à déterminer | à compléter | à compléter | si activé |
+| GitHub Actions | sauvegarde | à confirmer | à déterminer | à compléter | à compléter | si activé |
+| Brevo | email/contenu | à confirmer | à déterminer | à compléter | à compléter | si activé |
 
-## Modèle de TIA (pour tout transfert US résiduel — Stripe, Google, Twilio)
-1. **Description** : donnée, finalité, volume, sensibilité, fréquence.
-2. **Mécanisme** : DPF (vérifier l'inscription active sur dataprivacyframework.gov) ou CCT (v. 4/6/2021).
-3. **Législation du pays tiers** : risque d'accès par les autorités (FISA 702 / EO 12333 pour les US).
-4. **Mesures supplémentaires** : chiffrement en transit et au repos, pseudonymisation, minimisation,
-   engagements contractuels renforcés du prestataire.
-5. **Conclusion** : niveau de protection essentiellement équivalent ? risque résiduel acceptable ?
-6. **Réexamen** : à chaque évolution réglementaire (risque « Schrems III » sur le DPF).
+## Méthode TIA
+
+1. décrire données, finalité, fréquence, volumes et sensibilité ;
+2. localiser stockage, support, sauvegardes et sous-traitants ;
+3. identifier le mécanisme : adéquation, DPF, CCT ou dérogation exceptionnelle ;
+4. analyser l’accès légal dans le pays tiers ;
+5. évaluer mesures techniques et contractuelles ;
+6. conclure sur l’équivalence et le risque résiduel ;
+7. obtenir validation DPO/juridique ;
+8. réexaminer périodiquement et lors d’un changement fournisseur.
+
+## Mesures supplémentaires
+
+- région EEE lorsque disponible ;
+- TLS et chiffrement au repos ;
+- minimisation/pseudonymisation ;
+- tokens et secrets séparés ;
+- accès support restreint ;
+- rétention courte ;
+- journaux et alertes ;
+- sauvegardes chiffrées et droits minimaux ;
+- engagements de contestation des demandes d’autorités.
+
+## Runbook de changement de région PostgreSQL
+
+1. créer une base cible dans la région validée ;
+2. effectuer un `pg_dump` ;
+3. restaurer dans un environnement isolé ;
+4. vérifier migrations, comptages et fonctionnalités ;
+5. geler brièvement les écritures ;
+6. effectuer la synchronisation finale ;
+7. basculer `DATABASE_URL` et redéployer ;
+8. contrôler santé et intégrité ;
+9. conserver l’ancienne base protégée pendant la fenêtre de rollback ;
+10. supprimer selon procédure et mettre à jour DPA/registre/TIA.
 
 ## Suivi
-- [ ] Railway migré en région UE (supprime le transfert principal).
-- [ ] Cloudinary configuré en région UE.
-- [ ] DPF vérifié : Stripe, Google (+ Twilio si SMS activé).
-- [ ] TIA rédigé et archivé pour chaque transfert US résiduel.
-- [ ] Registre + `sous-traitants-dpa.md` mis à jour.
 
----
-_Version 1.0 — juin 2026. À réexaminer au moins annuellement._
+- [ ] localisation réelle renseignée ;
+- [ ] DPA archivés ;
+- [ ] DPF/CCT vérifiés ;
+- [ ] TIA achevées pour transferts résiduels ;
+- [ ] sauvegardes incluses ;
+- [ ] révision annuelle et à chaque changement.

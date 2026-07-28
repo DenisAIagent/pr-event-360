@@ -1,80 +1,82 @@
-# Rôles & permissions
+# Rôles, permissions et tenants
 
-## Multi-locataire (organisations)
+## Frontières d’accès
 
-L'application est **multi-locataire** : chaque client est une **organisation** (`organizations`)
-isolée. `users` et `events` portent un `organization_id` ; toutes les listes sont scopées à
-l'organisation de l'utilisateur. Un client rejoint la plateforme par **inscription payante**
-(Stripe Checkout → org + compte **admin** matérialisés au webhook) **ou** sur **invitation du
-super-admin** (`org_invites`, accès offert). Voir [api.md](api.md#facturation--apiadminbilling--webhook-stripe).
+1. **Plateforme** : opérée par `is_platform_admin`.
+2. **Organisation** : propriétaire de comptes et d’événements.
+3. **Événement** : frontière de données métier.
+4. **Journaliste** : ne voit que son propre espace et ses propres inscriptions.
 
-- **Isolation étanche** : un utilisateur ne voit/atteint que les données de SON organisation. Tenter
-  d'accéder à un événement d'une autre organisation renvoie **404** (sans révéler son existence).
-- **Super-admin plateforme** (`users.is_platform_admin`) : l'opérateur. Seul à gérer les **intégrations
-  partagées** (clés Brevo/Twilio/Cloudinary, `/api/admin/settings`), l'**onboarding des organisations**
-  (invitations, suppression) et la **modération des avis produit** (`/api/admin/reviews`), non bloqué par le scoping.
-- Les rôles ci-dessous (`admin/attache/assistant`) s'entendent **au sein d'une organisation**
-  (« admin » = admin de SON organisation).
+Un JWT prouve l’identité mais ne suffit pas : rôle, activation, abonnement, organisation, statut plateforme et MFA sont relus en base.
 
-## Trois niveaux d'accès (`user_role`)
+## Rôles
 
-| Rôle | Portée |
+| Rôle | Description |
 |---|---|
-| **admin** | Tout : tous les événements, gestion des comptes (équipe), réglages d'intégration (clés API), changement de rôles |
-| **attache** (attaché de presse) | Gère à fond les événements **assignés** : config, lineup, branding, médias, communiqués, newsletters, traitement |
-| **assistant** | Sur les événements **assignés** : consultation + traitement des demandes/accréditations. **Pas** d'édition de config, lineup, branding, ni de clés API |
+| `admin` | administre son organisation et son équipe |
+| `attache` | configure et pilote les événements accessibles |
+| `assistant` | consulte et traite les opérations, sans configuration |
+| super-admin | `is_platform_admin=true`, opérations plateforme |
 
-## Appartenance aux événements
+`admin` et super-admin doivent activer la MFA. Les rôles `attache` et `assistant` peuvent l’activer sans obligation.
 
-L'accès à un événement est régi par la table `event_members` :
+## Accès aux événements
 
-- **admin** → accède à **tous** les événements (aucune ligne nécessaire).
-- **attache / assistant** → accèdent uniquement aux événements où ils sont **membres**.
-- Le créateur d'un événement en devient automatiquement membre.
+- admin : tous les événements de son organisation ;
+- attaché/assistant : événements de `event_members` ;
+- super-admin : peut changer de contexte d’organisation via les routes prévues ;
+- un événement d’un autre tenant est traité comme introuvable.
 
-```ts
-// getAccessibleEventOrThrow(eventId, user)
-admin            → accès direct
-autre rôle       → exige une ligne event_members (sinon 403)
-```
+## Matrice
 
-## Matrice (résumé)
+| Action | Assistant | Attaché | Admin | Super-admin |
+|---|:---:|:---:|:---:|:---:|
+| Lister ses événements | oui | oui | oui | oui |
+| Consulter dashboard, lineup, demandes | oui | oui | oui | oui |
+| Traiter accréditations/demandes | oui | oui | oui | oui |
+| Créer/configurer un événement | non | oui | oui | oui |
+| Modifier lieux/participants/quotas | non | oui | oui | oui |
+| Créer/publier une conférence | non | oui | oui | oui |
+| Inviter et modifier une inscription conférence | non | oui | oui | oui |
+| Générer le planning | non | oui | oui | oui |
+| Gérer médias, contenus, newsletters | non | oui | oui | oui |
+| Supprimer un événement | non | non | oui | oui |
+| Gérer l’équipe de l’organisation | non | non | oui | oui |
+| Choisir un sous-domaine plateforme | non | oui | oui | oui |
+| Affecter/vérifier un domaine personnalisé | non | non | non | oui |
+| Gérer intégrations partagées | non | non | non | oui |
+| Gérer organisations et avis modérés | non | non | non | oui |
 
-| Action | admin | attache | assistant |
-|---|:--:|:--:|:--:|
-| Voir les événements assignés | tous | ✅ | ✅ |
-| Créer un événement | ✅ | ✅ | — |
-| Éditer config / lineup / branding / médias / CP / newsletters | ✅ | ✅ | — |
-| Traiter accréditations & demandes | ✅ | ✅ | ✅ |
-| Lire la file / le tableau de bord | ✅ | ✅ | ✅ |
-| Gérer l'équipe (inviter, rôles, désactiver) | ✅ | — | — |
-| Gérer les clés API (Intégrations) | ✅ | — | — |
+Les listes d’inscriptions et conférences sont consultables par un membre ayant accès à l’événement ; leurs mutations exigent `requireEventEditor`.
 
-Application côté serveur (le JWT prouve l'identité ; le rôle, l'activation du compte,
-`isPlatformAdmin` et l'abonnement sont relus en base à chaque requête) :
-- `requireAuth` → JWT valide + droits courants en base.
-- `requireRole('admin')` → `/api/admin/team` (scopé à l'organisation de l'admin).
-- `requirePlatformAdmin` → `/api/admin/settings` (intégrations partagées, super-admin uniquement).
-- `requireEventEditor` → routes d'édition (admin ou attache).
-- `getAccessibleEventOrThrow` → **isolation organisation** (404 si autre org) **puis** appartenance,
-  sur toute route `/:eventId`. Les enfants d'un événement (journalistes, demandes, médias…) en héritent.
-- **Équipe** : `getTeam`, invitations, changement de rôle/activation, assignation d'événements sont
-  scopés à l'organisation (un admin ne touche que les comptes/événements de SON org).
-- **Recherche globale** (`/api/admin/search`) : héritée du scoping (ne renvoie que l'org de l'utilisateur).
+## Middlewares
 
-Côté front : la navigation et les onglets sont masqués selon le rôle ; le serveur reste
-la source de vérité (un `assistant` qui force une route d'édition reçoit `403`).
+| Middleware | Garantie |
+|---|---|
+| `requireAuth` | session/Bearer valide, compte actif, abonnement actif, droits courants, CSRF et MFA |
+| `requireRole('admin')` | rôle organisation requis |
+| `requireEventEditor` | `admin` ou `attache` |
+| `requirePlatformAdmin` | drapeau plateforme courant |
+| `getAccessibleEventOrThrow` | événement dans le tenant et les assignations |
 
-## Cycle de vie d'un compte
+## Protections métier
 
-1. **Bootstrap** : le 1ᵉʳ compte est créé via le script `seed` ; la migration 015 promeut
-   le compte propriétaire historique en `admin`.
-2. **Invitation** (admin) : `POST /team/invite` `{email, role, eventIds[]}` → email avec
-   lien `/admin/accept-invite?token=…` (valable 7 jours). Le compte n'est créé qu'à
-   l'acceptation (le collaborateur choisit son mot de passe).
-3. **Rôle / activation** : modifiables par un admin. Garde-fou : impossible de
-   rétrograder ou désactiver le **dernier admin actif**.
-4. **Désactivation** : `users.active = false` → connexion et session existante refusées.
+- impossible de supprimer ou désactiver le dernier admin ;
+- impossible de se supprimer soi-même via la gestion d’équipe ;
+- réattribution des événements lors de la suppression d’un membre ;
+- assignations limitées aux événements de l’organisation ;
+- domaine personnalisé réservé au super-admin ;
+- participants, journalistes et conférences sont revérifiés contre le même `event_id` ;
+- recherche globale limitée aux événements accessibles.
 
-> Un changement de rôle, une désactivation ou le retrait du statut super-admin prend effet
-> dès la requête suivante : les droits ne restent pas figés jusqu'à l'expiration du JWT.
+## Journaliste
+
+Le token résout un seul `journalist_id`. Les routes publiques dérivent ensuite `event_id` et les dossiers d’upload depuis cette ligne, plutôt que d’accepter un tenant fourni par le client.
+
+Pour une conférence :
+
+- accréditation acceptée obligatoire ;
+- type d’accréditation autorisé ;
+- conférence du même événement ;
+- conférence sur invitation invisible sans invitation ;
+- le journaliste ne peut annuler que sa propre inscription.

@@ -2,7 +2,7 @@
   "name": "pr-event-360",
   "private": true,
   "version": "0.1.0",
-  "description": "Plateforme de gestion des accréditations presse en festival",
+  "description": "Plateforme de gestion des relations presse événementielles",
   "workspaces": [
     "packages/*",
     "server",

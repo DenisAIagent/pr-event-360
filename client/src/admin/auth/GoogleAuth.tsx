@@ -102,7 +102,7 @@ export function GoogleButton({
 }
 
 /** « Continuer avec Google » sur la page de connexion : un compte inconnu → page d'abonnement. */
-export function GoogleAuth() {
+export function GoogleAuth({ onMfaRequired }: { onMfaRequired?: (challenge: string) => void }) {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -111,8 +111,10 @@ export function GoogleAuth() {
     setError(null);
     try {
       const outcome = await loginWithGoogle(credential);
-      if (outcome?.needsSignup) {
+      if (outcome && 'needsSignup' in outcome) {
         navigate('/admin/abonnement', { state: { fromGoogle: true } });
+      } else if (outcome && 'mfaRequired' in outcome) {
+        onMfaRequired?.(outcome.challenge);
       } else {
         navigate('/admin', { replace: true });
       }

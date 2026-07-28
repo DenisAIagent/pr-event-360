@@ -1,7 +1,19 @@
 export type Lang = 'fr' | 'en' | 'pt' | 'es';
+export type { EventType } from '../../lib/eventProfiles';
+import type { EventType } from '../../lib/eventProfiles';
 export type RequestType = 'interview' | 'photo_report' | 'video_report';
 export type UserRole = 'admin' | 'attache' | 'assistant';
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+export type PressConferenceStatus = 'draft' | 'published' | 'closed' | 'completed';
+export type PressConferenceRegistrationMode = 'open' | 'approval' | 'invite_only';
+export type PressConferenceRegistrationStatus =
+  | 'invited'
+  | 'pending'
+  | 'registered'
+  | 'waitlisted'
+  | 'declined'
+  | 'checked_in'
+  | 'cancelled';
 
 export interface AppReview {
   id: string;
@@ -111,6 +123,7 @@ export interface UploadSignature {
   timestamp: number;
   folder: string;
   allowedFormats: string;
+  uploadPreset: string;
   signature: string;
   uploadUrl: string;
   maxBytes: number;
@@ -128,6 +141,7 @@ export type AccStatus = 'pas_encore_traite' | 'acceptee' | 'refusee';
 export interface EventSummary {
   id: string;
   name: string;
+  eventType: EventType;
   location: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -235,7 +249,7 @@ export interface Accreditation {
   lang: Lang;
   accreditationType: 'presse' | 'photo' | 'video' | null;
   accStatus: AccStatus;
-  token: string | null;
+  hasPassword: boolean;
   createdAt: string;
 }
 
@@ -261,6 +275,42 @@ export interface ArtistWithSlots {
 export interface Lineup {
   stages: Stage[];
   artists: ArtistWithSlots[];
+}
+
+export interface PressConference {
+  id: string;
+  eventId: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  venue: string | null;
+  capacity: number | null;
+  registrationMode: PressConferenceRegistrationMode;
+  status: PressConferenceStatus;
+  allowedAccreditationTypes: Array<'presse' | 'photo' | 'video'>;
+  embargoUntil: string | null;
+  livestreamUrl: string | null;
+  participants: Array<{ id: string; name: string }>;
+  counts: Record<PressConferenceRegistrationStatus, number>;
+  occupied: number;
+  available: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PressConferenceRegistration {
+  conferenceId: string;
+  journalistId: string;
+  status: PressConferenceRegistrationStatus;
+  sourceRequestId: string | null;
+  firstName: string;
+  lastName: string | null;
+  email: string;
+  media: string | null;
+  accreditationType: 'presse' | 'photo' | 'video' | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface NotificationRow {

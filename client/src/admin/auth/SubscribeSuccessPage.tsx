@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 /**
  * Retour après paiement Stripe réussi. Le compte est matérialisé par le webhook (asynchrone) :
- * on invite l'utilisateur à se connecter (email/mot de passe ou Google selon son choix).
+ * le propriétaire d'un compte email doit d'abord prouver l'adresse via le lien reçu.
  */
 export function SubscribeSuccessPage() {
   return (
@@ -18,8 +18,8 @@ export function SubscribeSuccessPage() {
           Merci ! Votre abonnement est actif et votre espace est en cours de création (quelques secondes).
         </div>
         <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
-          Connectez-vous avec l'identité choisie lors de l'inscription (email + mot de passe, ou Google)
-          pour accéder à votre organisation.
+          Si vous avez utilisé votre email, ouvrez le lien de définition du mot de passe que nous venons
+          de vous envoyer. Si vous avez utilisé Google, vous pouvez vous connecter immédiatement.
         </p>
         <Link to="/admin/login" className="btn btn-primary" style={{ textAlign: 'center' }}>
           Se connecter

@@ -10,6 +10,27 @@
 export const LANGS = ['fr', 'en', 'pt', 'es'] as const;
 export type Lang = (typeof LANGS)[number];
 
+export const EVENT_TYPES = ['music', 'trade_show', 'conference', 'corporate', 'other'] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+export const PRESS_CONFERENCE_STATUSES = ['draft', 'published', 'closed', 'completed'] as const;
+export type PressConferenceStatus = (typeof PRESS_CONFERENCE_STATUSES)[number];
+
+export const PRESS_CONFERENCE_REGISTRATION_MODES = ['open', 'approval', 'invite_only'] as const;
+export type PressConferenceRegistrationMode = (typeof PRESS_CONFERENCE_REGISTRATION_MODES)[number];
+
+export const PRESS_CONFERENCE_REGISTRATION_STATUSES = [
+  'invited',
+  'pending',
+  'registered',
+  'waitlisted',
+  'declined',
+  'checked_in',
+  'cancelled',
+] as const;
+export type PressConferenceRegistrationStatus =
+  (typeof PRESS_CONFERENCE_REGISTRATION_STATUSES)[number];
+
 export const ACCREDITATION_TYPES = ['presse', 'photo', 'video'] as const;
 export type AccreditationType = (typeof ACCREDITATION_TYPES)[number];
 

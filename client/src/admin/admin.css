@@ -1097,18 +1097,6 @@ select.status-select {
   width: auto;
   max-width: 100%;
 }
-.rail .org-name {
-  padding: 0 18px;
-  margin-top: -4px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* « Continuer avec Google » */
 .google-auth {
   display: flex;

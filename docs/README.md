@@ -1,56 +1,77 @@
 # Documentation technique — PR Event 360
 
-Plateforme de gestion des accréditations presse en festival : accréditations, demandes
-d'interviews et de reportages, newsroom (communiqués optimisés SEO), communications,
-**revue de presse** (collecte des retombées médiatiques), gestion d'équipe multi-locataire.
+État de la documentation : **18 juillet 2026**. Elle décrit la version actuellement déployée, incluant les profils d’événement et les conférences de presse.
 
-> Signature produit : **« Votre orchestrateur de relations presse ».**
-
-> L'**événement** est l'entité racine. Isolation totale entre festivals : chaque donnée
-> (journalistes, demandes, médias, communiqués…) appartient à un événement.
+PR Event 360 gère les relations presse des festivals et concerts, mais aussi des salons, foires, conférences, séminaires, lancements et événements corporate. Le profil choisi à la création adapte les libellés visibles tout en conservant un modèle technique commun.
 
 ## Sommaire
 
 | Document | Contenu |
 |---|---|
-| [architecture.md](architecture.md) | Monorepo, stack, découpage en couches, cycle de vie d'une requête |
-| [data-model.md](data-model.md) | Tables PostgreSQL, relations, migrations |
-| [api.md](api.md) | Référence des endpoints REST (back-office + surfaces publiques) |
-| [business-logic.md](business-logic.md) | Score de priorité, quotas, liste d'attente, notifications, parcours journaliste |
-| [roles-permissions.md](roles-permissions.md) | Rôles, appartenance aux événements, contrôle d'accès |
-| [security-rgpd.md](security-rgpd.md) | Authentification, secrets chiffrés, RGPD, en-têtes, rate limiting |
-| [deployment.md](deployment.md) | Variables d'environnement, build, migrations, déploiement Railway, sauvegardes |
-| [features.md](features.md) | Tour des surfaces (formulaire public, espace journaliste, newsroom, revue de presse, back-office…) |
-| [custom-domains.md](custom-domains.md) | Domaine personnalisé par événement (white-label) : résolution par Host, mode domaine, TLS |
-| [rgpd/](rgpd/) | Dossier de conformité : registre des traitements, DPA, procédures droits/violation, AIPD, TIA |
+| [architecture.md](architecture.md) | Monorepo, stack, couches et flux d’exécution |
+| [features.md](features.md) | Parcours et fonctionnalités par surface |
+| [business-logic.md](business-logic.md) | Profils d’événement, quotas, planning et conférences |
+| [data-model.md](data-model.md) | Tables, relations, enums et migrations |
+| [api.md](api.md) | Référence des endpoints REST |
+| [roles-permissions.md](roles-permissions.md) | Rôles, permissions et isolation des tenants |
+| [security-rgpd.md](security-rgpd.md) | Authentification, sessions, uploads et RGPD |
+| [deployment.md](deployment.md) | Configuration, build, Railway, sauvegarde et rollback |
+| [custom-domains.md](custom-domains.md) | Sous-domaines et domaines personnalisés |
+| [rgpd/](rgpd/) | Registre, DPA, procédures, AIPD et transferts |
+
+Documents complémentaires :
+
+- [PRD](../PR-Event-360_PRD.md)
+- [README du dépôt](../README.md)
+- [Design system](../PR%20Event%20360%20Design%20System/readme.md)
 
 ## Démarrage rapide
 
 ```bash
-cp .env.example .env        # variables d'environnement (jamais committées)
-npm install                 # 3 workspaces : packages/core, server, client
-npm run db:up               # PostgreSQL local (docker compose) — ou Postgres existant
-npm run migrate:up          # applique le schéma
-npm test                    # tests du moteur métier (packages/core)
+cp .env.example .env
+npm install
+npm run db:up
+npm run migrate:up
+npm --workspace server run dev
 ```
 
-Lancer en développement :
+Dans un second terminal :
 
 ```bash
-npm --workspace server run dev    # API sur http://localhost:4000
-npm --workspace client run dev    # Front sur http://localhost:5173
+npm --workspace client run dev
 ```
 
-## Vue d'ensemble
+## Architecture résumée
 
+```text
+React/Vite
+  ├─ back-office ── cookie HttpOnly + CSRF ──┐
+  └─ surfaces publiques ─ lien/token ────────┤
+                                              ▼
+                                       Express /api
+                                   routes → services → SQL
+                                              │
+                           @pr-event-360/core │ PostgreSQL
+                                              ▼
+                     Brevo · Twilio · Cloudinary · Stripe
 ```
-┌──────────────────────┐      ┌──────────────────────┐      ┌────────────────┐
-│  Client (React/Vite) │ ───▶ │  Server (Express)    │ ───▶ │  PostgreSQL    │
-│  - formulaires public│ REST │  - routes /api/*     │  SQL │                │
-│  - back-office /admin │◀──── │  - services / repos  │◀──── │                │
-└──────────────────────┘      │  - moteur @core      │      └────────────────┘
-                              └──────────┬───────────┘
-                                         │ I/O externes (mode « live »)
-                                         ▼
-              Brevo (email/SMS) · Twilio (SMS) · Cloudinary (médias) · Stripe (facturation)
+
+## Sources de vérité
+
+En cas d’écart :
+
+1. les migrations de `server/migrations` définissent le schéma ;
+2. les schémas Zod des routes définissent le contrat HTTP ;
+3. les services définissent les règles transactionnelles ;
+4. `packages/core` définit les décisions métier pures ;
+5. cette documentation explique le comportement attendu.
+
+## Commandes de contrôle
+
+```bash
+npm test
+npm --workspace server run test
+npm --workspace server run typecheck
+npm --workspace client run typecheck
+npm run build
 ```

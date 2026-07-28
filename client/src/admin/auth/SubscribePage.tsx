@@ -3,10 +3,8 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { GoogleButton } from './GoogleAuth';
 
-const MIN_LENGTH = 8;
-
 /**
- * Inscription PAYANTE : collecte le nom de l'organisation + l'identité (email/mot de passe
+ * Inscription PAYANTE : collecte le nom de l'organisation + l'identité (email
  * ou Google), démarre un paiement Stripe Checkout et redirige vers Stripe. Le compte n'est
  * créé qu'après paiement validé (webhook). Dormant si la facturation n'est pas configurée.
  */
@@ -15,8 +13,6 @@ export function SubscribePage() {
   const [orgName, setOrgName] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -43,14 +39,12 @@ export function SubscribePage() {
     !busy &&
     orgName.trim() !== '' &&
     fullName.trim() !== '' &&
-    email.trim() !== '' &&
-    password.length >= MIN_LENGTH &&
-    confirm === password;
+    email.trim() !== '';
 
   function submitEmail(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-    void goToCheckout({ orgName: orgName.trim(), fullName: fullName.trim(), email: email.trim(), password });
+    void goToCheckout({ orgName: orgName.trim(), fullName: fullName.trim(), email: email.trim() });
   }
 
   function onGoogle(credential: string) {
@@ -94,7 +88,7 @@ export function SubscribePage() {
                 <input
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Ex. Agence Présence / Festival X"
+                  placeholder="Ex. Agence Présence / Événement X"
                   required
                   autoFocus
                 />
@@ -107,26 +101,10 @@ export function SubscribePage() {
                 <label>Email</label>
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
-              <div className="field">
-                <label>Mot de passe</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={MIN_LENGTH}
-                  required
-                />
-                {password.length > 0 && password.length < MIN_LENGTH && (
-                  <span className="field-hint field-hint-error">{MIN_LENGTH} caractères minimum.</span>
-                )}
-              </div>
-              <div className="field">
-                <label>Confirmer le mot de passe</label>
-                <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-                {confirm.length > 0 && confirm !== password && (
-                  <span className="field-hint field-hint-error">Les mots de passe ne correspondent pas.</span>
-                )}
-              </div>
+              <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
+                Après paiement, un lien envoyé à cet email vous permettra de vérifier l'adresse et de définir
+                votre mot de passe.
+              </p>
               <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
                 {busy ? 'Redirection…' : "S'abonner et payer"}
               </button>

@@ -4,8 +4,8 @@ import type { AccStatus, RequestStatus, RequestType } from './types';
 export const STATUS_LABEL: Record<RequestStatus, string> = {
   pas_encore_traite: 'Pas encore traité',
   en_cours: 'En cours de traitement',
-  transmise_prod: 'Transmise à la prod artiste',
-  attente_artiste: 'En attente de réponse artiste',
+  transmise_prod: 'Transmise à l’organisation',
+  attente_artiste: 'En attente de réponse',
   acceptee: 'Acceptée',
   refusee: 'Refusée',
   liste_attente: "Liste d'attente",

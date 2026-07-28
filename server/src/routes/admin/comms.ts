@@ -31,6 +31,7 @@ import {
   listCoverageByEvent,
 } from '../../db/repositories/coverageRepo';
 import { remindCoverage } from '../../services/coverageService';
+import { listPressConferencesForPreview } from '../../services/pressConferenceService';
 
 // Monté à /api/admin/events (après eventsRouter) : gère médias, CP, newsletters.
 export const commsRouter = Router();
@@ -218,17 +219,23 @@ commsRouter.get(
     const eventId = req.params.eventId!;
     const event = await getEventOrThrow(eventId);
     const lang = event.languages[0] ?? 'fr';
-    const [lineup, branding] = await Promise.all([getPublicLineup(eventId, lang), getBranding(eventId)]);
+    const [lineup, branding, pressConferences] = await Promise.all([
+      getPublicLineup(eventId, lang),
+      getBranding(eventId),
+      listPressConferencesForPreview(eventId),
+    ]);
     sendData(res, {
-      event: { id: event.id, name: event.name, languages: event.languages, branding },
+      event: { id: event.id, name: event.name, eventType: event.eventType, languages: event.languages, branding },
       journalist: {
         firstName: 'Aperçu',
         lastName: 'Journaliste',
         lang,
         accreditationType: 'presse',
+        hasPassword: false,
       },
       lineup,
       requests: [],
+      pressConferences,
     });
   }),
 );

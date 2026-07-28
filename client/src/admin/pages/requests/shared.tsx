@@ -7,7 +7,7 @@ import { InfoBubble } from '../../components/InfoBubble';
 export type View = 'queue' | 'byArtist' | 'byStage' | 'planning';
 
 export const QUEUE_COLUMNS = ['Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut'];
-export const PLANNING_COLUMNS = ['Créneau', 'Artiste', 'Journaliste', 'Média', 'Statut'];
+export const PLANNING_COLUMNS = ['Créneau', 'Participant', 'Journaliste', 'Média', 'Statut'];
 
 export const TYPE_FILTERS: { value: RequestType | 'all'; label: string }[] = [
   { value: 'all', label: 'Toutes' },

@@ -13,16 +13,23 @@ export function SecurityPage() {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function startSetup() {
+  async function startSetup(currentCode?: string) {
     setBusy(true);
     try {
-      const r = await api.post<{ qr: string; otpauth: string }>('/admin/auth/mfa/setup');
+      const r = await api.post<{ qr: string; otpauth: string }>('/admin/auth/mfa/setup', { currentCode });
       setQr(r.qr);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Impossible de démarrer la configuration.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function reconfigure() {
+    const currentCode = window.prompt(
+      "Pour remplacer votre application d'authentification, saisissez d'abord un code actuel :",
+    );
+    if (currentCode) void startSetup(currentCode.trim());
   }
 
   async function enable() {
@@ -78,6 +85,9 @@ export function SecurityPage() {
               <button className="btn btn-ghost btn-sm" onClick={disable} disabled={busy} style={{ alignSelf: 'flex-start' }}>
                 Désactiver
               </button>
+              <button className="btn btn-ghost btn-sm" onClick={reconfigure} disabled={busy} style={{ alignSelf: 'flex-start' }}>
+                Reconfigurer
+              </button>
             </>
           )}
 
@@ -86,13 +96,13 @@ export function SecurityPage() {
               <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
                 La double authentification n'est pas activée sur votre compte.
               </p>
-              <button className="btn btn-primary" onClick={startSetup} disabled={busy} style={{ alignSelf: 'flex-start' }}>
+              <button className="btn btn-primary" onClick={() => void startSetup()} disabled={busy} style={{ alignSelf: 'flex-start' }}>
                 {busy ? 'Préparation…' : 'Activer la double authentification'}
               </button>
             </>
           )}
 
-          {!enabled && qr && (
+          {qr && (
             <>
               <p style={{ fontSize: 'var(--text-sm)' }}>
                 1. Scannez ce QR code avec votre application d'authentification.

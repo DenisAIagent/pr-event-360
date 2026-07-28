@@ -6,7 +6,6 @@ import { useFetch } from '../lib/useFetch';
 import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
 import { printTable } from '../lib/printRequests';
-import { CopyLink } from '../components/CopyLink';
 import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
@@ -83,6 +82,17 @@ export function AccreditationsTab() {
       reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Action impossible, réessayez.');
+    }
+  }
+
+  async function resendAccess(journalistId: string) {
+    try {
+      await apiAuthed.post(
+        `/admin/events/${eventId}/accreditations/${journalistId}/access-link/resend`,
+      );
+      toast.success('Nouveau lien personnel envoyé par email.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Envoi impossible, réessayez.');
     }
   }
 
@@ -222,18 +232,10 @@ export function AccreditationsTab() {
                       Refuser
                     </button>
                   </div>
-                ) : a.accStatus === 'acceptee' && a.token ? (
-                  <div style={{ minWidth: 280 }}>
-                    <CopyLink url={`${window.location.origin}/espace/${a.token}`} compact />
-                    <span className="muted" style={{ fontSize: 'var(--text-xs)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      Lien personnel (déjà envoyé par email)
-                      <InfoBubble title="Le lien personnel">
-                        Adresse <strong>unique et secrète</strong> de l'espace de ce journaliste, envoyée
-                        automatiquement par email à l'acceptation. C'est par là qu'il soumet ses demandes et
-                        suit son planning. S'il dit ne pas l'avoir reçue, copiez-la ici et renvoyez-la-lui.
-                      </InfoBubble>
-                    </span>
-                  </div>
+                ) : a.accStatus === 'acceptee' ? (
+                  <button className="btn btn-ghost btn-sm" onClick={() => resendAccess(a.id)}>
+                    Renvoyer un lien
+                  </button>
                 ) : (
                   <span className="muted">—</span>
                 )}

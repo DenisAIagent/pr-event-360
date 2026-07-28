@@ -5,7 +5,7 @@ vi.mock('../src/db/repositories/userRepo', () => ({
   findUserAuthState: vi.fn(),
   // Ces tests portent sur la relecture des droits, pas sur la MFA : on la déclare
   // active pour ne pas déclencher le gate d'enrôlement obligatoire (requireAuth).
-  getUserMfa: vi.fn(async () => ({ enabled: true, secret: 'x' })),
+  getUserMfa: vi.fn(async () => ({ enabled: true, secret: 'x', pendingSecret: null })),
 }));
 
 import { requireAuth } from '../src/middleware/auth';
@@ -99,7 +99,7 @@ describe('requireAuth', () => {
 
   it('bloque un admin SANS MFA active hors des endpoints d’enrôlement (MFA obligatoire)', async () => {
     vi.mocked(userRepo.findUserAuthState).mockResolvedValue(currentUser); // admin
-    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null });
+    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null, pendingSecret: null });
     const token = signToken({
       sub: currentUser.id,
       email: currentUser.email,
@@ -119,7 +119,7 @@ describe('requireAuth', () => {
 
   it('laisse passer un admin sans MFA vers un endpoint d’enrôlement', async () => {
     vi.mocked(userRepo.findUserAuthState).mockResolvedValue(currentUser);
-    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null });
+    vi.mocked(userRepo.getUserMfa).mockResolvedValueOnce({ enabled: false, secret: null, pendingSecret: null });
     const token = signToken({
       sub: currentUser.id,
       email: currentUser.email,

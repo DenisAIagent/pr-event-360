@@ -19,7 +19,7 @@ export function MfaEnrollmentGate() {
     setBusy(true);
     setError(null);
     try {
-      const r = await api.post<{ qr: string; otpauth: string }>('/admin/auth/mfa/setup');
+      const r = await api.post<{ qr: string; otpauth: string }>('/admin/auth/mfa/setup', {});
       setQr(r.qr);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Impossible de démarrer la configuration.');

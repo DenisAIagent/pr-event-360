@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
 import { withTransaction } from '../db/pool';
@@ -18,6 +19,7 @@ import {
   deletePendingSignup,
 } from '../db/repositories/pendingSignupRepo';
 import { markStripeEventProcessed, unmarkStripeEvent } from '../db/repositories/stripeEventRepo';
+import { requestPasswordReset } from './passwordResetService';
 
 const env = loadEnv();
 let stripe: Stripe | null = null;
@@ -42,7 +44,7 @@ function periodEnd(sub: Stripe.Subscription): string | null {
 }
 
 export type CheckoutInput =
-  | { orgName: string; fullName: string; email: string; password: string }
+  | { orgName: string; fullName: string; email: string }
   | { orgName: string; googleCredential: string };
 
 /**
@@ -56,7 +58,6 @@ export async function startCheckout(input: CheckoutInput): Promise<{ url: string
 
   let email: string;
   let fullName: string;
-  let passwordHash: string | null = null;
   let googleId: string | null = null;
   let provider: 'password' | 'google';
 
@@ -70,7 +71,6 @@ export async function startCheckout(input: CheckoutInput): Promise<{ url: string
     email = input.email.toLowerCase();
     fullName = input.fullName;
     provider = 'password';
-    passwordHash = await argon2.hash(input.password);
   }
 
   if (await findUserByEmail(email)) {
@@ -81,7 +81,6 @@ export async function startCheckout(input: CheckoutInput): Promise<{ url: string
     email,
     orgName,
     fullName,
-    passwordHash,
     googleId,
     authProvider: provider,
   });
@@ -150,11 +149,17 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
 }
 
 /** Crée l'organisation + le compte à partir d'une session Checkout payée. Idempotent. */
-async function materializeFromSession(session: Stripe.Checkout.Session): Promise<void> {
+export async function materializeFromSession(session: Stripe.Checkout.Session): Promise<void> {
   const pendingId = session.client_reference_id ?? session.metadata?.pending_id ?? null;
   if (!pendingId) return;
   const pending = await findPendingSignupById(pendingId);
   if (!pending) return; // déjà traité (livraison multiple du webhook)
+  // Lie strictement l'intention à LA session créée côté serveur. Un pending_id
+  // copié dans les métadonnées d'une autre session ne matérialise aucun compte.
+  if (!pending.stripeSessionId || pending.stripeSessionId !== session.id) {
+    console.error(`[billing] Session ${session.id} non liée au pending ${pending.id} — matérialisation refusée.`);
+    return;
+  }
   // Pending expiré : ne pas matérialiser une inscription trop ancienne (session tardive).
   if (new Date(pending.expiresAt).getTime() < Date.now()) {
     await deletePendingSignup(pending.id);
@@ -189,6 +194,10 @@ async function materializeFromSession(session: Stripe.Checkout.Session): Promise
   }
 
   const slug = await uniqueSlug(pending.orgName);
+  const passwordCredential =
+    pending.authProvider === 'password'
+      ? await argon2.hash(randomBytes(32).toString('hex'))
+      : null;
   await withTransaction(async (db) => {
     const org = await createOrganization({ name: pending.orgName, slug }, db);
     await createUser(
@@ -197,7 +206,9 @@ async function materializeFromSession(session: Stripe.Checkout.Session): Promise
         fullName: pending.fullName,
         role: 'admin',
         organizationId: org.id,
-        passwordHash: pending.passwordHash,
+        // Un compte email est créé avec un secret aléatoire inconnu de tous. Seul
+        // le lien envoyé à l'adresse permet ensuite de choisir le vrai mot de passe.
+        passwordHash: passwordCredential,
         googleId: pending.googleId,
         authProvider: pending.authProvider,
       },
@@ -215,4 +226,7 @@ async function materializeFromSession(session: Stripe.Checkout.Session): Promise
     );
   });
   await deletePendingSignup(pending.id);
+  if (pending.authProvider === 'password') {
+    await requestPasswordReset(pending.email);
+  }
 }

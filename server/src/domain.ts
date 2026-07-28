@@ -1,7 +1,11 @@
 import type {
   AccreditationStatus,
   AccreditationType,
+  EventType,
   Lang,
+  PressConferenceRegistrationMode,
+  PressConferenceRegistrationStatus,
+  PressConferenceStatus,
   RequestStatus,
   RequestType,
   UserRole,
@@ -46,6 +50,7 @@ export interface Event {
   organizationId: string;
   ownerUserId: string;
   name: string;
+  eventType: EventType;
   location: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -111,6 +116,33 @@ export interface Artist {
   videoQuota: number | null;
 }
 
+export interface PressConference {
+  id: string;
+  eventId: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  venue: string | null;
+  capacity: number | null;
+  registrationMode: PressConferenceRegistrationMode;
+  status: PressConferenceStatus;
+  allowedAccreditationTypes: AccreditationType[];
+  embargoUntil: string | null;
+  livestreamUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PressConferenceRegistration {
+  conferenceId: string;
+  journalistId: string;
+  status: PressConferenceRegistrationStatus;
+  sourceRequestId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ArtistWindow {
   id: string;
   artistId: string;
@@ -131,7 +163,6 @@ export interface InterviewSlot {
 export interface Journalist {
   id: string;
   eventId: string;
-  token: string | null;
   firstName: string;
   lastName: string | null;
   email: string;

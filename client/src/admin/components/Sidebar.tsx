@@ -21,6 +21,7 @@ import {
   NotebookText,
   LogOut,
   ChevronDown,
+  Presentation,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
@@ -97,6 +98,7 @@ export function Sidebar() {
   const PRIMARY: NavDef[] = [
     { to: `${base}/requests`, label: 'Demandes', icon: Inbox },
     { to: `${base}/accreditations`, label: 'Accréditations', icon: UserCheck },
+    { to: `${base}/press-conferences`, label: 'Conférences presse', icon: Presentation },
   ];
   const CONTENU: NavDef[] = [
     { to: `${base}/media`, label: 'Médiathèque', icon: Image },
@@ -118,12 +120,6 @@ export function Sidebar() {
           <img src="/brand/logo-pr-event-360-reversed.png" alt="PR Event 360" className="brand-mark" />
         </Link>
       </div>
-
-      {user?.organizationName && (
-        <div className="org-name" title={user.organizationName}>
-          {user.organizationName}
-        </div>
-      )}
 
       <div className="ev-switch-wrap" ref={switchRef}>
         <button type="button" className="ev-switch" onClick={() => setSwitchOpen((o) => !o)} aria-expanded={switchOpen}>

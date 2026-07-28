@@ -1,141 +1,142 @@
 # Logique métier
 
-Le cœur déterministe vit dans `packages/core` (fonctions **pures**, sans DB ni HTTP,
-l'instant courant étant toujours injecté → testables sans infrastructure). Le serveur
-fournit les comptages SQL et orchestre les effets de bord.
+Les décisions déterministes vivent dans `packages/core`. Le serveur ajoute les lectures SQL, transactions, contrôles d’accès et notifications.
 
-## Parcours journaliste (de bout en bout)
+## Profils d’événement
 
-```
-1. Accréditation     Le journaliste ouvre /accreditation/:eventId, remplit le formulaire
-                     (consentement RGPD obligatoire). → ligne `journalists` (acc_status = pas_encore_traite)
-2. Traitement        L'attaché accepte/refuse dans l'onglet Accréditations.
-                     À l'acceptation : génération d'un `token` unique + email contenant
-                     le lien personnel /espace/:token.
-3. Accès             Le journaliste accède à son espace par le lien magique, OU se connecte
-                     par email + mot de passe (compte par événement, défini depuis l'espace).
-4. Espace            Il consulte le lineup, soumet ses demandes (interview ou reportage
-                     photo/vidéo, toujours ↔ un artiste), suit leur statut, voit son
-                     planning d'interviews et accède à la newsroom. → lignes `requests`
-5. File / traitement L'attaché traite les demandes (file triée par score, par artiste,
-                     ou planning par créneau) et déclenche la génération du planning.
-                     Notifications à chaque étape.
-6. Revue de presse   Après l'événement (fin + délai de publication choisi à l'inscription :
-                     J+3 / J+8 / J+30), le journaliste reçoit un email l'invitant à déposer ses
-                     retombées (liens/photos/vidéos) dans son espace → lignes `press_coverage`.
-```
+`EVENT_PROFILES` associe chaque `event_type` à ses libellés. `music` est le repli pour les événements historiques. Le type ne change pas les clés techniques :
+
+- `artists` = artistes, exposants, intervenants, porte-paroles ou participants ;
+- `stages` = scènes, espaces ou salles.
+
+Les règles de demandes, quotas et conférences sont communes.
+
+## Accréditation et accès
+
+1. Soumission publique avec consentement → `journalists.acc_status = pas_encore_traite`.
+2. Acceptation par l’équipe → émission d’un token 256 bits, email du lien.
+3. Seul le hash SHA-256 et l’expiration à 7 jours sont stockés.
+4. Tout renvoi du lien ou login par mot de passe fait tourner le token et invalide l’ancien.
+5. Le mot de passe initial peut être créé depuis un lien valide.
+6. S’il existe déjà, le changement exige un reset email, usage unique, 1 h ; le reset révoque le lien d’espace.
+
+L’index partiel `uniq_journalists_event_email` empêche les doublons nouveaux par événement sans supprimer les doublons historiques.
 
 ## Score de priorité
 
-Calculé à la volée (jamais stocké), paramétrable par événement.
-
-```
-Score = (poids du type de média) × (multiplicateur du type de demande) + bonus d'ancienneté
-
-bonus d'ancienneté = min( heures_pleines_d'attente × ageBonusPerHour , ageBonusCap )
+```text
+score = mediaWeight × requestTypeMultiplier
+      + min(fullWaitingHours × ageBonusPerHour, ageBonusCap)
 ```
 
-- **Poids du type de média** : configuré dans `media_types` (ex. TV nationale = 100,
-  presse nationale = 80, web/blog = 20).
-- **Multiplicateur du type de demande** : `request_type_weights` (ex. interview 1.5,
-  reportage vidéo 1.3, reportage photo 1.0).
-- **Bonus d'ancienneté** : +`ageBonusPerHour` (défaut 1) par **heure pleine** d'attente,
-  plafonné à `ageBonusCap` (défaut 24) → une vieille demande remonte sans jamais
-  doubler indéfiniment les autres.
+- calcul à la volée ;
+- poids et multiplicateurs propres à l’événement ;
+- tri décroissant ;
+- aide au classement seulement, décision humaine.
 
-Implémentation : `packages/core/src/scoring/priorityScore.ts`. La file
-(`GET /:eventId/requests`) trie par score **décroissant**.
+## Demandes individuelles
 
-## Quotas
+Les types sont `interview`, `photo_report` et `video_report`. Un `artistId` de l’événement est toujours requis.
 
-Deux quotas, vérifiés à partir de comptages SQL (`checkQuota`,
-`packages/core/src/quotas/checkQuota.ts`) :
+### Quotas
 
-Tous les quotas sont portés par l'**artiste** (c'est lui qui décide combien d'interviews,
-de photographes dans le pit et de vidéastes il accepte) :
-
-| Quota | Plafond | « Places utilisées » comptées |
+| Type | Limite | Occupation |
 |---|---|---|
-| Interviews par artiste | `artists.itw_quota` sinon `event_configs.default_itw_quota` | demandes d'interview **accordées** (`transmise_prod`, `attente_artiste`, `acceptee`) |
-| Photographes par artiste | `artists.photo_quota` (`NULL` ⇒ illimité) | reportages photo **acceptés** sur l'artiste |
-| Vidéastes par artiste | `artists.video_quota` (`NULL` ⇒ illimité) | reportages vidéo **acceptés** sur l'artiste |
+| Interview | quota participant ou défaut événement | `transmise_prod`, `attente_artiste`, `acceptee` |
+| Photo | quota participant, `NULL` = illimité | reportages photo acceptés |
+| Vidéo | quota participant, `NULL` = illimité | reportages vidéo acceptés |
 
-- `resolveInterviewQuota(artistQuota, defaultQuota)` : quota d'interview spécifique, sinon défaut.
-- `hasRoom = used < limit`. Photo/vidéo sans quota défini (`NULL`) ⇒ **illimité** (aucune liste d'attente).
+Quota plein à la soumission → `liste_attente`. Quand une place se libère, la demande en attente au meilleur score, pour le même participant et le même type, est promue.
 
-## Liste d'attente & promotion
+### Créneaux
 
-- À la **soumission** d'une demande, si le quota concerné est déjà atteint, la demande
-  est placée automatiquement en `liste_attente` (statut système, non assignable à la main).
-- Quand une place se **libère** (un statut accordé repasse en refusé/non traité), le
-  service de promotion fait remonter la **meilleure** demande en attente pour le **même
-  artiste et le même type** (interview / photo / vidéo), selon le score
-  (`packages/core/src/waitlist/promote.ts`).
+Les fenêtres sont découpées selon `itw_duration_min + itw_buffer_min`. Le journaliste ne choisit pas un slot. `planningService` trie les interviews acceptées par score et affecte les slots les plus tôt, dans une transaction.
 
-## Créneaux & génération du planning
+## Conférences de presse
 
-Depuis les **fenêtres de disponibilité** d'un artiste (`artist_windows`) et la config
-(`itw_duration_min`, `itw_buffer_min`), le moteur génère des `interview_slots`
-contigus (durée + battement) — `packages/core/src/slots/generateSlots.ts`.
+### Cycle de vie
 
-Le journaliste **ne choisit pas** son créneau : c'est le système qui attribue, **par
-priorité**. Le bouton **« Générer le planning »** (`POST /:eventId/planning/generate`,
-`planningService`) regroupe les interviews **acceptées** par artiste, les trie par score
-décroissant, et assigne le meilleur score au créneau le plus tôt, etc. — de façon
-transactionnelle. Retour : `{ assigned, unscheduled }`. Chaque journaliste retrouve alors
-son créneau dans son espace (« Mon planning ») ; le back-office l'affiche dans la vue
-**planning par créneau** (chronologique, jour J).
+| Statut | Visibilité | Inscription |
+|---|---|---|
+| `draft` | back-office uniquement | fermée |
+| `published` | journalistes éligibles | ouverte avant le début |
+| `closed` | visible | fermée |
+| `completed` | visible | fermée |
+
+Une conférence `invite_only` n’est visible que si le journaliste possède déjà une inscription ou une invitation.
+
+### Décision d’inscription
+
+Ordre des règles :
+
+1. vérifier que la conférence et le journaliste appartiennent au même événement ;
+2. exiger une accréditation acceptée et un type autorisé ;
+3. exiger `published` et une date de début future ;
+4. verrouiller la conférence dans une transaction ;
+5. appliquer `decidePressConferenceRegistration` :
+   - déjà `registered`/`checked_in` : idempotent ;
+   - `invite_only` sans `invited` : refus ;
+   - `approval` sans invitation : `pending` ;
+   - capacité atteinte : `waitlisted` ;
+   - sinon : `registered`.
+
+`registered` et `checked_in` occupent la capacité. `capacity = NULL` signifie illimité ; `0` place toute inscription autorisée en attente.
+
+### Annulation et promotion
+
+- une invitation déclinée devient `declined` ;
+- les autres annulations deviennent `cancelled` ;
+- si un statut occupé libère une place, la première ligne `waitlisted` est promue `registered` dans la même transaction ;
+- une décision admin vers `registered` est ramenée à `waitlisted` si la capacité est pleine.
+
+### Indépendance des workflows
+
+Une conférence :
+
+- peut être créée après la période d’accréditation ;
+- peut associer plusieurs participants ;
+- ne ferme pas automatiquement les formulaires individuels ;
+- ne transforme ni ne supprime une `request` ;
+- possède ses propres statuts et notifications.
 
 ## Notifications
 
-Déclencheurs (`trigger_key`, gabarits d'événement) : `accreditation_received` /
-`accreditation_accepted` / `accreditation_rejected`, `request_received` / `request_accepted` /
-`request_rejected`, et `coverage_request` (collecte des retombées). Les récapitulatifs
-(`daily_recap`/`weekly_recap`), `newsletter`, la réinitialisation de mot de passe et l'invitation
-sont hors gabarits d'événement.
+Déclencheurs principaux :
 
-- **Gabarits** : `email_templates` par (événement × langue × déclencheur × canal),
-  avec valeurs par défaut multilingues (fr/en/pt/es) semées à la création.
-- **Variables** (`{{clé}}`) : `{{firstName}}`, `{{event}}`, `{{link}}`, `{{type}}` (libellé du type
-  de demande), `{{artist}}`, `{{slot}}` (créneau attribué), `{{reportage}}` (règles/autorisation
-  photo), `{{delay}}` (délai de publication, revue de presse). Une variable inconnue → chaîne vide,
-  avec nettoyage typographique (espaces français préservés).
-- **Nom d'expéditeur** : dérivé de l'événement — `eventSenderName(name)` = « *{name}* Press Team ».
-  L'**adresse** d'envoi reste l'expéditeur Brevo vérifié (`BREVO_SENDER_EMAIL`) ; seul le nom affiché change.
-- **Best-effort** : `sendNotification` ne lève jamais — une panne fournisseur ne casse
-  pas le flux métier ; l'échec est journalisé et la notification persistée en `failed`
-  (visible dans l'onglet Messages).
-- **Mode simulation** (défaut) : rien n'est envoyé, tout est persisté pour visualisation.
+- accréditation reçue, acceptée, refusée ;
+- demande reçue, acceptée, refusée ;
+- invitation conférence ;
+- inscription, demande en attente et liste d’attente conférence ;
+- promotion de liste d’attente ;
+- demande de retombées ;
+- récapitulatifs et newsletters.
 
-### Tâches planifiées (`node-cron`, fuseau Europe/Paris)
+Les gabarits sont multilingues. Un échec fournisseur est persisté mais ne rollback pas l’action métier. En `simulation`, aucun message externe n’est envoyé.
+
+## Tâches planifiées
+
+Fuseau : Europe/Paris.
 
 | Cron | Tâche |
 |---|---|
-| `0 8 * * *` | Récapitulatifs **quotidiens** aux destinataires configurés |
-| `0 8 * * 1` | Récapitulatifs **hebdomadaires** (lundi) |
-| `30 3 * * *` | **Purge de rétention RGPD** : suppression des journalistes > 12 mois après l'événement |
-| `0 9 * * *` | **Collecte des retombées** : email `coverage_request` aux accrédités dont `fin + délai de publication` est atteint |
+| `0 8 * * *` | récapitulatif quotidien |
+| `0 8 * * 1` | récapitulatif hebdomadaire |
+| `30 3 * * *` | purge journalistes 12 mois après la fin |
+| `0 9 * * *` | demande de retombées à fin + délai |
 
-## Revue de presse (collecte des retombées)
+## Revue de presse
 
-Après l'événement, la plateforme sollicite les accrédités acceptés pour constituer une **revue de
-presse classée par catégorie de média**.
+- invitation envoyée une seule fois via `coverage_request_sent_at` ;
+- URLs HTTPS ;
+- upload signé et limité ;
+- upload média exige `archive_consent` et `promo_consent` ;
+- suppression possible par le journaliste ou modération par un éditeur.
 
-- **Envoi par journaliste, idempotent** : `listJournalistsForCoverageRequest()` sélectionne les
-  accrédités `acceptee` dont `coverage_request_sent_at IS NULL` **et** `end_date + publish_delay_days`
-  est dépassé ; après envoi, `touchJournalistCoverageSent(id)` horodate `journalists.coverage_request_sent_at`
-  (pas de renvoi). Le **délai** (`publish_delay_days`, défaut 8) est choisi à l'inscription (3/8/30 j).
-- **Dépôt** (espace journaliste) : lien externe **ou** média uploadé (Cloudinary, signature tokenisée
-  `POST /:token/assets/sign`). Pour un **upload**, l'**autorisation d'archivage + usage promotionnel**
-  est obligatoire (`archive_consent` **et** `promo_consent`, sinon 400) — écho au règlement accepté à
-  l'accréditation. Catégories : presse écrite, web, TV, radio, réseaux sociaux, YouTube, podcast,
-  photo, vidéo, autre.
-- **Relance manuelle** (back-office) : `remindCoverage(eventId, journalistId?)` — un journaliste précis,
-  ou par défaut tous les accrédités acceptés qui n'ont encore rien déposé.
-- **Suivi** : `coverageStatsByEvent(eventId)` alimente le tableau « qui a contribué / en attente ».
+## Facturation
 
-## Clôture des inscriptions
-
-`events.accreditation_deadline` (optionnel). Au-delà, le formulaire public renvoie
-`registrationClosed = true` ; le front affiche un compte à rebours puis bascule en
-« inscriptions closes ». Le même indicateur protège la soumission côté serveur.
+- le checkout ne conserve pas un hash de mot de passe choisi avant preuve ;
+- Stripe Checkout porte une référence vers `pending_signups` ;
+- session, prix, email et métadonnées sont vérifiés avant matérialisation ;
+- l’événement Stripe est enregistré dans `stripe_events` pour l’idempotence ;
+- un compte email reçoit un flux d’activation/réinitialisation après paiement ;
+- un compte Google utilise une identité Google vérifiée.

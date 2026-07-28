@@ -2,11 +2,11 @@ import { pool } from '../pool';
 import type { Queryable } from '../types';
 import type { Journalist } from '../../domain';
 import type { AccreditationStatus, AccreditationType, Lang } from '@pr-event-360/core';
+import { hashJournalistToken } from '../../lib/token';
 
 interface JournalistRow {
   id: string;
   event_id: string;
-  token: string | null;
   first_name: string;
   last_name: string | null;
   email: string;
@@ -28,7 +28,6 @@ interface JournalistRow {
 const map = (r: JournalistRow): Journalist => ({
   id: r.id,
   eventId: r.event_id,
-  token: r.token,
   firstName: r.first_name,
   lastName: r.last_name,
   email: r.email,
@@ -47,7 +46,7 @@ const map = (r: JournalistRow): Journalist => ({
   createdAt: r.created_at,
 });
 
-const COLS = `id, event_id, token, first_name, last_name, email, phone, media,
+const COLS = `id, event_id, first_name, last_name, email, phone, media,
   media_type_id, audience, prev_article, lang, accreditation_type, acc_status,
   commit_publish, publish_delay_days, consent, password_hash, created_at`;
 
@@ -106,7 +105,7 @@ export async function listJournalistsForCoverageRequest(
     `SELECT ${COLS.split(',').map((c) => 'j.' + c.trim()).join(', ')}, e.name AS event_name
      FROM journalists j
      JOIN events e ON e.id = j.event_id
-     WHERE j.acc_status = 'acceptee' AND j.email <> '' AND j.token IS NOT NULL
+     WHERE j.acc_status = 'acceptee' AND j.email <> ''
        AND j.coverage_request_sent_at IS NULL
        AND e.end_date IS NOT NULL
        AND (e.end_date + (j.publish_delay_days || ' days')::interval) <= now()`,
@@ -130,10 +129,31 @@ export async function findJournalistByToken(
   token: string,
   db: Queryable = pool,
 ): Promise<Journalist | null> {
-  const { rows } = await db.query<JournalistRow>(`SELECT ${COLS} FROM journalists WHERE token = $1`, [
-    token,
-  ]);
+  const { rows } = await db.query<JournalistRow>(
+    `SELECT ${COLS} FROM journalists
+     WHERE token_hash = $1 AND token_expires_at > now()`,
+    [hashJournalistToken(token)],
+  );
   return rows[0] ? map(rows[0]) : null;
+}
+
+export async function rotateJournalistAccessToken(
+  id: string,
+  tokenHash: string,
+  expiresAt: Date,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query(
+    'UPDATE journalists SET token_hash = $2, token_expires_at = $3 WHERE id = $1',
+    [id, tokenHash, expiresAt],
+  );
+}
+
+export async function revokeJournalistAccessToken(id: string, db: Queryable = pool): Promise<void> {
+  await db.query(
+    'UPDATE journalists SET token_hash = NULL, token_expires_at = NULL WHERE id = $1',
+    [id],
+  );
 }
 
 /**
@@ -263,17 +283,17 @@ export async function listJournalistsByEvent(
   return rows.map(map);
 }
 
-/** Met à jour le statut d'accréditation et, à l'acceptation, pose le token. */
+/** Met à jour le statut d'accréditation et pose/révoque son bearer token. */
 export async function updateAccreditation(
   id: string,
   accStatus: AccreditationStatus,
-  token: string | null,
+  access: { tokenHash: string; expiresAt: Date } | null,
   db: Queryable = pool,
 ): Promise<Journalist | null> {
   const { rows } = await db.query<JournalistRow>(
-    `UPDATE journalists SET acc_status = $2, token = COALESCE($3, token)
+    `UPDATE journalists SET acc_status = $2, token_hash = $3, token_expires_at = $4
      WHERE id = $1 RETURNING ${COLS}`,
-    [id, accStatus, token],
+    [id, accStatus, access?.tokenHash ?? null, access?.expiresAt ?? null],
   );
   return rows[0] ? map(rows[0]) : null;
 }

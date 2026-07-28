@@ -18,13 +18,12 @@ billingRouter.get(
   }),
 );
 
-// Démarre le paiement (email + mot de passe OU Google) → renvoie l'URL Stripe Checkout.
+// Démarre le paiement (email à vérifier après paiement OU Google) → URL Stripe Checkout.
 const CheckoutSchema = z.union([
   z.object({
     orgName: z.string().min(1).max(120),
     fullName: z.string().min(1),
     email: z.string().email(),
-    password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
   }),
   z.object({
     orgName: z.string().min(1).max(120),

@@ -1,9 +1,10 @@
 import { OAuth2Client } from 'google-auth-library';
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
-import { signToken } from '../lib/jwt';
-import { findUserByGoogleId, findUserByEmail, linkGoogleId } from '../db/repositories/userRepo';
+import { signMfaChallenge, signToken } from '../lib/jwt';
+import { findUserByGoogleId, findUserByEmail, getUserMfa, linkGoogleId } from '../db/repositories/userRepo';
 import { assertSubscriptionActive } from './authService';
+import { mfaRequiredFor } from '../lib/mfaPolicy';
 import type { User } from '../domain';
 
 const env = loadEnv();
@@ -56,7 +57,19 @@ function sessionFor(user: User): { token: string; user: User } {
   };
 }
 
-export type GoogleLoginResult = { token: string; user: User } | { needsSignup: true };
+export type GoogleLoginResult =
+  | { token: string; user: User; mfaSetupRequired?: boolean }
+  | { mfaRequired: true; challenge: string }
+  | { needsSignup: true };
+
+async function completeGooglePrimaryFactor(user: User): Promise<GoogleLoginResult> {
+  const mfa = await getUserMfa(user.id);
+  if (mfa?.enabled) return { mfaRequired: true, challenge: signMfaChallenge(user.id) };
+  const session = sessionFor(user);
+  return mfaRequiredFor(user.role, user.isPlatformAdmin)
+    ? { ...session, mfaSetupRequired: true }
+    : session;
+}
 
 /**
  * Connexion via Google (réservée aux comptes inscrits) :
@@ -71,7 +84,7 @@ export async function loginWithGoogle(idToken: string): Promise<GoogleLoginResul
   if (byGoogle) {
     if (!byGoogle.active) throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
     assertSubscriptionActive(byGoogle);
-    return sessionFor(byGoogle);
+    return completeGooglePrimaryFactor(byGoogle);
   }
 
   const byEmail = await findUserByEmail(g.email);
@@ -79,7 +92,7 @@ export async function loginWithGoogle(idToken: string): Promise<GoogleLoginResul
     if (!byEmail.active) throw AppError.forbidden('Ce compte a été désactivé. Contactez un administrateur.');
     assertSubscriptionActive(byEmail);
     await linkGoogleId(byEmail.id, g.googleId);
-    return sessionFor(byEmail);
+    return completeGooglePrimaryFactor(byEmail);
   }
 
   return { needsSignup: true };

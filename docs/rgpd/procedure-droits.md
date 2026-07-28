@@ -1,39 +1,52 @@
-# Procédure d'exercice des droits des personnes (RGPD art. 12, 15-22)
+# Procédure d’exercice des droits
 
-> MDMC OÜ étant **sous-traitant**, les demandes des personnes sont en principe adressées au **Client
-> (responsable de traitement)**. MDMC **assiste** le Client (art. 28.3.e) via les fonctions du service et
-> traite directement les demandes portant sur ses **propres** traitements (comptes back-office, prospects).
+**Version 1.1 — 18 juillet 2026.**
+
+Pour les journalistes, le Client est en principe responsable de traitement ; MDMC OÜ l’assiste. Pour les comptes plateforme et prospects propres à MDMC OÜ, celle-ci agit comme responsable.
 
 ## Canal et délais
-- **Canal :** rgpd@mdmcmusicads.com (relayé au Client concerné si la demande porte sur ses journalistes).
-- **Délai :** réponse dans **1 mois** à compter de la réception (art. 12.3), prolongeable de 2 mois si
-  complexité, avec information de la personne.
-- **Vérification d'identité :** si doute raisonnable, demander un justificatif proportionné (art. 12.6).
-- **Gratuité :** sauf demandes manifestement infondées ou excessives (art. 12.5).
 
-## Droits et prise en charge dans PR Event 360
-| Droit | Article | Prise en charge |
-|---|---|---|
-| Information | 13-14 | Politique de confidentialité liée au point de collecte (formulaire d'accréditation). |
-| Accès | 15 | Export des données du journaliste par l'équipe presse ; à formaliser en réponse écrite. |
-| Rectification | 16 | Correction en base par l'équipe presse (ou par le journaliste dans son espace). |
-| **Effacement** | 17 | **Implémenté** — bouton « Supprimer (RGPD) » : suppression définitive + cascade. |
-| Limitation | 18 | Traitement au cas par cas (gel du traitement de la fiche). |
-| Portabilité | 20 | Export dans un format structuré (CSV/PDF) des données fournies par la personne. |
-| Opposition | 21 | Retrait des communications non essentielles ; arrêt du traitement fondé sur l'intérêt légitime. |
+- contact : `rgpd@mdmcmusicads.com` ou canal indiqué par le Client ;
+- accusé de réception et qualification rapide ;
+- réponse sous un mois, prolongeable selon le RGPD avec information ;
+- identité vérifiée de façon proportionnée ;
+- gratuité sauf demande manifestement infondée ou excessive.
 
-## Traçabilité
-Consigner chaque demande : date de réception, demandeur, nature, vérification d'identité, date et
-contenu de la réponse, prolongation éventuelle. Conserver la preuve de la réponse.
+## Étapes
 
-## Registre des demandes (à tenir)
-| Réf. | Date reçue | Personne | Droit exercé | Identité vérifiée | Date réponse | Suite donnée |
-|---|---|---|---|---|---|---|
-| D-2026-001 | | | | | | |
+1. enregistrer la date, l’identité, le tenant et le droit ;
+2. déterminer le responsable de traitement ;
+3. éviter d’envoyer des données avant vérification suffisante ;
+4. rechercher uniquement dans le tenant concerné ;
+5. exporter, corriger, limiter ou supprimer ;
+6. notifier les destinataires si requis ;
+7. répondre et conserver la preuve.
 
-## Amélioration prévue
-Ajout d'un **export self-service** (accès + portabilité) dans l'espace journaliste — réduit le délai et
-la charge, et renforce la conformité (priorité de contrôle CEPD 2026 : droits et transparence).
+## Droits
 
----
-_Version 1.0 — juin 2026._
+| Droit | Réponse opérationnelle |
+|---|---|
+| information | notices aux points de collecte |
+| accès | export identité, accréditation, demandes, planning, conférences, retombées et consentements |
+| rectification | correction dans le back-office ou l’espace |
+| effacement | suppression journaliste en cascade |
+| limitation | gel organisationnel documenté, en attendant une fonction dédiée |
+| portabilité | format structuré pour les données fournies |
+| opposition | retrait des communications non essentielles |
+
+L’effacement d’un journaliste supprime notamment ses demandes, historiques dépendants, inscriptions de conférence, resets et retombées. Les journaux ou sauvegardes soumis à une obligation légale suivent leur propre calendrier.
+
+## Sécurité de la réponse
+
+- ne jamais transmettre hashes, secrets, tokens ou données d’autres tenants ;
+- utiliser un canal chiffré ;
+- journaliser l’opérateur et le périmètre ;
+- faire relire un export complexe.
+
+## Registre
+
+| Réf. | Reçue | Personne/tenant | Droit | Vérification | Action | Réponse | Échéance |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
+
+L’export self-service complet reste une amélioration ; le traitement manuel assisté demeure nécessaire.

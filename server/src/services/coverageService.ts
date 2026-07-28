@@ -8,6 +8,7 @@ import { coverageStatsByEvent } from '../db/repositories/coverageRepo';
 import { getEventOrThrow } from './eventService';
 import { sendNotification } from './notifications/notificationService';
 import { TRIGGERS } from './notifications/templates';
+import { issueJournalistAccessToken } from './journalistAccessService';
 
 const env = loadEnv();
 
@@ -19,12 +20,13 @@ const env = loadEnv();
 export async function sendCoverageRequests(): Promise<void> {
   const journalists = await listJournalistsForCoverageRequest();
   for (const j of journalists) {
+    const token = await issueJournalistAccessToken(j.id);
     await sendNotification({
       eventId: j.eventId,
       eventName: j.eventName,
       journalist: j,
       triggerKey: TRIGGERS.COVERAGE_REQUEST,
-      variables: { link: `${env.CLIENT_URL}/espace/${j.token}`, delay: String(j.publishDelayDays) },
+      variables: { link: `${env.CLIENT_URL}/espace/${token}`, delay: String(j.publishDelayDays) },
     });
     await touchJournalistCoverageSent(j.id);
   }
@@ -40,7 +42,7 @@ export async function sendCoverageRequests(): Promise<void> {
 export async function remindCoverage(eventId: string, journalistId?: string): Promise<number> {
   const event = await getEventOrThrow(eventId);
   let journalists = (await listJournalistsByEvent(eventId)).filter(
-    (j) => j.accStatus === 'acceptee' && j.email && j.token,
+    (j) => j.accStatus === 'acceptee' && j.email,
   );
   if (journalistId) {
     journalists = journalists.filter((j) => j.id === journalistId);
@@ -49,12 +51,13 @@ export async function remindCoverage(eventId: string, journalistId?: string): Pr
     journalists = journalists.filter((j) => !submitted.has(j.id));
   }
   for (const j of journalists) {
+    const token = await issueJournalistAccessToken(j.id);
     await sendNotification({
       eventId,
       eventName: event.name,
       journalist: j,
       triggerKey: TRIGGERS.COVERAGE_REQUEST,
-      variables: { link: `${env.CLIENT_URL}/espace/${j.token}`, delay: String(j.publishDelayDays) },
+      variables: { link: `${env.CLIENT_URL}/espace/${token}`, delay: String(j.publishDelayDays) },
     });
   }
   return journalists.length;

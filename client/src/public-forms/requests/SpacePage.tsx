@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Inbox, CalendarDays, Newspaper, KeyRound, ExternalLink } from 'lucide-react';
-import { useI18n, isLang } from '../../i18n';
+import { Inbox, CalendarDays, Newspaper, KeyRound, ExternalLink, MapPin, Presentation, Users } from 'lucide-react';
+import { useI18n, isLang, type Translate } from '../../i18n';
 import { domainEvent } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
-import type { RequestType, SpaceResponse } from '../../lib/types';
+import type { PublicPressConference, RequestType, SpaceResponse } from '../../lib/types';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StatusBadge } from '../../components/StatusBadge';
 import { brandingStyle } from '../../lib/branding';
 import { Icon } from '../../components/Icon';
 import { CoverageSection } from './CoverageSection';
+import { getPublicEventTerms } from '../../lib/eventProfiles';
 
-type SpaceTab = 'requests' | 'planning' | 'coverage' | 'account';
+type SpaceTab = 'requests' | 'planning' | 'conferences' | 'coverage' | 'account';
 
 /**
  * Espace journaliste. En mode normal, charge les données via le token de l'URL.
@@ -134,6 +135,7 @@ export function SpacePage({
   }
 
   const canSubmit = !readOnly && !submitting && !!artistId;
+  const eventTerms = getPublicEventTerms(data.event.eventType, lang);
 
   const formatDay = (day: string) =>
     new Date(day).toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -157,6 +159,7 @@ export function SpacePage({
   const NAV: { key: SpaceTab; label: string; icon: typeof Inbox }[] = [
     { key: 'requests', label: t('space.nav.requests'), icon: Inbox },
     { key: 'planning', label: t('space.nav.planning'), icon: CalendarDays },
+    { key: 'conferences', label: t('space.nav.conferences'), icon: Presentation },
     { key: 'coverage', label: t('space.nav.coverage'), icon: Newspaper },
     { key: 'account', label: t('space.nav.account'), icon: KeyRound },
   ];
@@ -276,7 +279,7 @@ export function SpacePage({
 
                   <div className="field">
                     <label>
-                      {t('space.artist')} <span className="req">*</span>
+                      {eventTerms.participant} <span className="req">*</span>
                     </label>
                     <select value={artistId} onChange={(e) => setArtistId(e.target.value)} required>
                       <option value="">{t('space.select')}</option>
@@ -386,6 +389,17 @@ export function SpacePage({
                 </ul>
               )}
             </section>
+          )}
+
+          {tab === 'conferences' && (
+            <ConferenceSection
+              conferences={data.pressConferences ?? []}
+              token={token}
+              lang={lang}
+              t={t}
+              readOnly={readOnly}
+              onChanged={load}
+            />
           )}
 
           {tab === 'coverage' && (
@@ -501,5 +515,147 @@ export function SpacePage({
         </div>
       </main>
     </div>
+  );
+}
+
+function ConferenceSection({ conferences, token, lang, t, readOnly, onChanged }: {
+  conferences: PublicPressConference[];
+  token: string;
+  lang: string;
+  t: Translate;
+  readOnly: boolean;
+  onChanged: () => Promise<void>;
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function register(conferenceId: string) {
+    if (readOnly) return;
+    setBusyId(conferenceId);
+    setActionError(null);
+    try {
+      await api.post(`/public/space/${token}/press-conferences/${conferenceId}/register`);
+      await onChanged();
+    } catch (error) {
+      setActionError(error instanceof ApiError ? error.message : t('common.error'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function cancel(conferenceId: string) {
+    if (readOnly) return;
+    setBusyId(conferenceId);
+    setActionError(null);
+    try {
+      await api.del(`/public/space/${token}/press-conferences/${conferenceId}/registration`);
+      await onChanged();
+    } catch (error) {
+      setActionError(error instanceof ApiError ? error.message : t('common.error'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const formatDate = (value: string) => new Date(value).toLocaleString(lang, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <section className="stack" aria-labelledby="press-conferences-title" style={{ gap: 'var(--space-3)' }}>
+      <div>
+        <h1 id="press-conferences-title" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
+          {t('space.conference.title')}
+        </h1>
+        <p className="muted" style={{ margin: 'var(--space-1) 0 0' }}>{t('space.conference.lede')}</p>
+      </div>
+      {actionError && <div className="banner banner-error">{actionError}</div>}
+      {conferences.length === 0 ? <p className="muted">{t('space.conference.empty')}</p> : conferences.map((conference) => {
+        const status = conference.registrationStatus;
+        const canRegister = conference.status === 'published' && conference.eligible && Date.parse(conference.startsAt) > Date.now();
+        const activeRegistration = status === 'invited' || status === 'pending' || status === 'registered'
+          || status === 'waitlisted' || status === 'checked_in';
+        const canRetry = status == null || status === 'cancelled'
+          || (status === 'declined' && conference.registrationMode !== 'invite_only');
+        const actionLabel = conference.registrationMode === 'approval'
+          ? t('space.conference.request')
+          : conference.available === 0
+            ? t('space.conference.joinWaitlist')
+            : t('space.conference.register');
+        return (
+          <article key={conference.id} className="card stack" style={{ gap: 'var(--space-3)' }}>
+            <div className="row-between" style={{ alignItems: 'flex-start' }}>
+              <div>
+                <h2 style={{ fontSize: 'var(--text-lg)', margin: 0 }}>{conference.title}</h2>
+                <div className="muted" style={{ marginTop: 'var(--space-1)', fontSize: 'var(--text-sm)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <CalendarDays size={15} /> {formatDate(conference.startsAt)}
+                  </span>
+                </div>
+              </div>
+              {status && (
+                <span className={`badge ${status === 'registered' || status === 'checked_in' ? 'badge-success' : status === 'waitlisted' || status === 'pending' ? 'badge-pending' : ''}`}>
+                  {t(`space.conference.status.${status}`)}
+                </span>
+              )}
+            </div>
+            {conference.description && <p className="muted" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{conference.description}</p>}
+            <div className="inline-actions muted" style={{ fontSize: 'var(--text-sm)', gap: 'var(--space-4)' }}>
+              {conference.venue && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <MapPin size={15} /> {conference.venue}
+                </span>
+              )}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Users size={15} /> {conference.available == null
+                  ? t('space.conference.unlimited')
+                  : conference.available > 0
+                    ? t('space.conference.available', { count: String(conference.available) })
+                    : t('space.conference.full')}
+              </span>
+            </div>
+            {conference.participants.length > 0 && (
+              <div className="filters" style={{ marginBottom: 0 }}>
+                {conference.participants.map((participant) => <span className="chip" key={participant.id}>{participant.name}</span>)}
+              </div>
+            )}
+            {conference.embargoUntil && (
+              <div className="banner banner-warn">{t('space.conference.embargo', { date: formatDate(conference.embargoUntil) })}</div>
+            )}
+            {conference.status !== 'published' && (
+              <p className="muted" style={{ margin: 0 }}>{t(`space.conference.${conference.status}`)}</p>
+            )}
+            {!conference.eligible && <p className="muted" style={{ margin: 0 }}>{t('space.conference.notEligible')}</p>}
+            {canRegister && status === 'invited' && (
+              <div className="inline-actions">
+                <button className="btn btn-primary" disabled={busyId === conference.id} onClick={() => void register(conference.id)}>
+                  {t('space.conference.confirmInvitation')}
+                </button>
+                <button className="btn btn-ghost" disabled={busyId === conference.id} onClick={() => void cancel(conference.id)}>
+                  {t('space.conference.declineInvitation')}
+                </button>
+              </div>
+            )}
+            {canRegister && canRetry && (
+              <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} disabled={busyId === conference.id}
+                onClick={() => void register(conference.id)}>{actionLabel}</button>
+            )}
+            {activeRegistration && status !== 'invited' && status !== 'checked_in' && conference.status === 'published' && (
+              <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} disabled={busyId === conference.id}
+                onClick={() => void cancel(conference.id)}>{t('space.conference.cancel')}</button>
+            )}
+            {conference.livestreamUrl && (status === 'registered' || status === 'checked_in') && (
+              <a className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} href={conference.livestreamUrl} target="_blank" rel="noreferrer">
+                {t('space.conference.livestream')} <ExternalLink size={14} />
+              </a>
+            )}
+          </article>
+        );
+      })}
+    </section>
   );
 }

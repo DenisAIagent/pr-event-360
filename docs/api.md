@@ -1,235 +1,273 @@
 # Référence API REST
 
-Base : `/api`. Réponses au format enveloppe `{ success, data }` / `{ success, error }`.
+Base : `/api`. Réponses : `{ success: true, data }` ou `{ success: false, error }`.
 
-## Conventions d'accès
+## Accès
 
-| Marqueur | Signification |
+| Marqueur | Condition |
 |---|---|
-| **public** | Aucune authentification |
-| **auth** | Session cookie `pr360_session` valide ou JWT Bearer explicite (`Authorization: Bearer <token>`) |
-| **accès événement** | auth + l'utilisateur doit avoir accès à l'événement (admin = tout, sinon membre) |
-| **éditeur** | accès événement **et** rôle `admin` ou `attache` (l'`assistant` est en lecture/traitement) |
-| **admin** | auth + rôle `admin` |
+| public | aucune authentification |
+| auth | cookie `pr360_session` ou Bearer explicite |
+| accès événement | auth + événement accessible dans le tenant |
+| éditeur | rôle `admin` ou `attache` + accès événement |
+| admin | rôle `admin` |
+| super-admin | `is_platform_admin=true` |
 
-Le JWT (12 h, HS256) est posé en cookie `HttpOnly` par les routes de connexion. Le rôle,
-l'activation du compte, le statut super-admin et l'abonnement sont relus en base à chaque
-requête ; ils ne restent pas figés dans la session.
+Pour une mutation authentifiée par cookie, envoyer `X-CSRF-Token` avec la valeur du cookie `pr360_csrf`. Le Bearer explicite n’est pas soumis au CSRF.
+
+Le JWT dure 12 h. Les routes ne renvoient pas le JWT au JavaScript : elles posent le cookie HttpOnly. Rôle, activation, abonnement, statut plateforme, révocation du mot de passe et obligation MFA sont contrôlés en base.
 
 ## Santé
 
-| Méthode | Chemin | Accès |
+| Méthode | Route | Accès |
 |---|---|---|
 | GET | `/api/health` | public |
 
 ## Authentification — `/api/admin/auth`
 
-| Méthode | Chemin | Accès | Description |
+| Méthode | Route | Accès | Description |
 |---|---|---|---|
-| GET | `/config` | public | `{googleEnabled, googleClientId}` — indique si « Continuer avec Google » est disponible |
-| POST | `/google` | public · rate-limité | **Connexion** via ID token Google → pose le cookie de session et renvoie `{user}` (connexion/liaison) **ou** `{needsSignup:true}` si le compte n'existe pas (inscription via paiement) |
-| POST | `/login` | public | `{email, password}` → pose le cookie de session et renvoie `{user}` **ou** `{mfaRequired, challenge}` si 2FA active. Refusé si l'abonnement de l'organisation est inactif |
+| POST | `/login` | public, 10/15 min | email/mot de passe ; session ou challenge MFA |
+| POST | `/login/mfa` | public, 10/15 min | `{challenge, code}` ; ouvre la session |
+| GET | `/me` | auth | utilisateur courant + `mfaSetupRequired` |
+| POST | `/logout` | cookie CSRF | efface session et CSRF |
+| GET | `/config` | public | disponibilité Google |
+| POST | `/google` | public, limité | login Google vérifié ; MFA identique au login classique |
+| GET | `/mfa/status` | auth | état TOTP |
+| POST | `/mfa/setup` | auth | prépare un secret ; `currentCode` requis lors d’un ré-enrôlement |
+| POST | `/mfa/enable` | auth | promeut le secret préparé après preuve TOTP |
+| POST | `/mfa/disable` | auth | exige un code courant |
+| POST | `/register` | admin | crée un `attache` ou `assistant` dans l’organisation |
+| POST | `/forgot-password` | public, limité | réponse générique |
+| POST | `/reset-password` | public, limité | token usage unique, mot de passe min. 8 |
+| GET | `/invite?token=…` | public, limité | prévisualise une invitation d’équipe |
+| POST | `/accept-invite` | public, limité | crée le compte invité |
+| GET | `/org-invite?token=…` | public, limité | prévisualise une invitation d’organisation |
+| POST | `/org-invite/accept` | public, limité | crée l’organisation et ouvre la session |
 
-> L'inscription n'est plus libre : elle passe par le paiement (voir **Facturation**). La connexion
-> (email ou Google) est réservée aux comptes **inscrits et à l'abonnement actif**.
-| POST | `/login/mfa` | public · rate-limité | `{challenge, code}` → pose le cookie de session et renvoie `{user}` |
-| GET | `/mfa/status` | auth | État de la 2FA du compte |
-| POST | `/mfa/setup` | auth | Génère un secret TOTP + QR (provisionnement) |
-| POST | `/mfa/enable` | auth | Active la 2FA après vérification d'un code |
-| POST | `/mfa/disable` | auth | Désactive la 2FA |
-| POST | `/register` | auth | Crée un compte (1ᵉʳ compte via seed) |
-| POST | `/forgot-password` | public · rate-limité | Réponse générique (anti-énumération) |
-| POST | `/reset-password` | public · rate-limité | `{token, password}` (jeton usage unique, 1 h) |
-| GET | `/invite?token=` | public · rate-limité | Pré-remplissage de l'acceptation (`{email, role}`) |
-| POST | `/accept-invite` | public · rate-limité | `{token, fullName, password}` → crée le compte |
+MFA obligatoire pour `admin` et super-admin : une session sans enrôlement n’accède qu’à `me`, aux routes MFA et à `logout`.
 
-> Rate limiting : 10 requêtes / 15 min sur les routes de réinitialisation/invitation/MFA.
-> **2FA (TOTP)** optionnelle par compte : si activée, `login` renvoie un challenge court à
-> échanger via `login/mfa` contre une session cookie.
+## Événements — `/api/admin/events`
 
-## Événements & configuration — `/api/admin/events`
+### Création
 
-| Méthode | Chemin | Accès | Description |
+`POST /`, accès éditeur :
+
+```json
+{
+  "name": "Tech Summit",
+  "eventType": "conference",
+  "location": "Lisbonne",
+  "startDate": "2026-09-10",
+  "endDate": "2026-09-11",
+  "languages": ["fr", "en"],
+  "config": {
+    "itwDurationMin": 20,
+    "itwBufferMin": 5
+  }
+}
+```
+
+`eventType` : `music | trade_show | conference | corporate | other`.
+
+### Routes générales
+
+| Méthode | Route | Accès | Description |
 |---|---|---|---|
-| POST | `/` | éditeur | Créer un événement (sème config, poids, templates) |
-| GET | `/` | auth | Liste (admin = tous, sinon événements assignés) |
-| GET | `/:eventId` | accès événement | Détail + branding + `customDomain`/`customDomainVerified`/`customDomainTarget` |
-| DELETE | `/:eventId` | admin | Supprime l'événement et **toutes** ses données (cascade — RGPD) |
-| PUT | `/:eventId/subdomain` | éditeur | `{slug\|null}` — sous-domaine plateforme (`slug.<base>`). Slug validé/réservé, UNIQUE → 409 |
-| PUT | `/:eventId/domain` | éditeur | `{domain\|null}` — affecte le domaine personnalisé (UNIQUE → 409 si pris) |
-| POST | `/:eventId/domain/verify` | éditeur | Vérifie la résolution DNS (CNAME/A) vers la cible → `{verified, target}` |
+| POST | `/` | éditeur | crée l’événement et ses valeurs par défaut |
+| GET | `/` | auth | événements accessibles |
+| GET | `/:eventId` | accès événement | détail, branding et domaines |
+| DELETE | `/:eventId` | admin | suppression en cascade |
+| GET | `/:eventId/settings` | accès événement | configuration complète |
+| PUT | `/:eventId/config` | éditeur | durées, quotas, âge et règles photo |
+| PUT | `/:eventId/photo-rules` | éditeur | règlement photo/vidéo |
+| POST | `/:eventId/media-types` | éditeur | poids d’un type de média |
+| PUT | `/:eventId/type-weights` | éditeur | multiplicateur d’une demande |
+| PUT | `/:eventId/templates` | éditeur | gabarit langue/déclencheur/canal |
+| PUT | `/:eventId/branding` | éditeur | logo, fond et couleurs |
+| PUT | `/:eventId/deadline` | éditeur | clôture ISO avec offset ou `null` |
+| PUT | `/:eventId/recap` | éditeur | `none | daily | weekly` |
+| POST | `/:eventId/recap/test` | éditeur | envoi immédiat |
 
-> `GET /:eventId` expose aussi `subdomainSlug`, `customDomain`, `customDomainTarget`, `platformBaseDomain`.
-| GET | `/:eventId/settings` | accès événement | Config complète (config, médias, poids, templates, branding, récap) |
-| PUT | `/:eventId/config` | éditeur | Règles de calcul |
-| POST | `/:eventId/media-types` | éditeur | Ajouter un type de média |
-| PUT | `/:eventId/type-weights` | éditeur | Multiplicateur par type de demande |
-| PUT | `/:eventId/templates` | éditeur | Gabarit email/SMS (langue × déclencheur) |
-| PUT | `/:eventId/branding` | éditeur | Logo, couleurs |
-| PUT | `/:eventId/deadline` | éditeur | Date de clôture des inscriptions (ISO offset, ou `null`) |
-| PUT | `/:eventId/recap` | éditeur | Récapitulatif périodique |
-| POST | `/:eventId/recap/test` | éditeur | Envoi immédiat du récap |
-| POST | `/:eventId/stages` | éditeur | Ajouter une scène |
-| PUT/DELETE | `/:eventId/stages/:stageId` | éditeur | Renommer / supprimer une scène |
-| GET | `/:eventId/lineup` | accès événement | Scènes + artistes + créneaux |
-| POST | `/:eventId/artists` | éditeur | Ajouter un artiste (+ fenêtres → créneaux + quotas itw/photo/vidéo) |
-| PUT/DELETE | `/:eventId/artists/:artistId` | éditeur | Modifier / supprimer un artiste |
+### Lieux et participants
 
-## Accréditations & demandes — `/api/admin/events`
+Les noms techniques restent `stages` et `artists` quel que soit le profil.
 
-| Méthode | Chemin | Accès | Description |
-|---|---|---|---|
-| GET | `/:eventId/accreditations` | accès événement | Liste des journalistes |
-| POST | `/:eventId/accreditations/:journalistId/process` | accès événement | `{action: accept\|reject}` |
-| DELETE | `/:eventId/accreditations/:journalistId` | accès événement | Supprimer un journaliste et ses données (droit à l'effacement) |
-| GET | `/:eventId/requests` | accès événement | File triée par score. Filtres `?type=&status=` |
-| POST | `/:eventId/requests/:requestId/status` | accès événement | Changer le statut d'une demande |
-| POST | `/:eventId/planning/generate` | éditeur | Attribue les créneaux aux interviews acceptées, par priorité → `{assigned, unscheduled}` |
-| GET | `/:eventId/dashboard` | accès événement | KPIs (totaux, par type, liste d'attente, journalistes) |
-| GET | `/:eventId/messages` | accès événement | Journal des notifications |
-
-## Médias, newsroom, newsletters — `/api/admin/events`
-
-| Méthode | Chemin | Accès | Description |
-|---|---|---|---|
-| GET | `/:eventId/assets` | accès événement | Médiathèque |
-| POST | `/:eventId/assets/sign` | éditeur | Signature d'upload Cloudinary (direct, signé) |
-| POST | `/:eventId/assets` | éditeur | Enregistrer un média (après upload ou par lien) |
-| DELETE | `/:eventId/assets/:assetId` | éditeur | Supprimer un média |
-| GET | `/:eventId/press-releases` | accès événement | Communiqués (tous) |
-| POST/PUT/DELETE | `/:eventId/press-releases[/:id]` | éditeur | CRUD communiqué |
-| GET | `/:eventId/newsletters` | accès événement | Newsletters |
-| POST/PUT | `/:eventId/newsletters[/:id]` | éditeur | Créer / modifier un brouillon |
-| DELETE | `/:eventId/newsletters/:id` | éditeur | Supprimer un **brouillon** (les newsletters envoyées sont conservées) |
-| POST | `/:eventId/newsletters/:id/send` | éditeur | `{journalistIds[]}` — envoi groupé |
-| GET | `/:eventId/recipients` | accès événement | Journalistes (pour la sélection d'envoi) |
-| GET | `/:eventId/space-preview` | accès événement | Données d'aperçu de l'espace journaliste |
-
-## Revue de presse (retombées) — `/api/admin/events`
-
-| Méthode | Chemin | Accès | Description |
-|---|---|---|---|
-| GET | `/:eventId/coverage` | accès événement | `{ items, tracking }` — retombées + suivi par journaliste (contribué / en attente) |
-| POST | `/:eventId/coverage/remind` | éditeur | `{journalistId?}` — relance (un journaliste, sinon tous les non-contributeurs) → `{sent}` |
-| DELETE | `/:eventId/coverage/:id` | éditeur | Modération : retirer une retombée |
-
-## Avis produit — `/api/admin/review` et `/api/admin/reviews`
-
-| Méthode | Chemin | Accès | Description |
-|---|---|---|---|
-| GET | `/api/admin/review/` | auth | Avis de l'utilisateur courant (s'il en a laissé un) |
-| POST | `/api/admin/review/` | auth | Laisser/mettre à jour son avis `{rating 1–5, quote, authorRole?, consentPublic}` |
-| GET | `/api/admin/reviews/` | super-admin | Modération : tous les avis |
-| POST | `/api/admin/reviews/:id/status` | super-admin | `{status: pending\|approved\|rejected}` |
-
-## Équipe — `/api/admin/team` (admin)
-
-| Méthode | Chemin | Description |
+| Méthode | Route | Accès |
 |---|---|---|
-| GET | `/` | Comptes (+ events assignés) + invitations en attente |
-| POST | `/invite` | `{email, role, eventIds[]}` → invitation par email |
-| POST | `/:userId/role` | Changer le rôle (protège le dernier admin) |
-| POST | `/:userId/active` | Activer/désactiver (protège le dernier admin) |
-| PUT | `/:userId/events` | Remplacer les événements assignés |
-| DELETE | `/:userId` | **Supprimer** le compte (réattribue ses événements à l'admin ; pas soi-même, pas le dernier admin) |
+| POST | `/:eventId/stages` | éditeur |
+| PUT/DELETE | `/:eventId/stages/:stageId` | éditeur |
+| GET | `/:eventId/lineup` | accès événement |
+| POST | `/:eventId/artists` | éditeur |
+| PUT/DELETE | `/:eventId/artists/:artistId` | éditeur |
 
-## Facturation — `/api/admin/billing` + webhook Stripe
+Un participant accepte `itwQuota`, `photoQuota`, `videoQuota` et des fenêtres `{day,startTime,endTime}` à la création.
 
-> Inscription **payante** (Stripe, abonnement annuel). Dormant si Stripe non configuré
-> (`STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID`). Le compte n'est créé qu'**au paiement validé** (webhook).
+### Conférences de presse
 
-| Méthode | Chemin | Accès | Description |
+| Méthode | Route | Accès | Description |
 |---|---|---|---|
-| GET | `/api/admin/billing/config` | public | `{billingEnabled, priceLabel}` |
-| POST | `/api/admin/billing/checkout` | public · rate-limité | `{orgName, fullName, email, password}` **ou** `{orgName, googleCredential}` → `{url}` (Stripe Checkout) |
-| POST | `/api/stripe/webhook` | public (signé) | Événements Stripe (corps brut, signature vérifiée) : `checkout.session.completed` matérialise l'org + le compte ; `customer.subscription.updated/deleted`, `invoice.payment_failed` mettent à jour le statut |
+| GET | `/:eventId/press-conferences` | accès événement | conférences enrichies des participants/comptages |
+| POST | `/:eventId/press-conferences` | éditeur | crée |
+| PUT | `/:eventId/press-conferences/:conferenceId` | éditeur | remplace les champs et participants |
+| DELETE | `/:eventId/press-conferences/:conferenceId` | éditeur | supprime en cascade |
+| GET | `/:eventId/press-conferences/:conferenceId/registrations` | accès événement | inscriptions et journalistes |
+| POST | `/:eventId/press-conferences/:conferenceId/invitations` | éditeur | `{journalistIds[]}`, max. 500 |
+| PUT | `/:eventId/press-conferences/:conferenceId/registrations/:journalistId` | éditeur | `{status}` |
 
-Onboarding (super-admin) — **invitation à s'inscrire** (accès offert, sans paiement) :
-| Méthode | Chemin | Accès | Description |
+Corps de création/mise à jour :
+
+```json
+{
+  "title": "Point presse de clôture",
+  "description": "Fréquentation et bilan.",
+  "startsAt": "2026-07-20T16:00:00.000Z",
+  "endsAt": "2026-07-20T17:00:00.000Z",
+  "venue": "Salle presse",
+  "capacity": 80,
+  "registrationMode": "approval",
+  "status": "published",
+  "allowedAccreditationTypes": ["presse", "photo", "video"],
+  "embargoUntil": null,
+  "livestreamUrl": "https://video.example.test/live",
+  "participantIds": []
+}
+```
+
+- mode : `open | approval | invite_only` ;
+- statut conférence : `draft | published | closed | completed` ;
+- statut inscription : `invited | pending | registered | waitlisted | declined | checked_in | cancelled` ;
+- `livestreamUrl` doit utiliser HTTPS ;
+- `endsAt` doit être postérieur à `startsAt`.
+
+### Accréditations, demandes et planning
+
+| Méthode | Route | Accès | Description |
 |---|---|---|---|
-| POST | `/api/admin/organizations/invite` | super-admin | `{email}` → `{inviteUrl}` — **lien copiable** à partager soi-même (14 j, usage unique) |
-| GET | `/api/admin/auth/org-invite?token=` | public | Pré-remplissage (`{email}`) |
-| POST | `/api/admin/auth/org-invite/accept` | public · rate-limité | `{token, orgName, fullName, password}` **ou** `{token, orgName, googleCredential}` → l'invité crée son organisation (active), pose le cookie de session et renvoie `{user}` |
+| GET | `/:eventId/accreditations` | accès événement | sans `passwordHash`, no-store |
+| POST | `/:eventId/accreditations/:journalistId/process` | accès événement | `accept | reject` |
+| POST | `/:eventId/accreditations/:journalistId/access-link/resend` | éditeur | rotation et renvoi |
+| DELETE | `/:eventId/accreditations/:journalistId` | éditeur | effacement RGPD |
+| GET | `/:eventId/requests?type=&status=` | accès événement | file triée |
+| POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
+| POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |
+| GET | `/:eventId/dashboard` | accès événement | KPIs |
+| GET | `/:eventId/messages` | accès événement | notifications |
 
-Variante directe : `POST /api/admin/organizations` `{orgName, adminEmail}` → crée l'organisation + invite l'admin (l'opérateur nomme l'orga).
+### Médias, newsroom et communications
 
-Suppression (super-admin) :
-| Méthode | Chemin | Description |
+| Méthode | Route | Accès |
 |---|---|---|
-| DELETE | `/api/admin/organizations/:orgId` | Supprime l'organisation + **toutes** ses données (cascade). Interdit sur sa propre organisation |
-| POST | `/api/admin/organizations/delete-account` | `{email}` → supprime le compte ; si seul membre de son org → supprime l'org entière. Libère l'email |
+| GET/POST | `/:eventId/assets` | accès / éditeur |
+| POST | `/:eventId/assets/sign` | éditeur |
+| DELETE | `/:eventId/assets/:assetId` | éditeur |
+| GET/POST | `/:eventId/press-releases` | accès / éditeur |
+| PUT/DELETE | `/:eventId/press-releases/:id` | éditeur |
+| GET/POST | `/:eventId/newsletters` | accès / éditeur |
+| PUT/DELETE | `/:eventId/newsletters/:id` | éditeur |
+| POST | `/:eventId/newsletters/:id/send` | éditeur |
+| GET | `/:eventId/recipients` | accès événement |
+| GET | `/:eventId/space-preview` | accès événement, cookie session |
+| GET | `/:eventId/coverage` | accès événement |
+| POST | `/:eventId/coverage/remind` | éditeur |
+| DELETE | `/:eventId/coverage/:id` | éditeur |
 
-## Intégrations — `/api/admin/settings` (super-admin plateforme)
+Les URLs de média enregistrées doivent être HTTPS. Les bytes déclarés sont bornés à 200 Mio.
 
-> Ressources **partagées** (clés Brevo/Twilio/Cloudinary) : réservées au super-admin plateforme
-> (`is_platform_admin`). Invisibles des admins d'organisation.
+### Domaines
 
-
-| Méthode | Chemin | Description |
-|---|---|---|
-| GET | `/` | État des réglages (source db/env/none, secrets masqués) |
-| PUT | `/` | Carte clé→valeur (valeur vide = retour au `.env`). Chiffré AES-256-GCM |
-
-## Recherche globale — `/api/admin/search`
-
-| Méthode | Chemin | Accès | Description |
+| Méthode | Route | Accès | Description |
 |---|---|---|---|
-| GET | `/?q=` | auth | Recherche journalistes (nom/email/média) + événements, **limitée aux événements accessibles** à l'utilisateur. `< 2` caractères → résultat vide. Alimente le champ de recherche du header. |
+| PUT | `/:eventId/subdomain` | éditeur | `{slug|null}` |
+| PUT | `/:eventId/domain` | super-admin | `{domain|null}` |
+| POST | `/:eventId/domain/verify` | super-admin | contrôle CNAME/A |
+
+## Équipe — `/api/admin/team`
+
+Toutes les routes exigent `admin`.
+
+| Méthode | Route | Description |
+|---|---|---|
+| GET | `/` | membres et invitations |
+| POST | `/invite` | invite email/rôle/événements |
+| POST | `/:userId/role` | change le rôle |
+| POST | `/:userId/active` | active/désactive |
+| PUT | `/:userId/events` | remplace les assignations |
+| DELETE | `/:userId` | supprime avec protections du dernier admin |
+| POST/DELETE | routes d’invitations | renvoi/suppression selon l’UI |
+
+## Facturation et organisations
+
+### `/api/admin/billing`
+
+| Méthode | Route | Accès | Description |
+|---|---|---|---|
+| GET | `/config` | public | activation et prix |
+| POST | `/checkout` | public, limité | crée Stripe Checkout |
+| POST | `/api/stripe/webhook` | signature Stripe | traite paiement/abonnement |
+
+Le checkout email ne stocke pas le mot de passe envoyé avant preuve. Le webhook vérifie la session et le prix, est idempotent via `stripe_events`, puis lance l’activation du compte.
+
+### `/api/admin/organizations`
+
+Super-admin uniquement : liste, création directe, invitation d’organisation, changement de contexte, suppression d’organisation et suppression de compte.
+
+## Intégrations — `/api/admin/settings`
+
+Super-admin uniquement :
+
+- `GET /` : source db/env/none et secrets masqués ;
+- `PUT /` : valeurs chiffrées AES-256-GCM, vide = repli vers l’environnement.
+
+## Recherche et avis
+
+- `GET /api/admin/search?q=…` : auth, résultats limités aux événements accessibles ;
+- `GET/POST /api/admin/review` : avis de l’utilisateur ;
+- `GET /api/admin/reviews` et `POST /:id/status` : modération super-admin ;
+- `GET /api/public/reviews` : avis approuvés avec consentement.
 
 ## Surfaces publiques
 
 ### Accréditation — `/api/public`
 
-| Méthode | Chemin | Description |
-|---|---|---|
-| GET | `/events/:eventId` | Données du formulaire (branding, types de média, deadline, `registrationClosed`) |
-| POST | `/events/:eventId/accreditations` | Soumettre une demande (consentement RGPD obligatoire, `lang`, `publishDelayDays` 3/8/30, `commitPublish`) |
+| Méthode | Route |
+|---|---|
+| GET | `/events/:eventId` |
+| POST | `/events/:eventId/accreditations` |
+
+La réponse GET inclut `eventType`. La soumission exige le consentement et refuse les doublons.
 
 ### Espace journaliste — `/api/public/space`
 
-| Méthode | Chemin | Description |
+| Méthode | Route | Description |
 |---|---|---|
-| GET | `/:token` | Profil + lineup + demandes (cible & créneau) + `hasPassword` + `photoRules` + `coverage` + `coverageCategories` + `event.ended` (token unique ; accréditation acceptée requise) |
-| POST | `/:token/requests` | Soumettre une demande d'interview/reportage |
-| POST | `/:token/password` | Définir/remplacer le mot de passe d'espace (authentifié par le token, min. 8 car.) |
-| POST | `/:token/coverage` | Déposer une retombée `{mediaCategory, isUpload, url, thumbnailUrl?, title?, archiveConsent, promoConsent}` (upload ⇒ consentements requis, sinon 400) |
-| DELETE | `/:token/coverage/:id` | Retirer une de ses retombées |
-| POST | `/:token/assets/sign` | Signature d'upload Cloudinary (dossier dérivé du token) |
+| GET | `/:token` | événement, profil, lineup, demandes, conférences, règles et retombées |
+| POST | `/:token/requests` | cible participant obligatoire |
+| POST | `/:token/press-conferences/:conferenceId/register` | inscrit/demande une place |
+| DELETE | `/:token/press-conferences/:conferenceId/registration` | annule ou décline |
+| POST | `/:token/password` | **première définition uniquement**, min. 8 |
+| POST | `/:token/coverage` | dépose une retombée |
+| DELETE | `/:token/coverage/:id` | retire sa retombée |
+| POST | `/:token/assets/sign` | upload scindé par événement |
 
-### Compte journaliste (email + mot de passe) — `/api/public/journalist`
+### Compte journaliste — `/api/public/journalist`
 
-Accès **par événement**. Le login renvoie le token d'espace ; le client redirige vers
-`/espace/:token`. Le lien magique tokenisé reste valable en parallèle.
+| Méthode | Route | Description |
+|---|---|---|
+| POST | `/login` | `{eventId,email,password}` → nouveau token d’espace |
+| POST | `/forgot-password` | réponse générique |
+| POST | `/reset-password` | token 1 h, révoque le token d’espace |
 
-| Méthode | Chemin | Accès | Description |
-|---|---|---|---|
-| POST | `/login` | public · rate-limité | `{eventId, email, password}` → `{token, firstName}` (erreur générique sinon) |
-| POST | `/forgot-password` | public · rate-limité | `{eventId, email}` → réponse générique ; envoie un lien de réinitialisation |
-| POST | `/reset-password` | public · rate-limité | `{token, password}` (jeton SHA-256 usage unique, 1 h) |
-
-> Rate limiting : 10 requêtes / 15 min sur `/api/public/journalist/*`.
+Rate limit : 10 requêtes / 15 min.
 
 ### Newsroom — `/api/public/newsroom`
 
-| Méthode | Chemin | Description |
-|---|---|---|
-| GET | `/:eventId` | Communiqués publiés + médias + branding + deadline |
+- `GET /:eventId` : contenus publiés, médias, branding ;
+- `GET /:eventId/cp/:slug` : communiqué public.
 
-### Avis publics (témoignages) — `/api/public/reviews`
+## SEO hors API
 
-| Méthode | Chemin | Description |
-|---|---|---|
-| GET | `/` | Avis **approuvés et consentis** (id, authorName, authorRole, authorOrg, rating, quote) — alimente la landing |
-
-## SEO (rendu serveur, hors `/api`)
-
-Servi à la racine du domaine (sans authentification) :
-
-| Méthode | Chemin | Description |
-|---|---|---|
-| GET | `/robots.txt` | Autorise l'indexation + lien vers le sitemap |
-| GET | `/sitemap.xml` | Par hôte : newsroom + communiqués publiés de l'événement (mode domaine), ou pages plateforme + communiqués canoniques. Caché 300 s |
-
-Les pages de communiqué (`/newsroom/:eventId/:slug` ou `/newsroom/:slug` en mode domaine) sont
-rendues par le **catch-all SPA** avec injection des balises `<head>` (meta + Open Graph, image de
-couverture) via `services/seo.ts` quand le communiqué est publié. Aucune route API dédiée.
+- `GET /robots.txt` ;
+- `GET /sitemap.xml` ;
+- communiqué rendu par le catch-all SPA avec balises injectées ;
+- en mode domaine, URLs sans `eventId`.

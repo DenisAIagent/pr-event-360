@@ -23,7 +23,7 @@ interface AuthUser {
 type LoginOutcome = { mfaRequired: true; challenge: string } | undefined;
 
 /** Connexion Google : un compte inconnu renvoie `needsSignup` (l'inscription se fait via l'abonnement). */
-type GoogleOutcome = { needsSignup: true } | undefined;
+type GoogleOutcome = { needsSignup: true } | { mfaRequired: true; challenge: string } | undefined;
 
 interface AuthValue {
   user: AuthUser | null;
@@ -101,10 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithGoogle = useCallback(
     async (credential: string): Promise<GoogleOutcome> => {
-      const result = await api.post<{ user: AuthUser } | { needsSignup: true }>('/admin/auth/google', {
-        credential,
-      });
+      const result = await api.post<
+        | { user: AuthUser; mfaSetupRequired?: boolean }
+        | { needsSignup: true }
+        | { mfaRequired: true; challenge: string }
+      >('/admin/auth/google', { credential });
       if ('needsSignup' in result) return { needsSignup: true };
+      if ('mfaRequired' in result) return { mfaRequired: true, challenge: result.challenge };
+      setMfaSetupRequired(Boolean(result.mfaSetupRequired));
       persist(result.user);
       return undefined;
     },

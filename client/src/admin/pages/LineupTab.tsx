@@ -5,7 +5,8 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
-import type { ArtistWithSlots, EventSettings, Lineup, Stage } from '../lib/types';
+import type { ArtistWithSlots, EventSettings, EventSummary, Lineup, Stage } from '../lib/types';
+import { getEventProfile, type EventProfile } from '../../lib/eventProfiles';
 import {
   ConfigForm,
   TypeWeights,
@@ -18,8 +19,6 @@ import { BrandingEditor } from '../components/settings/BrandingEditor';
 import { SubdomainCard } from '../components/settings/SubdomainCard';
 import { DomainCard } from '../components/settings/DomainCard';
 import { InfoBubble } from '../components/InfoBubble';
-
-const STEPS = ['Scènes', 'Artistes', 'Règles & quotas', 'Apparence', 'Sous-domaine', 'Clôture', 'Récap & emails'];
 
 interface WindowDraft {
   day: string;
@@ -51,10 +50,20 @@ export function LineupTab() {
     () => apiAuthed.get<EventSettings>(`/admin/events/${eventId}/settings`),
     [eventId],
   );
-  const ev = useFetch<{ name: string }>(
-    () => apiAuthed.get<{ name: string }>(`/admin/events/${eventId}`),
+  const ev = useFetch<EventSummary>(
+    () => apiAuthed.get<EventSummary>(`/admin/events/${eventId}`),
     [eventId],
   );
+  const profile = getEventProfile(ev.data?.eventType);
+  const steps = [
+    profile.venuePlural,
+    profile.participantPlural,
+    'Règles & quotas',
+    'Apparence',
+    'Sous-domaine',
+    'Clôture',
+    'Récap & emails',
+  ];
 
   const [stageName, setStageName] = useState('');
   const [artistName, setArtistName] = useState('');
@@ -118,7 +127,7 @@ export function LineupTab() {
     <div className="stack" style={{ maxWidth: 820 }}>
       {/* Stepper de configuration : 6 étapes cliquables */}
       <ol className="wizard-steps">
-        {STEPS.map((label, i) => (
+        {steps.map((label, i) => (
           <li
             key={label}
             className={i === step ? 'current' : i < step ? 'done' : ''}
@@ -134,33 +143,34 @@ export function LineupTab() {
       {step === 0 && (
         <>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Étape 1 — créez vos scènes, une à une. Vous pourrez toujours en ajouter ou les corriger plus tard.
+            Étape 1 — créez vos {profile.venuePlural.toLocaleLowerCase('fr')}, un par un. Vous pourrez toujours en
+            ajouter ou les corriger plus tard.
           </p>
           <section className="card">
-            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Scènes</h3>
+            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>{profile.venuePlural}</h3>
             <form className="inline-actions" onSubmit={addStage} style={{ marginBottom: 'var(--space-3)' }}>
               <input
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
-                placeholder="Nom de la scène"
+                placeholder={`Nom — ${profile.venueSingular.toLocaleLowerCase('fr')}`}
                 style={{ flex: 1 }}
                 autoFocus
               />
               <button className="btn btn-primary btn-sm" type="submit">
-                Ajouter la scène
+                Ajouter
               </button>
             </form>
             <div className="stack">
               {stages.map((s) => (
-                <StageRow key={s.id} stage={s} eventId={eventId} onChanged={reload} />
+                <StageRow key={s.id} stage={s} profile={profile} eventId={eventId} onChanged={reload} />
               ))}
-              {noStage && <span className="muted">Aucune scène pour l’instant.</span>}
+              {noStage && <span className="muted">Aucun espace défini pour l’instant.</span>}
             </div>
           </section>
           {!noStage && (
             <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-              {`${stages.length} scène${stages.length > 1 ? 's' : ''} créée${stages.length > 1 ? 's' : ''}.`} Cliquez
-              « Suivant » pour passer aux artistes.
+              {stages.length} {stages.length > 1 ? profile.venuePlural.toLocaleLowerCase('fr') : profile.venueSingular.toLocaleLowerCase('fr')}
+              {stages.length > 1 ? ' créés' : ' créé'}. Cliquez « Suivant » pour passer à l’étape suivante.
             </p>
           )}
         </>
@@ -169,11 +179,13 @@ export function LineupTab() {
       {step === 1 && (
         <>
           <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-            Étape 2 — ajoutez vos artistes et rattachez chacun à une scène.
+            Étape 2 — ajoutez vos {profile.participantPlural.toLocaleLowerCase('fr')} et rattachez-les à un espace.
           </p>
 
           <section className="card">
-            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Ajouter un artiste</h3>
+            <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>
+              Ajouter — {profile.participantSingular.toLocaleLowerCase('fr')}
+            </h3>
             <form className="stack" onSubmit={addArtist}>
               {formError && <div className="banner banner-error">{formError}</div>}
               <div className="field">
@@ -182,9 +194,9 @@ export function LineupTab() {
               </div>
               <div className="grid-2">
                 <div className="field">
-                  <label>Scène</label>
+                  <label>{profile.venueSingular}</label>
                   <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
-                    <option value="">— Sans scène</option>
+                    <option value="">— Sans espace</option>
                     {stages.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.name}
@@ -196,7 +208,7 @@ export function LineupTab() {
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     Quota interviews (sinon défaut)
                     <InfoBubble>
-                      Nombre maximum d'interviews pour cet artiste. Laissez <strong>vide</strong> pour
+                      Nombre maximum d'interviews pour ce participant. Laissez <strong>vide</strong> pour
                       utiliser la valeur par défaut définie à l'étape « Règles & quotas ».
                     </InfoBubble>
                   </label>
@@ -207,10 +219,9 @@ export function LineupTab() {
                 <div className="field">
                   <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     Quota photographes
-                    <InfoBubble title="Photographes « dans le pit »">
-                      Le <strong>« pit »</strong> est la zone réservée aux photographes juste devant la
-                      scène. Ce quota limite le nombre de photographes acceptés pour cet artiste. Laissez
-                      vide = illimité.
+                    <InfoBubble title="Accès photo">
+                      Ce quota limite le nombre de photographes acceptés pour ce participant et son espace.
+                      Laissez vide = illimité.
                     </InfoBubble>
                   </label>
                   <input
@@ -233,14 +244,14 @@ export function LineupTab() {
                 </div>
               </div>
               <p className="hint" style={{ marginTop: 'calc(-1 * var(--space-2))' }}>
-                Quotas propres à l’artiste (interviews, photographes dans le pit, vidéastes).
+                Quotas propres à chaque participant (interviews, photographes, vidéastes).
                 Laisser vide = <strong>illimité</strong>. Au-delà du quota, les demandes passent en liste d’attente.
               </p>
               <div className="field">
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   Tranches de disponibilité → créneaux générés
                   <InfoBubble title="Comment les créneaux sont créés">
-                    Indiquez les plages où l'artiste est disponible pour des interviews. L'app y crée
+                    Indiquez les plages où le participant est disponible pour des interviews. L'app y crée
                     <strong> automatiquement</strong> les créneaux, selon la <em>durée</em> et le{' '}
                     <em>battement</em> définis à l'étape « Règles & quotas ».
                     <br />
@@ -263,15 +274,15 @@ export function LineupTab() {
                 </button>
               </div>
               <button className="btn btn-primary" type="submit" disabled={busy || !artistName}>
-                {busy ? 'Ajout…' : "Ajouter l'artiste"}
+                {busy ? 'Ajout…' : `Ajouter — ${profile.participantSingular.toLocaleLowerCase('fr')}`}
               </button>
             </form>
           </section>
 
           <section className="stack">
-            <h3 style={{ fontSize: 'var(--text-lg)' }}>Lineup ({artists.length})</h3>
+            <h3 style={{ fontSize: 'var(--text-lg)' }}>{profile.programLabel} ({artists.length})</h3>
             {artists.length === 0 && (
-              <p className="muted">Aucun artiste — ajoutez-en un ci-dessus pour gérer les demandes d’interview.</p>
+              <p className="muted">Aucun participant — ajoutez-en un ci-dessus pour gérer les demandes d’interview.</p>
             )}
             {stages.map((stage) => {
               const arts = artists.filter((a) => a.stageId === stage.id);
@@ -280,15 +291,15 @@ export function LineupTab() {
                   <h4 style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
                     {stage.name}{' '}
                     <span className="muted" style={{ fontWeight: 400 }}>
-                      · {arts.length} artiste{arts.length > 1 ? 's' : ''}
+                      · {arts.length} {arts.length > 1 ? profile.participantPlural.toLocaleLowerCase('fr') : profile.participantSingular.toLocaleLowerCase('fr')}
                     </span>
                   </h4>
                   {arts.length === 0 ? (
-                    <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>Aucun artiste sur cette scène.</span>
+                    <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>Aucun participant dans cet espace.</span>
                   ) : (
                     <div className="stack">
                       {arts.map((a) => (
-                        <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
+                        <ArtistRow key={a.id} artist={a} stages={stages} profile={profile} eventId={eventId} onChanged={reload} />
                       ))}
                     </div>
                   )}
@@ -298,11 +309,11 @@ export function LineupTab() {
             {unassigned.length > 0 && (
               <div>
                 <h4 className="muted" style={{ fontSize: 'var(--text-base)', margin: '0 0 var(--space-2)' }}>
-                  Sans scène · {unassigned.length} artiste{unassigned.length > 1 ? 's' : ''}
+                  Sans espace · {unassigned.length} {unassigned.length > 1 ? profile.participantPlural.toLocaleLowerCase('fr') : profile.participantSingular.toLocaleLowerCase('fr')}
                 </h4>
                 <div className="stack">
                   {unassigned.map((a) => (
-                    <ArtistRow key={a.id} artist={a} stages={stages} eventId={eventId} onChanged={reload} />
+                    <ArtistRow key={a.id} artist={a} stages={stages} profile={profile} eventId={eventId} onChanged={reload} />
                   ))}
                 </div>
               </div>
@@ -319,7 +330,7 @@ export function LineupTab() {
           </p>
           {settings.data ? (
             <>
-              <ConfigForm eventId={eventId} config={settings.data.config} />
+              <ConfigForm eventId={eventId} config={settings.data.config} participantLabel={profile.participantSingular} />
               <TypeWeights eventId={eventId} weights={settings.data.typeWeights} onSaved={settings.reload} />
               <MediaTypes eventId={eventId} mediaTypes={settings.data.mediaTypes} onSaved={settings.reload} />
             </>
@@ -401,14 +412,14 @@ export function LineupTab() {
       >
         {step > 0 ? (
           <button className="btn btn-ghost" onClick={() => setStep(step - 1)}>
-            <ArrowLeft size={18} /> {STEPS[step - 1]}
+            <ArrowLeft size={18} /> {steps[step - 1]}
           </button>
         ) : (
           <span />
         )}
-        {step < STEPS.length - 1 ? (
+        {step < steps.length - 1 ? (
           <button className="btn btn-primary" onClick={() => setStep(step + 1)}>
-            Suivant : {STEPS[step + 1]} <ArrowRight size={18} />
+            Suivant : {steps[step + 1]} <ArrowRight size={18} />
           </button>
         ) : (
           <span className="muted" style={{ fontSize: 'var(--text-sm)' }}>
@@ -421,7 +432,17 @@ export function LineupTab() {
 }
 
 /** Scène : affichage + renommage / suppression en cas d'erreur de saisie. */
-function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string; onChanged: () => void }) {
+function StageRow({
+  stage,
+  profile,
+  eventId,
+  onChanged,
+}: {
+  stage: Stage;
+  profile: EventProfile;
+  eventId: string;
+  onChanged: () => void;
+}) {
   const api = useAuthedApi();
   const toast = useToast();
   const confirm = useConfirm();
@@ -434,7 +455,7 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
     setBusy(true);
     try {
       await api.put(`/admin/events/${eventId}/stages/${stage.id}`, { name: name.trim() });
-      toast.success('Scène renommée.');
+      toast.success(`${profile.venueSingular} renommé.`);
       setEditing(false);
       onChanged();
     } catch (e) {
@@ -445,11 +466,11 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
   }
 
   async function remove() {
-    if (!(await confirm({ message: `Supprimer la scène « ${stage.name} » ? Les artistes rattachés seront dé-rattachés.`, confirmLabel: 'Supprimer', danger: true }))) return;
+    if (!(await confirm({ message: `Supprimer « ${stage.name} » ? Les participants rattachés seront détachés.`, confirmLabel: 'Supprimer', danger: true }))) return;
     setBusy(true);
     try {
       await api.delete(`/admin/events/${eventId}/stages/${stage.id}`);
-      toast.success('Scène supprimée.');
+      toast.success(`${profile.venueSingular} supprimé.`);
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
@@ -489,11 +510,13 @@ function StageRow({ stage, eventId, onChanged }: { stage: Stage; eventId: string
 function ArtistRow({
   artist,
   stages,
+  profile,
   eventId,
   onChanged,
 }: {
   artist: ArtistWithSlots;
   stages: Stage[];
+  profile: EventProfile;
   eventId: string;
   onChanged: () => void;
 }) {
@@ -530,7 +553,7 @@ function ArtistRow({
         photoQuota: photoQuota ? Number(photoQuota) : null,
         videoQuota: videoQuota ? Number(videoQuota) : null,
       });
-      toast.success('Artiste mis à jour.');
+      toast.success(`${profile.participantSingular} mis à jour.`);
       setEditing(false);
       onChanged();
     } catch (e) {
@@ -545,7 +568,7 @@ function ArtistRow({
     setBusy(true);
     try {
       await api.delete(`/admin/events/${eventId}/artists/${artist.id}`);
-      toast.success('Artiste supprimé.');
+      toast.success(`${profile.participantSingular} supprimé.`);
       onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erreur');
@@ -563,7 +586,7 @@ function ArtistRow({
         </div>
         <div className="grid-2">
           <div className="field">
-            <label>Scène</label>
+            <label>{profile.venueSingular}</label>
             <select value={stageId} onChange={(e) => setStageId(e.target.value)}>
               <option value="">—</option>
               {stages.map((s) => (

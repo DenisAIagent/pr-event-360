@@ -5,6 +5,7 @@ import {
   type Lang,
   type RequestStatus,
   type RequestType,
+  getEventProfile,
 } from '@pr-event-360/core';
 import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
@@ -58,26 +59,27 @@ export interface SubmitRequestInput {
 export async function submitRequest(input: SubmitRequestInput): Promise<RequestRecord> {
   const journalist = await requireAccreditedJournalist(input.token);
   const event = await getEventOrThrow(journalist.eventId);
+  const profile = getEventProfile(event.eventType);
   const config = await getConfig(journalist.eventId);
   if (!config) throw AppError.notFound('Configuration de l’événement introuvable');
 
   // Garde-fou multi-tenant : une scène ciblée doit appartenir à l'événement du
   // journaliste (le stageId vient du client, un UUID d'un autre event passerait Zod).
   if (input.stageId && !(await findStage(input.stageId, journalist.eventId))) {
-    throw AppError.badRequest('Scène inconnue pour cet événement');
+    throw AppError.badRequest(`${profile.venueSingular} inconnu pour cet événement`);
   }
 
   // Validation de cohérence cible selon le type.
   let initialStatus: RequestStatus = 'pas_encore_traite';
 
   if (input.type === 'interview') {
-    if (!input.artistId) throw AppError.badRequest('Un artiste est requis pour une interview');
+    if (!input.artistId) throw AppError.badRequest(`${profile.participantSingular} requis pour une interview`);
     const artist = await findArtist(input.artistId, journalist.eventId);
-    if (!artist) throw AppError.badRequest('Artiste inconnu pour cet événement');
+    if (!artist) throw AppError.badRequest(`${profile.participantSingular} inconnu pour cet événement`);
     if (input.slotId) {
       const slot = await findSlot(input.slotId);
       if (!slot || slot.artistId !== artist.id) {
-        throw AppError.badRequest('Créneau invalide pour cet artiste');
+        throw AppError.badRequest(`Créneau invalide pour ce participant`);
       }
     }
     const used = await countGrantedInterviews(artist.id);
@@ -86,9 +88,9 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
   } else {
     // photo_report / video_report → artiste requis. Le quota est propre à
     // l'artiste (photographes/vidéastes) ; NULL ⇒ illimité.
-    if (!input.artistId) throw AppError.badRequest('Un artiste est requis pour un reportage');
+    if (!input.artistId) throw AppError.badRequest(`${profile.participantSingular} requis pour un reportage`);
     const artist = await findArtist(input.artistId, journalist.eventId);
-    if (!artist) throw AppError.badRequest('Artiste inconnu pour cet événement');
+    if (!artist) throw AppError.badRequest(`${profile.participantSingular} inconnu pour cet événement`);
     if (input.type === 'photo_report' && artist.photoQuota != null) {
       const used = await countAcceptedPhotos(artist.id);
       if (!checkQuota(used, artist.photoQuota).hasRoom) initialStatus = 'liste_attente';

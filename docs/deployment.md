@@ -1,120 +1,186 @@
-# Déploiement & environnement
+# Déploiement et exploitation
 
-Cible : **Railway** (ou tout hébergeur Node + PostgreSQL). Les variables d'environnement
-sont validées au démarrage du serveur (`config/env.ts`, zod) → **fail-fast** si une valeur
-requise manque ou est invalide.
+## Production actuelle
 
-## Variables d'environnement
+- URL : [https://pr-event-360-production-a23e.up.railway.app/](https://pr-event-360-production-a23e.up.railway.app/)
+- hébergeur : Railway ;
+- santé : `GET /api/health` ;
+- dernier déploiement vérifié avec la migration `0044_press-conferences`.
 
-| Variable | Requis | Défaut | Rôle |
-|---|:--:|---|---|
-| `DATABASE_URL` | ✅ | — | Connexion PostgreSQL |
-| `JWT_SECRET` | ✅ | — | Signature des JWT (≥ 32 caractères ; fort en prod) |
-| `APP_ENCRYPTION_KEY` | — | — | Clé maîtresse AES-256-GCM (32 octets base64) pour les clés API en base |
-| `NODE_ENV` | — | `development` | `development` / `test` / `production` |
-| `PORT` | — | `4000` | Port d'écoute de l'API |
-| `PUBLIC_BASE_URL` | — | `http://localhost:4000` | URL publique du back-end |
-| `CLIENT_URL` | — | `http://localhost:5173` | URL du front (CORS + liens) |
-| `CUSTOM_DOMAIN_TARGET` | — | host de `PUBLIC_BASE_URL` | Cible CNAME affichée aux clients pour les [domaines personnalisés](custom-domains.md) |
-| `PLATFORM_BASE_DOMAIN` | — | — | Domaine de base des [sous-domaines self-service](custom-domains.md) (`slug.<base>`). Nécessite un wildcard DNS+TLS |
-| `NOTIFICATIONS_MODE` | — | `simulation` | `simulation` (rien envoyé) / `live` |
-| `EMAIL_PROVIDER` | — | `brevo` | Fournisseur email |
-| `SMS_PROVIDER` | — | `twilio` | `twilio` / `brevo` |
-| `BREVO_API_KEY` | live | — | Clé API Brevo (email/SMS) |
-| `BREVO_SENDER_EMAIL` | live | — | Adresse expéditeur **vérifiée** dans Brevo (l'adresse ne change jamais) |
-| `BREVO_SENDER_NAME` | — | `PR Event 360` | Nom d'expéditeur **de repli** — le nom affiché des emails d'événement est « *{Événement}* Press Team » |
-| `BREVO_SMS_SENDER` | — | `PREvent` | Émetteur SMS (≤ 11 car.) |
-| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM` | si Twilio | — | SMS Twilio |
-| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | médias | — | Stockage Cloudinary |
-| `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` / `STRIPE_WEBHOOK_SECRET` | facturation | — | Abonnement Stripe (inscription payante) — dormant si absent |
-| `SENTRY_DSN` | — | — | Suivi des erreurs **serveur** (Sentry) — dormant si absent |
-| `VITE_SENTRY_DSN` | — | — | Suivi des erreurs **client** (Sentry, embarqué au **build**) — dormant si absent |
+La région effective des services Railway/PostgreSQL doit être confirmée dans le dashboard avant toute affirmation RGPD.
 
-> Les clés Brevo/Twilio/Cloudinary peuvent aussi être saisies (chiffrées) via l'UI
-> **Intégrations** (admin), qui prime sur le `.env`. Voir [security-rgpd.md](security-rgpd.md).
+## Variables d’environnement
 
-### Générer les secrets
+### Requises
+
+| Variable | Usage |
+|---|---|
+| `DATABASE_URL` | PostgreSQL |
+| `JWT_SECRET` | JWT, ≥ 32 caractères |
+| `PUBLIC_BASE_URL` | URL canonique et liens |
+| `CLIENT_URL` | origine CORS et liens front |
+
+`NODE_ENV` vaut `production` en production ; `PORT` est généralement injecté par Railway.
+
+### Recommandées
+
+| Variable | Usage |
+|---|---|
+| `APP_ENCRYPTION_KEY` | 32 octets base64, secrets DB |
+| `ADMIN_EMAIL/PASSWORD/NAME` | bootstrap idempotent |
+| `SENTRY_DSN` | erreurs serveur |
+| `VITE_SENTRY_DSN` | erreurs client au build |
+
+### Optionnelles
+
+- Google : `GOOGLE_CLIENT_ID` ;
+- Stripe : `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` ;
+- domaines : `CUSTOM_DOMAIN_TARGET`, `PLATFORM_BASE_DOMAIN` ;
+- Brevo : `BREVO_API_KEY`, expéditeur et SMS ;
+- Twilio : SID, token et numéro ;
+- Cloudinary : cloud, clé, secret et preset signé.
+
+Voir [.env.example](../.env.example).
+
+## Secrets
 
 ```bash
-# JWT_SECRET
-node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
-# APP_ENCRYPTION_KEY (exactement 32 octets)
+openssl rand -hex 32
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-## Build
+La première commande convient à `JWT_SECRET`. La seconde produit `APP_ENCRYPTION_KEY`.
+
+## Build et tests avant déploiement
 
 ```bash
-npm install                              # tous les workspaces
-npm --workspace packages/core run build  # (si build séparé) — sinon consommé en source
-npm --workspace server run build         # tsc --noEmit (vérification de types)
-npm --workspace client run build         # tsc --noEmit && vite build → client/dist
+npm ci
+npm test
+npm --workspace server run test
+npm --workspace server run typecheck
+npm --workspace client run typecheck
+npm run build
 ```
 
-Démarrage en production :
+`npm run build` produit `client/dist`. Le serveur de production sert ce dossier.
+
+## Commande de démarrage
 
 ```bash
-npm --workspace server run start:prod    # migrate:deploy → bootstrap:admin → start
-# (ou, si les migrations sont déjà appliquées) :
-npm --workspace server run start         # tsx src/index.ts
+npm start
 ```
 
-> `start:prod` **applique les migrations en attente** puis démarre — c'est la commande
-> lancée par Railway à chaque déploiement (le schéma est donc toujours à jour).
+Elle exécute `server start:prod` :
 
-Le front (`client/dist`) est servi en statique (CDN / hébergeur front) et tape l'API via
-`/api` (proxifié en dev par Vite, à configurer en prod selon l'hébergeur).
+1. attend PostgreSQL ;
+2. exécute `node-pg-migrate up` ;
+3. lance le bootstrap admin si les variables existent ;
+4. démarre Express.
 
-## Migrations
+Une migration échouée empêche le service de démarrer.
 
-À appliquer **avant** de démarrer une nouvelle version :
+## Déploiement Railway
+
+1. créer le service applicatif depuis le dépôt ;
+2. ajouter PostgreSQL ;
+3. renseigner les variables ;
+4. utiliser `npm run build` comme build et `npm start` comme start si Railway ne les détecte pas ;
+5. déployer ;
+6. vérifier les logs de migrations ;
+7. appeler `/api/health` ;
+8. ouvrir login, accréditation, espace, conférence et newsroom ;
+9. vérifier cookies Secure/HttpOnly, CSP et HSTS.
+
+## Stripe
+
+Le webhook doit viser :
+
+```text
+https://<domaine>/api/stripe/webhook
+```
+
+Renseigner le secret de signature associé. Tester au moins :
+
+- checkout terminé ;
+- duplication du même événement ;
+- prix inattendu ;
+- abonnement supprimé ;
+- paiement échoué.
+
+## Cloudinary
+
+Créer un preset :
+
+- signé, jamais unsigned ;
+- `max_file_size` ≤ 209715200 ;
+- formats conformes à [security-rgpd.md](security-rgpd.md#uploads).
+
+Le serveur refuse de signer si le preset distant ne respecte pas ces règles.
+
+## Notifications
+
+1. garder `NOTIFICATIONS_MODE=simulation` ;
+2. valider les gabarits et le journal Messages ;
+3. vérifier l’expéditeur Brevo ;
+4. configurer SMS si nécessaire ;
+5. passer à `live`.
+
+Une liste d’IP Brevo incompatible avec l’IP de sortie dynamique de Railway peut bloquer les envois ; privilégier une configuration adaptée à l’hébergeur.
+
+## Migrations et rollback
+
+Local :
 
 ```bash
-npm run migrate:up        # applique les migrations en attente
-npm run migrate:down      # rollback d'une migration
+npm run migrate:up
+npm run migrate:down
 ```
 
-Le 1ᵉʳ compte admin se crée via le seed :
+Avant production :
+
+- sauvegarder ;
+- tester la chaîne complète sur une base vide ;
+- tester la migration sur une copie ;
+- déployer l’application compatible ;
+- ne rollbacker qu’après vérification de l’impact sur les données.
+
+La migration `0041` supprime le token journaliste brut après hashage. Son rollback recrée une colonne mais ne peut pas récupérer les valeurs brutes historiques.
+
+## Sauvegardes
+
+Le workflow `.github/workflows/db-backup.yml` effectue un `pg_dump` quotidien si `BACKUP_DATABASE_URL` est configuré dans les secrets GitHub.
+
+Test de restauration :
 
 ```bash
-SEED_EMAIL=… SEED_PASSWORD=… SEED_NAME=… npm --workspace server run seed
+pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" backup.dump
 ```
 
-## Passage en « live » (envois réels)
+Ne pas restaurer directement en production pour un test. Utiliser une base isolée, appliquer les contrôles de comptage, puis détruire l’environnement de test.
 
-1. Renseigner les clés Brevo (et Twilio si SMS), ou les saisir via **Intégrations**.
-2. Côté Brevo : **vérifier l'expéditeur**. ⚠️ La fonctionnalité « IP autorisées »
-   (`Sécurité → IP autorisées`) bloque les envois depuis une IP inconnue ; or l'**IP de sortie
-   de Railway change à chaque déploiement**. Sur ce type d'hébergeur, **désactiver** cette
-   fonctionnalité (plutôt que d'y lister une IP qui sera invalidée au prochain déploiement),
-   sinon les envois sont acceptés par l'API mais **rejetés silencieusement** à la livraison.
-3. Passer `NOTIFICATIONS_MODE=live` une fois le parcours validé en simulation.
-4. Pour les médias : créer un compte Cloudinary et renseigner les 3 clés.
-
-## Scripts utiles (racine)
+## Runbook de vérification
 
 ```bash
-npm run db:up / db:down          # PostgreSQL local via docker compose
-npm run migrate:up / :down / :redo
-npm test                         # tests du moteur métier (packages/core)
-npm --workspace server run test  # tests serveur (Vitest)
+curl -fsS https://<domaine>/api/health
 ```
 
-## Sauvegardes (base de données)
+Puis contrôler :
 
-Un workflow GitHub Actions (`.github/workflows/db-backup.yml`) fait un `pg_dump` **quotidien**
-de la production et stocke l'archive comme **artefact GitHub** (hors Railway — survit à une
-réinitialisation du service Postgres).
+- migrations `0001` à `0044` ;
+- login + MFA admin ;
+- création d’un événement de chaque type ;
+- création/publication d’une conférence ;
+- inscription, liste d’attente, annulation et promotion ;
+- refus d’un accès entre tenants ;
+- upload d’un type permis et rejet d’un type interdit ;
+- webhook Stripe idempotent ;
+- tâches cron et simulation des notifications.
 
-**Activation (une fois)** : GitHub → Settings → Secrets → Actions → secret
-`BACKUP_DATABASE_URL` = la **chaîne publique** Railway (`DATABASE_PUBLIC_URL`, host `*.proxy.rlwy.net`).
-Puis l'onglet **Actions** → « Sauvegarde base de données » → **Run workflow** pour tester.
+## Incident ou rollback
 
-**Restauration** : télécharger l'artefact, puis
-```bash
-pg_restore --clean --if-exists --no-owner -d "$DATABASE_URL" backup-AAAAMMJJ-HHMMSS.dump
-```
-
-> ⚠️ Une réinitialisation du Postgres Railway (recréation du service / changement de `DATABASE_URL`)
-> vide la base : les migrations reconstruisent le **schéma** au déploiement, mais **pas les données**.
-> Garder une sauvegarde externe à jour est la seule protection.
+1. geler les écritures si l’intégrité est menacée ;
+2. conserver logs et identifiants de déploiement ;
+3. désactiver `live` pour les notifications si nécessaire ;
+4. rollback applicatif seulement si le schéma reste compatible ;
+5. restaurer depuis une sauvegarde vérifiée si données corrompues ;
+6. appliquer la [procédure de violation](rgpd/procedure-violation.md) si des données personnelles sont concernées.

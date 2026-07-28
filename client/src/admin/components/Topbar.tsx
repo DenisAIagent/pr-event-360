@@ -8,6 +8,7 @@ import type { EventSummary } from '../lib/types';
 const PAGE_LABEL: Record<string, string> = {
   requests: 'Demandes',
   accreditations: 'Accréditations',
+  'press-conferences': 'Conférences de presse',
   lineup: 'Configuration',
   media: 'Médiathèque',
   newsroom: 'Newsroom',

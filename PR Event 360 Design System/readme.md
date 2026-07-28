@@ -1,8 +1,9 @@
 # PR Event 360 — Design System
 
 A SaaS brand and UI system for **PR Event 360**, the platform for managing press
-relations around events: media contacts, invitations, follow-ups, accreditations,
-media coverage and reporting — "vos relations presse événementielles, à 360°".
+relations around festivals, trade shows, conferences, seminars and corporate events:
+accreditations, interview requests, press conferences, media resources, coverage and
+reporting — "vos relations presse événementielles, à 360°".
 
 The identity is **navy-dominant, digital-blue accent, generous white**: professional,
 structured, fluid, and tech-premium without being cold. The audience is communication
@@ -19,14 +20,27 @@ to all of them, but they are recorded here for provenance:
   positioning, logo rules, colour palette, typography, UI style, dashboards, tone of voice.
 - **Logo** — official lockup supplied as `uploads/ChatGPT Image 26 juin 2026…png`, cleaned
   and recoloured into the variants in `assets/`.
-- **Attached repo (not accessible):** `https://github.com/DenisAIagent/pr-event-360` — the
-  GitHub App is not installed on that org, so it returned 404. **If you have access, install
-  the importer and re-attach it** to align components with the real production code.
-- **Reference codebase used for product structure:** `https://github.com/Mounjago/PressPilot`
-  — a sibling press-relations SaaS by the same author (different visual identity: black/green
-  Poppins). Its **"RP" workspace** (Tableau de bord · Communiqués · Événements · Dossiers de
-  presse · Contacts) maps directly onto PR Event 360's domain and informed the app UI kit's
-  information architecture and KPI/dashboard patterns. Explore it for deeper screen reference.
+- **Production repository:** the design system now lives beside the application source. The
+  implementation and the product documentation in `../docs/` are the source of truth for
+  current routes, features and terminology.
+- **Historical structural reference:** PressPilot informed early dashboard patterns but is not
+  a source of truth for PR Event 360.
+
+## Product vocabulary
+
+The event profile determines visible terms:
+
+| Profile | Participants | Venues | Program |
+|---|---|---|---|
+| Festival / concert | Artistes | Scènes | Line-up |
+| Salon / foire | Exposants | Espaces | Exposants |
+| Conférence / séminaire | Intervenants | Salles | Programme |
+| Corporate | Porte-paroles | Espaces | Programme |
+| Autre | Participants | Espaces | Programme |
+
+Components and prototypes should use contextual labels. Avoid hard-coding “artiste” or
+“scène” in reusable navigation and empty states. Press conferences are a dedicated workflow,
+separate from individual interview requests.
 
 ---
 
@@ -118,7 +132,8 @@ Brand signatures / baselines: *Connect · Communicate · Celebrate* (institution
 
 **UI kits** (`ui_kits/<product>/index.html`)
 - `app/` — the PR Event 360 SaaS application: sidebar, dashboard (KPIs + charts), contacts
-  presse table, événements. Interactive nav.
+  presse table, événements. This kit is a visual reference; production navigation also includes
+  press conferences and event-profile vocabulary.
 - `website/` — the marketing landing page: hero, KPI band, features, navy CTA, footer.
 
 **`SKILL.md`** — makes this system usable as a downloadable Claude Skill.

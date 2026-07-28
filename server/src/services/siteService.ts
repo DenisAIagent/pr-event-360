@@ -31,6 +31,27 @@ export function normalizeDomain(input: string): string {
     .replace(/:\d+$/, ''); // retire le port éventuel (ex. en dev)
 }
 
+/**
+ * Empêche qu'un événement revendique un host exploité par la plateforme elle-même.
+ * Le domaine de base est réservé avec tous ses sous-domaines : ceux-ci sont gérés
+ * exclusivement par le mécanisme de `subdomain_slug`.
+ */
+export function isReservedCustomDomain(input: string): boolean {
+  const domain = normalizeDomain(input);
+  if (!domain) return true;
+  const env = loadEnv();
+  const exact = new Set(
+    [env.PUBLIC_BASE_URL, env.CLIENT_URL, customDomainTarget()]
+      .map((value) => normalizeDomain(value))
+      .filter(Boolean),
+  );
+  if (exact.has(domain) || domain === 'localhost' || domain === '127.0.0.1' || domain === '::1') {
+    return true;
+  }
+  const base = platformBaseDomain();
+  return Boolean(base && (domain === base || domain.endsWith(`.${base}`)));
+}
+
 export async function resolveEventForHost(hostname: string): Promise<Event | null> {
   const host = normalizeDomain(hostname);
   if (!host) return null;
@@ -46,7 +67,12 @@ export async function resolveEventForHost(hostname: string): Promise<Event | nul
     if (slug && !slug.includes('.')) event = await findEventBySubdomain(slug);
   }
   // 2) Sinon, domaine personnalisé du client.
-  if (!event) event = await findEventByCustomDomain(host);
+  if (!event && !isReservedCustomDomain(host)) {
+    const candidate = await findEventByCustomDomain(host);
+    // La possession DNS doit être prouvée avant que le Host puisse sélectionner
+    // l'événement. Une simple valeur saisie dans le back-office ne suffit jamais.
+    if (candidate?.customDomainVerified) event = candidate;
+  }
 
   cache.set(host, { event, expires: now + TTL_MS });
   return event;

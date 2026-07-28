@@ -1,5 +1,6 @@
 import type { Lang } from '../i18n';
 import type { PressCoverageItem } from './mediaCategories';
+import type { EventType } from './eventProfiles';
 
 export type RequestType = 'interview' | 'photo_report' | 'video_report';
 export type RequestStatus =
@@ -61,6 +62,7 @@ export interface PressReleaseDetail {
 export interface PublicEvent {
   id: string;
   name: string;
+  eventType: EventType;
   location: string | null;
   languages: Lang[];
   mediaTypes: { id: string; label: string }[];
@@ -106,7 +108,7 @@ export interface JournalistRequest {
 }
 
 export interface SpaceResponse {
-  event: { id: string; name: string; languages: Lang[]; branding: EventBranding; ended?: boolean };
+  event: { id: string; name: string; eventType: EventType; languages: Lang[]; branding: EventBranding; ended?: boolean };
   journalist: {
     firstName: string;
     lastName: string | null;
@@ -119,4 +121,34 @@ export interface SpaceResponse {
   photoRules?: { photoRule: string | null; onsiteContract: boolean; photoTerms: string | null } | null;
   coverage?: PressCoverageItem[];
   coverageCategories?: { value: string; label: string }[];
+  pressConferences?: PublicPressConference[];
+}
+
+export type PublicPressConferenceRegistrationStatus =
+  | 'invited'
+  | 'pending'
+  | 'registered'
+  | 'waitlisted'
+  | 'declined'
+  | 'checked_in'
+  | 'cancelled';
+
+export interface PublicPressConference {
+  id: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string | null;
+  venue: string | null;
+  capacity: number | null;
+  registrationMode: 'open' | 'approval' | 'invite_only';
+  status: 'published' | 'closed' | 'completed';
+  allowedAccreditationTypes: AccreditationType[];
+  embargoUntil: string | null;
+  livestreamUrl: string | null;
+  participants: Array<{ id: string; name: string }>;
+  occupied: number;
+  available: number | null;
+  registrationStatus: PublicPressConferenceRegistrationStatus | null;
+  eligible: boolean;
 }

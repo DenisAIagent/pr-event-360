@@ -8,6 +8,7 @@ import { Kpi, type View } from './requests/shared';
 import { QueueView } from './requests/QueueView';
 import { GroupedView } from './requests/GroupedView';
 import { PlanningView } from './requests/PlanningView';
+import { getEventProfile } from '../../lib/eventProfiles';
 
 /**
  * Onglet « Demandes » : KPIs + bascule entre 4 vues (file globale, interviews par
@@ -25,11 +26,12 @@ export function RequestsTab() {
   const ev = useFetch<EventSummary>(() => apiAuthed.get<EventSummary>(`/admin/events/${eventId}`), [eventId]);
   const eventName = ev.data?.name ?? 'Événement';
   const branding = ev.data?.branding ?? null;
+  const profile = getEventProfile(ev.data?.eventType);
 
   const VIEWS: { value: View; label: string }[] = [
     { value: 'queue', label: 'File globale' },
-    { value: 'byArtist', label: 'Interviews par artiste' },
-    { value: 'byStage', label: 'Reportages par artiste' },
+    { value: 'byArtist', label: `Interviews par ${profile.participantSingular.toLocaleLowerCase('fr')}` },
+    { value: 'byStage', label: `Reportages par ${profile.participantSingular.toLocaleLowerCase('fr')}` },
     { value: 'planning', label: 'Planning par créneau' },
   ];
 
@@ -49,7 +51,7 @@ export function RequestsTab() {
             help={
               <>
                 Une demande passe <strong>automatiquement</strong> en liste d'attente quand le quota
-                (de l'artiste / du type) est atteint. Si une place se libère, la meilleure demande en
+                (du participant / du type) est atteint. Si une place se libère, la meilleure demande en
                 attente est <strong>promue automatiquement</strong> selon son score.
               </>
             }
@@ -86,6 +88,7 @@ export function RequestsTab() {
           eventName={eventName}
           branding={branding}
           mode="interviews"
+          profile={profile}
           statusF={statusF}
           setStatusF={setStatusF}
           onChanged={() => dash.reload()}
@@ -97,6 +100,7 @@ export function RequestsTab() {
           eventName={eventName}
           branding={branding}
           mode="reports"
+          profile={profile}
           statusF={statusF}
           setStatusF={setStatusF}
           onChanged={() => dash.reload()}

@@ -18,6 +18,11 @@ import {
   listCoverageByJournalist,
 } from '../../db/repositories/coverageRepo';
 import { signUpload } from '../../services/storageService';
+import {
+  cancelConferenceRegistration,
+  listPressConferencesForJournalist,
+  registerJournalistForConference,
+} from '../../services/pressConferenceService';
 
 export const publicSpaceRouter = Router();
 
@@ -47,15 +52,23 @@ publicSpaceRouter.get(
       throw AppError.forbidden('Accréditation non encore acceptée');
     }
     const event = await getEventOrThrow(journalist.eventId);
-    const [lineup, requests, branding, config, coverage] = await Promise.all([
+    const [lineup, requests, branding, config, coverage, pressConferences] = await Promise.all([
       getPublicLineup(journalist.eventId, journalist.lang),
       listJournalistRequests(token),
       getBranding(journalist.eventId),
       getConfig(journalist.eventId),
       listCoverageByJournalist(journalist.id),
+      listPressConferencesForJournalist(journalist),
     ]);
     sendData(res, {
-      event: { id: event.id, name: event.name, languages: event.languages, branding, ended: isEventEnded(event.endDate) },
+      event: {
+        id: event.id,
+        name: event.name,
+        eventType: event.eventType,
+        languages: event.languages,
+        branding,
+        ended: isEventEnded(event.endDate),
+      },
       journalist: {
         firstName: journalist.firstName,
         lastName: journalist.lastName,
@@ -70,7 +83,25 @@ publicSpaceRouter.get(
         : null,
       coverage,
       coverageCategories: MEDIA_CATEGORIES,
+      pressConferences,
     });
+  }),
+);
+
+publicSpaceRouter.post(
+  '/:token/press-conferences/:conferenceId/register',
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(req.params.token!);
+    sendData(res, await registerJournalistForConference(journalist, req.params.conferenceId!));
+  }),
+);
+
+publicSpaceRouter.delete(
+  '/:token/press-conferences/:conferenceId/registration',
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(req.params.token!);
+    await cancelConferenceRegistration(journalist, req.params.conferenceId!);
+    sendData(res, { cancelled: true });
   }),
 );
 
@@ -83,7 +114,7 @@ const RequestSchema = z
     message: z.string().max(2000).nullish(),
   })
   .refine((d) => !!d.artistId, {
-    message: 'Un artiste est requis',
+    message: 'Un participant est requis',
     path: ['artistId'],
   });
 

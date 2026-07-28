@@ -18,6 +18,7 @@ export const MANAGED_KEYS = [
   { key: 'CLOUDINARY_CLOUD_NAME', label: 'Cloudinary — Cloud name', secret: false },
   { key: 'CLOUDINARY_API_KEY', label: 'Cloudinary — API Key', secret: false },
   { key: 'CLOUDINARY_API_SECRET', label: 'Cloudinary — API Secret', secret: true },
+  { key: 'CLOUDINARY_UPLOAD_PRESET', label: 'Cloudinary — preset signé (max 200 Mio)', secret: false },
 ] as const;
 
 type ManagedKey = (typeof MANAGED_KEYS)[number]['key'];
@@ -91,6 +92,7 @@ export interface StorageSettings {
   cloudName?: string;
   apiKey?: string;
   apiSecret?: string;
+  uploadPreset?: string;
 }
 
 /** Config Cloudinary effective (surcharge DB sinon environnement). */
@@ -102,6 +104,7 @@ export async function getStorageSettings(): Promise<StorageSettings> {
     cloudName: pick('CLOUDINARY_CLOUD_NAME', env.CLOUDINARY_CLOUD_NAME),
     apiKey: pick('CLOUDINARY_API_KEY', env.CLOUDINARY_API_KEY),
     apiSecret: pick('CLOUDINARY_API_SECRET', env.CLOUDINARY_API_SECRET),
+    uploadPreset: pick('CLOUDINARY_UPLOAD_PRESET', env.CLOUDINARY_UPLOAD_PRESET),
   };
 }
 

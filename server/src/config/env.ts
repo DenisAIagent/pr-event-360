@@ -54,6 +54,8 @@ const EnvSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional(),
   CLOUDINARY_API_KEY: z.string().optional(),
   CLOUDINARY_API_SECRET: z.string().optional(),
+  // Preset SIGNÉ configuré chez Cloudinary avec max_file_size <= 200 Mio.
+  CLOUDINARY_UPLOAD_PRESET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

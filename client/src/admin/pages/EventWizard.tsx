@@ -5,11 +5,17 @@ import { CopyLink } from '../components/CopyLink';
 import { PageHero } from '../components/PageHero';
 import { Icon } from '../../components/Icon';
 import type { EventSummary, Lang, Stage } from '../lib/types';
+import {
+  EVENT_PROFILES,
+  EVENT_TYPES,
+  getEventProfile,
+  type EventProfile,
+  type EventType,
+} from '../../lib/eventProfiles';
 
 const ALL_LANGS: Lang[] = ['fr', 'en', 'pt', 'es'];
 const LANG_LABEL: Record<Lang, string> = { fr: 'Français', en: 'Anglais', pt: 'Portugais', es: 'Espagnol' };
 
-const STEPS = ['Informations', 'Apparence', 'Scènes & artistes', 'Règles', 'Clôture', 'Terminé'] as const;
 type StepIndex = 0 | 1 | 2 | 3 | 4 | 5;
 
 const DEFAULT_CONFIG = {
@@ -25,8 +31,11 @@ export function EventWizard() {
   const navigate = useNavigate();
   const [step, setStep] = useState<StepIndex>(0);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<EventType>('music');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const profile = getEventProfile(eventType);
+  const steps = ['Informations', 'Apparence', profile.setupStepLabel, 'Règles', 'Clôture', 'Terminé'];
 
   function go(next: StepIndex) {
     setError(null);
@@ -55,7 +64,7 @@ export function EventWizard() {
           subtitle="Quelques étapes pour tout configurer — vous pourrez ajuster ensuite."
         />
         <ol className="wizard-steps">
-          {STEPS.map((label, i) => (
+          {steps.map((label, i) => (
             <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>
               <span className="wizard-step-num">{i < step ? <Icon name="check" size={14} /> : i + 1}</span>
               <span className="wizard-step-label">{label}</span>
@@ -65,13 +74,30 @@ export function EventWizard() {
 
         {error && <div className="banner banner-error" style={{ maxWidth: 680 }}>{error}</div>}
 
-        {step === 0 && <InfosStep busy={busy} onNext={(fn) => run(fn, 1)} setEventId={setEventId} />}
+        {step === 0 && (
+          <InfosStep
+            busy={busy}
+            eventType={eventType}
+            setEventType={setEventType}
+            onNext={(fn) => run(fn, 1)}
+            setEventId={setEventId}
+          />
+        )}
         {step === 1 && eventId && (
           <BrandingStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 2)} onSkip={() => go(2)} onBack={() => go(0)} />
         )}
-        {step === 2 && eventId && <LineupStep eventId={eventId} onContinue={() => go(3)} onBack={() => go(1)} />}
+        {step === 2 && eventId && (
+          <LineupStep eventId={eventId} profile={profile} onContinue={() => go(3)} onBack={() => go(1)} />
+        )}
         {step === 3 && eventId && (
-          <ConfigStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 4)} onSkip={() => go(4)} onBack={() => go(2)} />
+          <ConfigStep
+            eventId={eventId}
+            profile={profile}
+            busy={busy}
+            onNext={(fn) => run(fn, 4)}
+            onSkip={() => go(4)}
+            onBack={() => go(2)}
+          />
         )}
         {step === 4 && eventId && (
           <DeadlineStep eventId={eventId} busy={busy} onNext={(fn) => run(fn, 5)} onSkip={() => go(5)} onBack={() => go(3)} />
@@ -135,10 +161,14 @@ function NavButtons({
 
 function InfosStep({
   busy,
+  eventType,
+  setEventType,
   onNext,
   setEventId,
 }: {
   busy: boolean;
+  eventType: EventType;
+  setEventType: (type: EventType) => void;
   onNext: (fn: () => Promise<void>) => void;
   setEventId: (id: string) => void;
 }) {
@@ -158,6 +188,7 @@ function InfosStep({
     onNext(async () => {
       const ev = await api.post<EventSummary>('/admin/events', {
         name,
+        eventType,
         location: location || null,
         startDate: startDate || null,
         endDate: endDate || null,
@@ -170,6 +201,36 @@ function InfosStep({
   return (
     <form onSubmit={submit}>
       <StepCard title="Informations de l'événement">
+        <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend style={{ fontWeight: 700, marginBottom: 'var(--space-2)' }}>Quel type d'événement créez-vous ? *</legend>
+          <div className="grid-2">
+            {EVENT_TYPES.map((type) => {
+              const option = EVENT_PROFILES[type];
+              const selected = eventType === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className="card"
+                  aria-pressed={selected}
+                  onClick={() => setEventType(type)}
+                  style={{
+                    padding: 'var(--space-3)',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    borderColor: selected ? 'var(--color-accent)' : undefined,
+                    background: selected ? 'var(--color-accent-tint)' : undefined,
+                  }}
+                >
+                  <strong>{option.label}</strong>
+                  <span className="muted" style={{ display: 'block', marginTop: 4, fontSize: 'var(--text-sm)' }}>
+                    {option.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
         <div className="field">
           <label>Nom de l'événement *</label>
           <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
@@ -263,7 +324,17 @@ function BrandingStep({
   );
 }
 
-function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContinue: () => void; onBack: () => void }) {
+function LineupStep({
+  eventId,
+  profile,
+  onContinue,
+  onBack,
+}: {
+  eventId: string;
+  profile: EventProfile;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
   const api = useAuthedApi();
   const [stages, setStages] = useState<Stage[]>([]);
   const [stageName, setStageName] = useState('');
@@ -273,6 +344,8 @@ function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContin
   const [artists, setArtists] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const venueLower = profile.venueSingular.toLocaleLowerCase('fr');
+  const participantLower = profile.participantSingular.toLocaleLowerCase('fr');
 
   async function addStage() {
     if (!stageName.trim()) return;
@@ -310,16 +383,17 @@ function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContin
   }
 
   return (
-    <StepCard title="Scènes & artistes">
+    <StepCard title={profile.setupStepLabel}>
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Optionnel ici — vous pourrez compléter le lineup et les créneaux d'interview plus tard dans l'onglet dédié.
+        Optionnel ici — vous pourrez compléter la liste des {profile.participantPlural.toLocaleLowerCase('fr')} et
+        les créneaux d'interview plus tard dans l'onglet dédié.
       </p>
       {error && <div className="banner banner-error">{error}</div>}
 
       <div className="field">
-        <label>Scènes ({stages.length})</label>
+        <label>{profile.venuePlural} ({stages.length})</label>
         <div className="inline-actions">
-          <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder="Nom de la scène" />
+          <input value={stageName} onChange={(e) => setStageName(e.target.value)} placeholder={`Nom — ${venueLower}`} />
           <button className="btn btn-ghost btn-sm" onClick={addStage} disabled={busy || !stageName.trim()}>
             Ajouter
           </button>
@@ -334,12 +408,12 @@ function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContin
       </div>
 
       <div className="field">
-        <label>Artistes ({artists.length})</label>
+        <label>{profile.participantPlural} ({artists.length})</label>
         <div className="grid-2">
-          <input value={artistName} onChange={(e) => setArtistName(e.target.value)} placeholder="Nom de l'artiste" />
+          <input value={artistName} onChange={(e) => setArtistName(e.target.value)} placeholder={`Nom — ${participantLower}`} />
           <div className="inline-actions">
             <select value={artistStage} onChange={(e) => setArtistStage(e.target.value)}>
-              <option value="">Scène (optionnel)</option>
+              <option value="">{profile.venueSingular} (optionnel)</option>
               {stages.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -373,12 +447,14 @@ function LineupStep({ eventId, onContinue, onBack }: { eventId: string; onContin
 
 function ConfigStep({
   eventId,
+  profile,
   busy,
   onNext,
   onSkip,
   onBack,
 }: {
   eventId: string;
+  profile: EventProfile;
   busy: boolean;
   onNext: (fn: () => Promise<void>) => void;
   onSkip: () => void;
@@ -400,7 +476,10 @@ function ConfigStep({
   const fields: { key: keyof typeof cfg; label: string }[] = [
     { key: 'itwDurationMin', label: 'Durée interview (min)' },
     { key: 'itwBufferMin', label: 'Battement entre interviews (min)' },
-    { key: 'defaultItwQuota', label: 'Quota interviews par artiste (défaut)' },
+    {
+      key: 'defaultItwQuota',
+      label: `Quota interviews par ${profile.participantSingular.toLocaleLowerCase('fr')} (défaut)`,
+    },
     { key: 'ageBonusPerHour', label: 'Bonus de score / heure d’ancienneté' },
     { key: 'ageBonusCap', label: 'Plafond du bonus d’ancienneté (h)' },
   ];

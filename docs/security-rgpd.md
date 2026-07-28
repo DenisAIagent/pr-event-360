@@ -1,124 +1,186 @@
-# Sécurité & RGPD
+# Sécurité et RGPD
 
-## Authentification
+Dernière mise à jour : 18 juillet 2026.
 
-- **Mots de passe** hachés avec **argon2** (jamais en clair, jamais loggés) — back-office **et**
-  comptes journalistes.
-- **JWT** (`HS256`, expiration 12 h) signé avec `JWT_SECRET`, porte l'identité et le contexte
-  d'organisation. À chaque requête, le rôle, l'activation du compte, le statut super-admin et
-  l'abonnement sont relus en base avant d'autoriser l'action.
-- **Session en cookie `httpOnly`** : le JWT est déposé dans un cookie `pr360_session`
-  `HttpOnly` + `Secure` (prod) + `SameSite=Lax` — **inaccessible au JavaScript**, donc non
-  volable par une éventuelle XSS (contrairement à un stockage en `localStorage`). Le repli
-  `Authorization: Bearer` reste accepté pour les clients API/tests (non rejouable cross-site).
-- **CSRF (double-submit)** : un cookie `pr360_csrf` lisible est rejoué en en-tête `X-CSRF-Token` ;
-  toute mutation (POST/PUT/PATCH/DELETE) authentifiée **par cookie** exige la correspondance
-  cookie ↔ en-tête (comparaison à temps constant). Webhook Stripe (signé) et surfaces publiques exemptés.
-- **Révocation de session** : un reset de mot de passe horodate `users.password_changed_at` ;
-  tout JWT émis **avant** cette date est refusé (`requireAuth`) → les sessions ouvertes avec
-  l'ancien mot de passe sont invalidées immédiatement.
-- **Rate limiting du login** : `/api/admin/auth/login` limité à 10 tentatives / 15 min (anti brute-force).
-- À la connexion, un compte **désactivé** (`users.active = false`) est refusé même avec le
-  bon mot de passe (message générique). Message d'échec identique « email ou mot de passe
-  incorrect » + hachage factice pour ne pas révéler l'existence d'un compte (anti-timing).
-- **2FA (TOTP)** optionnelle par compte back-office : si activée, le login renvoie un challenge
-  court échangé contre un code à 6 chiffres avant l'émission du jeton (`mfa_secret`/`mfa_enabled`).
-- **« Continuer avec Google »** (optionnel, dormant sans `GOOGLE_CLIENT_ID`) : l'ID token Google est
-  **vérifié côté serveur** (signature + audience), l'email doit être **vérifié par Google**. Un compte
-  existant au même email est **lié** automatiquement (Google garantit l'email). Les comptes Google n'ont
-  pas de mot de passe (`password_hash` NULL, `auth_provider='google'`) ; la connexion par mot de passe
-  les refuse. L'ID client Google est **public** (pas un secret) ; aucun secret OAuth n'est manipulé (flux GIS).
+## Authentification back-office
 
-### Comptes journalistes (par événement)
+- mots de passe Argon2 ;
+- JWT HS256, 12 h, `JWT_SECRET` ≥ 32 caractères ;
+- JWT dans `pr360_session`, cookie `HttpOnly`, `Secure` en production, `SameSite=Lax` ;
+- Bearer explicite accepté pour clients API/tests ;
+- aucun stockage de session dans `localStorage` ;
+- rôle, compte actif, abonnement, super-admin et changement de mot de passe relus en base ;
+- `password_changed_at` révoque les JWT antérieurs ;
+- réponses génériques et hash factice contre l’énumération/timing ;
+- 10 tentatives de login par 15 minutes.
 
-L'espace journaliste reste accessible par **token magique** ; en plus, le journaliste peut
-définir un **mot de passe** (depuis son espace, après acceptation) et se reconnecter par
-**email + mot de passe** (scopé à l'événement). Login à erreur **générique** + hachage factice
-anti-timing ; le login renvoie le token d'espace. `POST /api/public/journalist/*` est
-rate-limité (10 / 15 min). Les deux modes d'accès coexistent (rétro-compatibilité).
+### CSRF
 
-## Réinitialisation de mot de passe
+Pour toute mutation par cookie :
 
-Même mécanique pour le back-office (`password_reset_tokens`) et les journalistes
-(`journalist_password_resets`) :
+1. le navigateur envoie `pr360_csrf` ;
+2. le client le copie dans `X-CSRF-Token` ;
+3. le serveur compare à temps constant.
 
-- Jeton aléatoire 256 bits ; **seul son hash SHA-256** est stocké.
-- **Usage unique**, expiration **1 h**, un seul lien actif par compte à la fois.
-- Réponse **générique** à la demande (anti-énumération : on ne révèle pas si l'email existe).
-- **Rate limiting** : 10 requêtes / 15 min.
-- L'email de réinitialisation dépend du fournisseur (Brevo) ; le lien magique reste un secours.
+Le Bearer n’est pas envoyé automatiquement par un navigateur tiers. Le webhook Stripe utilise sa propre signature sur corps brut.
 
-## Invitations
+### MFA
 
-- Même schéma : jeton aléatoire, hash SHA-256 stocké, expiration **7 jours**, usage unique.
-- Le compte n'est matérialisé qu'à l'acceptation.
+TOTP obligatoire pour :
 
-## Gestion des secrets
+- `role = admin` ;
+- `is_platform_admin = true`.
 
-Deux niveaux :
+Sans MFA active, la session est limitée à `/me`, état/configuration/activation MFA et déconnexion.
 
-1. **Variables d'environnement** (`.env`, jamais committé) : `DATABASE_URL`, `JWT_SECRET`,
-   `APP_ENCRYPTION_KEY`, clés Brevo/Twilio/Cloudinary par défaut.
-2. **Réglages chiffrés en base** (`app_secrets`) gérés par l'admin via l'UI Intégrations :
-   - Chiffrement **AES-256-GCM** ; clé maîtresse `APP_ENCRYPTION_KEY` (32 octets base64),
-     présente uniquement dans l'environnement.
-   - Résolution **DB d'abord, `.env` en repli**. Les secrets sont **masqués** à l'affichage
-     (8 puces + 4 derniers caractères).
-   - Sans `APP_ENCRYPTION_KEY`, la gestion en base est désactivée (repli `.env`).
+Le ré-enrôlement écrit `mfa_pending_secret` sans écraser le secret actif. Le secret préparé n’est promu qu’après validation d’un code ; le changement exige aussi un code courant si la MFA est déjà active.
 
-**Uploads Cloudinary** : signature générée côté serveur (la clé secrète ne quitte jamais
-le back-end) ; le navigateur téléverse en direct avec une signature à durée de vie courte.
+Google Identity applique la même politique MFA. L’ID token est vérifié côté serveur avec audience et email vérifié.
 
-## En-têtes & réseau
+## Journalistes
 
-- **helmet** : en-têtes de sécurité (nosniff, frameguard, etc.) + **HSTS** (`Strict-Transport-Security`,
-  max-age 1 an, `includeSubDomains`, `preload`) → force HTTPS.
-- **CORS** restreint à `CLIENT_URL`, avec `credentials` (envoi du cookie de session).
-- **Rate limiting** : 30 req/min sur les surfaces publiques (accréditation, espace,
-  newsroom) ; 10 req/15 min sur réinitialisation/invitation/MFA et sur le login journaliste.
-- **express.json** plafonné à 6 Mo (logos/images en data URL).
+### Lien d’espace
 
-## Isolation multi-locataire
+- 256 bits aléatoires ;
+- hash SHA-256 uniquement en base ;
+- expiration 7 jours ;
+- rotation à l’acceptation, au renvoi du lien et au login par mot de passe ;
+- lookup par hash et contrôle de l’expiration ;
+- `Referrer-Policy: no-referrer` pour ne pas transmettre le token de l’URL.
 
-- Chaque client est une **organisation** ; `users`/`events` portent `organization_id`. Toutes les
-  listes et accès sont **scopés à l'organisation** de l'utilisateur (équipe, événements, recherche).
-- L'accès à un événement d'une autre organisation renvoie **404** (pas de fuite d'existence), via
-  `getAccessibleEventOrThrow`. Les enfants (journalistes, demandes, médias…) en héritent.
-- L'assignation d'événements à un membre **valide** que chaque événement appartient à l'organisation
-  (anti-fuite via `event_members`).
-- **Intégrations partagées** (clés API) = plateforme, réservées au super-admin ; jamais exposées aux
-  admins d'organisation.
+Un lien expiré est introuvable. Les logs de production n’affichent pas les tokens.
+
+### Mot de passe
+
+- compte scindé par événement ;
+- Argon2 ;
+- définition initiale seulement via un lien d’espace valide ;
+- un lien seul ne permet pas de remplacer un mot de passe existant ;
+- changement via reset email : token haché, usage unique, 1 h ;
+- reset réussi révoque le lien d’espace ;
+- login générique et limité à 10/15 min.
+
+### Doublons
+
+Un index unique partiel empêche deux nouvelles accréditations avec le même email normalisé dans un événement. Les doublons historiques sont conservés hors index.
+
+## Autorisation et isolation
+
+- organisation sur comptes et événements ;
+- accès événement validé par `getAccessibleEventOrThrow` ;
+- membres limités à `event_members` ;
+- réponses 404 pour ne pas divulguer un autre tenant ;
+- IDs enfants toujours recoupés avec `event_id` ;
+- recherches et exports scopés ;
+- intégrations et domaines personnalisés réservés au super-admin ;
+- permissions d’écriture de configuration regroupées dans `requireEventEditor`.
+
+### Conférences
+
+- conférence, participant et journaliste du même événement ;
+- accréditation acceptée ;
+- type d’accréditation autorisé ;
+- conférence sur invitation cachée sans invitation ;
+- mutation RP réservée aux éditeurs ;
+- capacité vérifiée sous transaction/verrou ;
+- inscription unique par journaliste ;
+- annulation publique limitée au propriétaire du token.
+
+## Entrées, injections et contenu
+
+- schémas Zod pour corps, paramètres significatifs et environnement ;
+- requêtes SQL paramétrées ;
+- aucun shell construit depuis une entrée HTTP ;
+- contenus riches assainis avec `sanitize-html` ;
+- CSP Helmet :
+  - scripts limités à self et Google Identity ;
+  - connexions limitées à API, Cloudinary, Google et Sentry ;
+  - frames limitées à Google et YouTube privacy-enhanced ;
+  - `object-src 'none'` et `base-uri 'self'` ;
+- URLs médias/livestream externes forcées en HTTPS ;
+- branding limité à HTTP(S) ou data URLs bitmap ; SVG/HTML/JS interdits ;
+- JSON public limité à 100 Kio, admin à 6 Mio.
+
+## Uploads
+
+Le fichier va directement du navigateur vers Cloudinary :
+
+- signature générée côté serveur ;
+- dossier imposé `pr-event-360/<eventId>` ;
+- preset obligatoirement signé (`unsigned=false`) ;
+- le serveur vérifie chez Cloudinary que `max_file_size <= 209715200` ;
+- formats signés : JPG/JPEG, PNG, WebP, GIF, AVIF, MP4, MOV, WebM, M4V et PDF ;
+- SVG, HTML, JavaScript et exécutables exclus ;
+- l’enregistrement du média revalide URL HTTPS et taille ≤ 200 Mio ;
+- clé secrète Cloudinary jamais envoyée au client.
+
+## SSRF et domaines
+
+- le client ne choisit pas une URL arbitraire à télécharger côté serveur pour les médias ;
+- vérification Cloudinary vers un endpoint fixe ;
+- vérification DNS limitée au domaine normalisé et à la cible configurée ;
+- hôtes réservés et domaines de la plateforme exclus ;
+- le routage par `Host` ne s’applique pas aux routes privées/API ;
+- données injectées dans le HTML échappées et sérialisées en JSON non exécutable.
+
+## Facturation
+
+- corps brut et signature `STRIPE_WEBHOOK_SECRET` ;
+- vérification du prix, de la session et des métadonnées ;
+- `stripe_events` empêche le retraitement ;
+- aucun hash de mot de passe conservé dans `pending_signups` ;
+- compte créé après preuve de paiement ou invitation valide.
+
+## Secrets
+
+### Environnement
+
+`DATABASE_URL`, `JWT_SECRET`, `APP_ENCRYPTION_KEY`, Stripe et fournisseurs ne sont jamais committés.
+
+### Base
+
+Les clés configurées dans l’UI :
+
+- sont réservées au super-admin ;
+- sont chiffrées AES-256-GCM ;
+- utilisent une clé maître de 32 octets base64 ;
+- sont masquées à l’affichage ;
+- retombent sur l’environnement si la valeur DB est absente.
+
+Les tokens de reset, invitation et espace sont hashés.
+
+## En-têtes et réseau
+
+- HSTS 1 an, sous-domaines et preload ;
+- CSP, nosniff et protections Helmet ;
+- CORS sur l’origine exacte `CLIENT_URL` avec credentials ;
+- confiance limitée à un proxy en production ;
+- surfaces publiques 30 req/min ;
+- auth sensible 10 req/15 min ;
+- erreurs internes masquées en production.
 
 ## RGPD
 
-- **Consentement explicite obligatoire** à l'accréditation — contrainte applicative
-  (`consent` doit valoir `true`, validé par zod côté serveur).
-- **Accès tokenisé** : l'espace journaliste est accessible par un **token unique non
-  devinable** (256 bits), propre à chaque journaliste.
-- **Droit à l'effacement** : suppression en cascade. Supprimer un journaliste retire ses
-  demandes/historique **et ses retombées** (`press_coverage`) ; supprimer un événement ou une
-  organisation purge l'ensemble de ses données (`ON DELETE CASCADE` sur toutes les tables rattachées).
-- **Limitation de conservation** : purge de rétention automatique (planificateur, 03:30) des
-  journalistes > 12 mois après la fin de leur événement.
-- **Autorisation d'exploitation des médias** : le dépôt d'une photo/vidéo dans la revue de presse
-  exige une **double autorisation** (archivage + usage promotionnel), horodatée, en écho au règlement
-  accepté à l'accréditation.
-- **Minimisation** : seules les données nécessaires au traitement de l'accréditation sont
-  demandées.
-- **Dossier de conformité** : registre des traitements, DPA, procédures droits/violation, AIPD, TIA
-  dans [`docs/rgpd/`](rgpd/). Éditeur : **MDMC OÜ** (Estonie, UE).
-- **Identifiants de services externes** : uniquement en variables d'environnement ou
-  chiffrés en base, jamais en clair dans le code ni en base.
-- **Pas de fuite** : les messages d'erreur côté client restent génériques ; le détail
-  technique est journalisé côté serveur uniquement.
+- consentement explicite à l’accréditation ;
+- score de priorité sans décision automatisée finale ;
+- droit à l’effacement par cascade ;
+- suppression d’un journaliste : demandes, conférences et retombées ;
+- suppression événement/organisation : données rattachées ;
+- purge automatique 12 mois après fin ;
+- double consentement pour médias uploadés dans la revue de presse ;
+- Sentry client avec `sendDefaultPii=false` ;
+- dossiers opérationnels dans [rgpd/](rgpd/).
 
-## Checklist avant mise en production
+## Checklist de production
 
-- [ ] `JWT_SECRET` et `APP_ENCRYPTION_KEY` aléatoires forts (voir [deployment.md](deployment.md)).
-- [ ] HTTPS + en-têtes (HSTS) au niveau de l'hébergeur/proxy.
-- [ ] `CLIENT_URL` / `PUBLIC_BASE_URL` pointant sur les domaines de production.
-- [ ] Expéditeur Brevo **vérifié**. ⚠️ Sur un hébergeur à **IP de sortie dynamique** (Railway
-      la change à chaque déploiement), **désactiver** la fonctionnalité « IP autorisées » de
-      Brevo plutôt que d'en lister une — sinon les emails sont rejetés après chaque déploiement.
-- [ ] Régénérer toute clé ayant pu être exposée.
-- [ ] `NOTIFICATIONS_MODE=live` seulement après validation visuelle du parcours.
+- [ ] secrets forts et différents par environnement ;
+- [ ] HTTPS et URLs publiques cohérentes ;
+- [ ] compte bootstrap protégé et MFA activée ;
+- [ ] migrations exécutées sur une sauvegarde testée ;
+- [ ] preset Cloudinary signé et borné ;
+- [ ] webhook Stripe configuré et testé ;
+- [ ] expéditeur Brevo vérifié ;
+- [ ] `NOTIFICATIONS_MODE=live` seulement après validation ;
+- [ ] régions/DPA des sous-traitants confirmés ;
+- [ ] test d’accès croisé entre deux tenants ;
+- [ ] sauvegarde et restauration vérifiées.

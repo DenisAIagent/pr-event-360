@@ -2,7 +2,6 @@ import type { AccreditationType, Lang } from '@pr-event-360/core';
 import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
 import { loadEnv } from '../config/env';
-import { generateJournalistToken } from '../lib/token';
 import { getEventOrThrow, isRegistrationClosed } from './eventService';
 import { findMediaType } from '../db/repositories/eventRepo';
 import {
@@ -15,6 +14,7 @@ import {
 import { sendNotification } from './notifications/notificationService';
 import { TRIGGERS } from './notifications/templates';
 import type { Journalist } from '../domain';
+import { newJournalistAccessToken } from './journalistAccessService';
 
 const env = loadEnv();
 
@@ -101,13 +101,18 @@ export async function processAccreditation(
   }
 
   if (action === 'accept') {
-    const token = journalist.token ?? generateJournalistToken();
+    const token = newJournalistAccessToken();
     const updated = await withTransaction((db) =>
-      updateAccreditation(journalistId, 'acceptee', token, db),
+      updateAccreditation(
+        journalistId,
+        'acceptee',
+        { tokenHash: token.tokenHash, expiresAt: token.expiresAt },
+        db,
+      ),
     );
     if (!updated) throw AppError.notFound('Journaliste introuvable');
 
-    const link = `${env.CLIENT_URL}/espace/${updated.token}`;
+    const link = `${env.CLIENT_URL}/espace/${token.rawToken}`;
     const base = {
       eventId: event.id,
       eventName: event.name,
@@ -132,4 +137,30 @@ export async function processAccreditation(
     triggerKey: TRIGGERS.ACCREDITATION_REJECTED,
   });
   return updated;
+}
+
+/** Régénère et renvoie par email un lien court pour une accréditation acceptée. */
+export async function resendAccreditationAccess(eventId: string, journalistId: string): Promise<void> {
+  const event = await getEventOrThrow(eventId);
+  const journalist = await findJournalistById(journalistId);
+  if (!journalist || journalist.eventId !== eventId) {
+    throw AppError.notFound('Journaliste introuvable pour cet événement');
+  }
+  if (journalist.accStatus !== 'acceptee') {
+    throw AppError.badRequest("L'accréditation doit être acceptée avant l'envoi du lien.");
+  }
+  const token = newJournalistAccessToken();
+  const updated = await updateAccreditation(
+    journalist.id,
+    'acceptee',
+    { tokenHash: token.tokenHash, expiresAt: token.expiresAt },
+  );
+  if (!updated) throw AppError.notFound('Journaliste introuvable');
+  await sendNotification({
+    eventId: event.id,
+    eventName: event.name,
+    journalist: updated,
+    triggerKey: TRIGGERS.ACCREDITATION_ACCEPTED,
+    variables: { link: `${env.CLIENT_URL}/espace/${token.rawToken}` },
+  });
 }

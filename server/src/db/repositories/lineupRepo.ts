@@ -15,7 +15,7 @@ async function assertStageInEvent(
 ): Promise<void> {
   if (!stageId) return;
   const { rowCount } = await db.query('SELECT 1 FROM stages WHERE id = $1 AND event_id = $2', [stageId, eventId]);
-  if (!rowCount) throw AppError.badRequest('Scène introuvable pour cet événement.');
+  if (!rowCount) throw AppError.badRequest('Espace introuvable pour cet événement.');
 }
 
 // ── Stages ──────────────────────────────────────────────────────────

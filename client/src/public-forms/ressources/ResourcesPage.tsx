@@ -33,16 +33,16 @@ const GUIDES: Guide[] = [
     icon: Mic,
     title: 'Demandes d’interview & reportage',
     points: [
-      '4 vues : file globale, par artiste, par scène, et planning par créneau.',
+      '4 vues : file globale, par participant, par espace, et planning par créneau.',
       'Un score de priorité classe les demandes ; appliquez vos quotas (liste d’attente automatique au-delà).',
-      'Action « accepter les N meilleurs », export PDF prêt pour les régisseurs, raccourcis clavier (↑↓/JK, A accepter, R refuser).',
+      'Action « accepter les N meilleurs », export PDF prêt pour les équipes terrain, raccourcis clavier (↑↓/JK, A accepter, R refuser).',
     ],
   },
   {
     icon: CalendarRange,
-    title: 'Lineup & créneaux',
+    title: 'Programme & créneaux',
     points: [
-      'Ajoutez vos scènes et vos artistes (avec un quota d’interviews optionnel par artiste).',
+      'Ajoutez les espaces et participants adaptés au type choisi : scènes et artistes, salles et intervenants, espaces et exposants…',
       'Renseignez les tranches de disponibilité : les créneaux d’interview sont générés automatiquement.',
       'La durée d’interview et le battement entre créneaux se règlent dans les Paramètres.',
     ],
@@ -96,7 +96,7 @@ const GUIDES: Guide[] = [
 
 const TIPS: string[] = [
   'Soignez votre lien d’inscription : c’est la première impression. Partagez-le tôt sur vos réseaux et votre site presse.',
-  'Définissez des quotas réalistes par artiste et par scène : la liste d’attente gère automatiquement le surplus.',
+  'Définissez des quotas réalistes par participant et par espace : la liste d’attente gère automatiquement le surplus.',
   'Anticipez la clôture des inscriptions : le compte à rebours public crée un sentiment d’urgence utile.',
   'Demandez (et suivez) l’engagement à créditer l’événement et à transmettre les publications.',
   'Nourrissez la newsroom avant l’événement : communiqués, visuels HD et dossier de presse prêts à télécharger.',
@@ -108,12 +108,12 @@ const FAQ: { q: string; a: string }[] = [
     a: 'Chaque demande reçoit un score automatique : (poids du média) × (multiplicateur du type) + un bonus d’ancienneté. Vous ajustez ces poids et multiplicateurs dans les Paramètres. Le score classe la file, mais vous gardez toujours la décision finale (accepter / refuser).',
   },
   {
-    q: 'Que se passe-t-il quand le quota est atteint pour un artiste ?',
+    q: 'Que se passe-t-il quand le quota est atteint pour un participant ?',
     a: 'Les demandes supplémentaires passent automatiquement en liste d’attente. Dès qu’une demande acceptée est refusée, la meilleure demande en attente (par score) est promue automatiquement.',
   },
   {
     q: 'Comment sont générés les créneaux d’interview ?',
-    a: 'Dans « Lineup & créneaux », renseignez les tranches de disponibilité d’un artiste (jour + plage horaire). Les créneaux contigus sont générés selon la durée d’interview et le battement définis dans les Paramètres. Pour les modifier, ajustez les tranches.',
+    a: 'Dans « Configuration », renseignez les tranches de disponibilité d’un participant (jour + plage horaire). Les créneaux contigus sont générés selon la durée d’interview et le battement définis dans les Paramètres. Pour les modifier, ajustez les tranches.',
   },
   {
     q: 'Puis-je fermer les inscriptions à une date précise ?',
@@ -121,7 +121,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Comment un journaliste accède-t-il à son espace ?',
-    a: 'À l’acceptation de son accréditation, il reçoit un email avec un lien personnel unique (non devinable). Ce lien lui donne accès au lineup et à la soumission de ses demandes, sans mot de passe.',
+    a: 'À l’acceptation de son accréditation, il reçoit un email avec un lien personnel unique (non devinable). Ce lien lui donne accès au programme et à la soumission de ses demandes, sans mot de passe.',
   },
   {
     q: 'Quels sont les rôles et leurs limites ?',
@@ -153,7 +153,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Comment exporter les demandes en PDF ?',
-    a: 'Chaque vue (file, par artiste, par scène, planning) a un bouton « Exporter en PDF ». Le document reprend votre logo et vos couleurs, prêt à imprimer et à remettre aux régisseurs.',
+    a: 'Chaque vue (file, par participant, par espace, planning) a un bouton « Exporter en PDF ». Le document reprend votre logo et vos couleurs, prêt à imprimer et à remettre aux équipes terrain.',
   },
 ];
 
@@ -204,7 +204,7 @@ export function ResourcesPage() {
         <ol className="res-steps">
           <li>
             <strong>Créez votre événement</strong> — un assistant en 6 étapes (infos, apparence,
-            lineup, règles, clôture).
+            programme, règles, clôture).
           </li>
           <li>
             <strong>Partagez le lien d’inscription</strong> aux journalistes (réseaux, email, site presse).

@@ -31,6 +31,7 @@ import { ReviewPage } from './pages/ReviewPage';
 import { ReviewsModerationPage } from './pages/ReviewsModerationPage';
 import { SecurityPage } from './pages/SecurityPage';
 import { EventWizard } from './pages/EventWizard';
+import { PressConferencesTab } from './pages/PressConferencesTab';
 import './admin.css';
 
 /** Garde les routes réservées aux administrateurs (d'organisation). */
@@ -80,6 +81,7 @@ export function AdminApp() {
               <Route index element={<Navigate to="requests" replace />} />
               <Route path="requests" element={<RequestsTab />} />
               <Route path="accreditations" element={<AccreditationsTab />} />
+              <Route path="press-conferences" element={<PressConferencesTab />} />
               <Route path="lineup" element={<LineupTab />} />
               <Route path="media" element={<MediaTab />} />
               <Route path="newsroom" element={<NewsroomTab />} />

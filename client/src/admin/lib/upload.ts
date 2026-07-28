@@ -24,6 +24,7 @@ export async function uploadToCloudinary(file: File, sig: UploadSignature): Prom
   form.append('folder', sig.folder);
   // Doit correspondre EXACTEMENT au paramètre signé côté serveur (sinon signature invalide).
   form.append('allowed_formats', sig.allowedFormats);
+  form.append('upload_preset', sig.uploadPreset);
   form.append('signature', sig.signature);
 
   const res = await fetch(sig.uploadUrl, { method: 'POST', body: form });

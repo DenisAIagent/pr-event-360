@@ -9,6 +9,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 // shell fourni par AdminShell — la page ne rend que son contenu
 import type { EventSummary } from '../lib/types';
+import { getEventProfile } from '../../lib/eventProfiles';
 
 export function EventsListPage() {
   const { user } = useAuth();
@@ -65,6 +66,7 @@ function EventCard({ ev, isAdmin, onDeleted }: { ev: EventSummary; isAdmin: bool
   const toast = useToast();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
+  const profile = getEventProfile(ev.eventType);
 
   async function remove(e: React.MouseEvent) {
     e.preventDefault();
@@ -93,6 +95,9 @@ function EventCard({ ev, isAdmin, onDeleted }: { ev: EventSummary; isAdmin: bool
   return (
     <div style={{ position: 'relative' }}>
       <Link to={`/admin/events/${ev.id}`} className="event-card">
+        <span className="badge badge-progress" style={{ alignSelf: 'flex-start', marginBottom: 'var(--space-2)' }}>
+          {profile.label}
+        </span>
         <h3 style={{ fontSize: 'var(--text-lg)', paddingRight: isAdmin ? 'var(--space-5)' : 0 }}>{ev.name}</h3>
         <p className="muted" style={{ margin: 'var(--space-1) 0 var(--space-3)', fontSize: 'var(--text-sm)' }}>
           {ev.location ?? 'Lieu non précisé'}

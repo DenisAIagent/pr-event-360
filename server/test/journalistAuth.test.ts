@@ -5,6 +5,8 @@ vi.mock('../src/db/repositories/journalistRepo', () => ({
   findAcceptedJournalistByEmail: vi.fn(),
   findAcceptedJournalistByEmailForReset: vi.fn(),
   findJournalistByToken: vi.fn(),
+  revokeJournalistAccessToken: vi.fn(),
+  rotateJournalistAccessToken: vi.fn(),
   setJournalistPassword: vi.fn(),
 }));
 vi.mock('../src/db/repositories/journalistResetRepo', () => ({
@@ -29,7 +31,6 @@ import { AppError } from '../src/http/AppError';
 const accepted = (over: Record<string, unknown> = {}) => ({
   id: 'j1',
   eventId: 'evt-1',
-  token: 'tok',
   firstName: 'Léa',
   accStatus: 'acceptee',
   passwordHash: null,

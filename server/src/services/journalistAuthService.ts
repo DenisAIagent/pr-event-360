@@ -6,6 +6,7 @@ import {
   findAcceptedJournalistByEmail,
   findAcceptedJournalistByEmailForReset,
   findJournalistByToken,
+  revokeJournalistAccessToken,
   setJournalistPassword,
 } from '../db/repositories/journalistRepo';
 import {
@@ -15,6 +16,7 @@ import {
 } from '../db/repositories/journalistResetRepo';
 import { getBranding, findEventById } from '../db/repositories/eventRepo';
 import { ctaButton, eventSenderName, sendBrandedEmail } from './notifications/email';
+import { issueJournalistAccessToken } from './journalistAccessService';
 
 const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
@@ -62,8 +64,8 @@ export async function journalistLogin(
     throw invalid;
   }
   const ok = await argon2.verify(journalist.passwordHash, password);
-  if (!ok || !journalist.token) throw invalid;
-  return { token: journalist.token, firstName: journalist.firstName };
+  if (!ok) throw invalid;
+  return { token: await issueJournalistAccessToken(journalist.id), firstName: journalist.firstName };
 }
 
 /**
@@ -96,6 +98,8 @@ export async function resetJournalistPassword(rawToken: string, newPassword: str
   if (!consumed) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');
   const passwordHash = await argon2.hash(newPassword);
   await setJournalistPassword(consumed.journalistId, passwordHash);
+  // Un reset prouve la possession de l'email et invalide tout ancien lien fuité.
+  await revokeJournalistAccessToken(consumed.journalistId);
 }
 
 /** Compose et envoie le lien de réinitialisation via le fournisseur email actif. */

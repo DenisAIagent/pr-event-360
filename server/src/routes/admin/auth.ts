@@ -106,8 +106,10 @@ authRouter.get(
 authRouter.post(
   '/mfa/setup',
   requireAuth,
+  validateBody(z.object({ currentCode: z.string().min(6).max(8).optional() })),
   asyncHandler(async (req, res) => {
-    sendData(res, await startMfaSetup(req.user!.sub, req.user!.email));
+    const { currentCode } = req.body as { currentCode?: string };
+    sendData(res, await startMfaSetup(req.user!.sub, req.user!.email, currentCode));
   }),
 );
 

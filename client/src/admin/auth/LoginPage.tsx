@@ -119,7 +119,7 @@ export function LoginPage() {
               Pas encore d'espace ? S'abonner
             </Link>
           </form>
-          <GoogleAuth />
+          <GoogleAuth onMfaRequired={setChallenge} />
           </>
         )}
       </div>

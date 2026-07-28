@@ -6,7 +6,6 @@ export interface PendingSignup {
   email: string;
   orgName: string;
   fullName: string;
-  passwordHash: string | null;
   googleId: string | null;
   authProvider: 'password' | 'google';
   stripeSessionId: string | null;
@@ -18,21 +17,19 @@ interface Row {
   email: string;
   org_name: string;
   full_name: string;
-  password_hash: string | null;
   google_id: string | null;
   auth_provider: 'password' | 'google';
   stripe_session_id: string | null;
   expires_at: string;
 }
 
-const COLS = 'id, email, org_name, full_name, password_hash, google_id, auth_provider, stripe_session_id, expires_at';
+const COLS = 'id, email, org_name, full_name, google_id, auth_provider, stripe_session_id, expires_at';
 
 const map = (r: Row): PendingSignup => ({
   id: r.id,
   email: r.email,
   orgName: r.org_name,
   fullName: r.full_name,
-  passwordHash: r.password_hash,
   googleId: r.google_id,
   authProvider: r.auth_provider,
   stripeSessionId: r.stripe_session_id,
@@ -46,24 +43,22 @@ export async function createPendingSignup(
     email: string;
     orgName: string;
     fullName: string;
-    passwordHash?: string | null;
     googleId?: string | null;
     authProvider: 'password' | 'google';
   },
   db: Queryable = pool,
 ): Promise<PendingSignup> {
   const expiresAt = new Date(Date.now() + TTL_MS);
-  // Une seule intention active par email à la fois.
-  await db.query('DELETE FROM pending_signups WHERE email = $1', [input.email]);
+  // Plusieurs checkouts peuvent coexister pour un même email. Une nouvelle
+  // tentative ne doit jamais invalider une session Stripe déjà payée/en cours.
   const { rows } = await db.query<Row>(
-    `INSERT INTO pending_signups (email, org_name, full_name, password_hash, google_id, auth_provider, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO pending_signups (email, org_name, full_name, google_id, auth_provider, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${COLS}`,
     [
       input.email,
       input.orgName,
       input.fullName,
-      input.passwordHash ?? null,
       input.googleId ?? null,
       input.authProvider,
       expiresAt,

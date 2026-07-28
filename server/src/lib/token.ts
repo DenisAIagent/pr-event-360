@@ -23,3 +23,6 @@ export function generateResetToken(): string {
 export function hashResetToken(rawToken: string): string {
   return createHash('sha256').update(rawToken).digest('hex');
 }
+
+/** Même propriété de sécurité pour les bearer tokens d'espace journaliste. */
+export const hashJournalistToken = hashResetToken;

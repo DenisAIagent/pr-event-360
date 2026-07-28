@@ -6,11 +6,13 @@ user-invocable: true
 
 Read the `readme.md` file within this skill, and explore the other available files.
 
-PR Event 360 is a SaaS for managing event press relations (media contacts, invitations,
-follow-ups, accreditations, coverage, reporting). The identity is navy-dominant with a
-digital-blue accent, generous white, Inter/Manrope type, fine-line Lucide icons, and a
-360-circle + connected-dots motif. Tone: expert, clear, direct, French, action-verb-led,
-no hype, no emoji.
+PR Event 360 is a SaaS for managing press relations for festivals, concerts, trade shows,
+conferences, seminars and corporate events (accreditations, individual requests, press
+conferences, resources, coverage and reporting). Visible vocabulary must follow the event
+profile: artistes/scènes, exposants/espaces, intervenants/salles, porte-paroles/espaces or
+participants/espaces. The identity is navy-dominant with a digital-blue accent, generous
+white, Inter/Manrope type, fine-line Lucide icons, and a 360-circle + connected-dots motif.
+Tone: expert, clear, direct, French, action-verb-led, no hype, no emoji.
 
 Key files:
 - `styles.css` — link this; it `@import`s all tokens and fonts.

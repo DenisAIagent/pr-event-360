@@ -1,72 +1,91 @@
 # PR Event 360
 
-**Votre orchestrateur de relations presse.** Plateforme de gestion des accréditations presse en festival : accréditations, interviews, captations photo/vidéo, newsroom et revue de presse. L'**événement** est l'entité racine — isolation totale entre festivals.
+**Votre orchestrateur de relations presse.** PR Event 360 centralise les accréditations, demandes d’interview et de reportage, conférences de presse, ressources médias et retombées pour les festivals, concerts, salons, foires, conférences, séminaires et événements corporate.
 
-📚 **Documentation technique complète : [`docs/`](docs/README.md)** — architecture, modèle de données, API, logique métier, rôles, sécurité/RGPD, déploiement, fonctionnalités.
+L’**événement** est l’entité racine. Chaque événement appartient à une organisation et ses journalistes, participants, demandes, conférences et contenus sont isolés des autres tenants.
+
+Documentation :
+
+- [Documentation technique](docs/README.md)
+- [PRD produit](PR-Event-360_PRD.md)
+- [Design system](PR%20Event%20360%20Design%20System/readme.md)
 
 ## Stack
 
-| Couche | Choix |
+| Couche | Technologies |
 |---|---|
-| Frontend | React + Vite + TypeScript |
-| Backend | Node.js + Express + TypeScript (REST) |
-| Base de données | PostgreSQL (SQL brut + `node-pg-migrate`) |
-| Auth back-office | JWT + hash argon2 |
-| Email / SMS | Brevo / Twilio — **démarrage en simulation** |
-| Hébergement cible | Railway |
+| Frontend | React 18, Vite 6, TypeScript |
+| Backend | Node.js 20+, Express 4, TypeScript |
+| Base de données | PostgreSQL, `pg`, `node-pg-migrate` |
+| Authentification | Argon2, JWT en cookie HttpOnly, CSRF double-submit, TOTP |
+| Services optionnels | Brevo, Twilio, Cloudinary, Stripe, Google Identity, Sentry |
+| Hébergement actuel | Railway |
 
-Monorepo npm workspaces :
+Le monorepo utilise les workspaces npm :
 
-- `packages/core` — moteur métier **pur** (créneaux, score, quotas, liste d'attente), testable isolément, sans dépendance DB/HTTP.
-- `server` — API REST, repositories, services, migrations.
-- `client` — formulaires publics multilingues (FR/EN/PT/ES) + back-office.
+- `packages/core` : règles métier pures — profils d’événement, score, quotas, créneaux, listes d’attente et décisions d’inscription aux conférences ;
+- `server` : API REST, services, repositories SQL, tâches planifiées et migrations ;
+- `client` : back-office et surfaces publiques multilingues FR/EN/PT/ES.
 
-## Prérequis
+## Démarrage local
 
-- Node.js ≥ 20
-- Docker (PostgreSQL local) — ou une instance PostgreSQL accessible
-
-## Démarrage
+Prérequis : Node.js 20+, npm et Docker, ou une base PostgreSQL accessible.
 
 ```bash
-# 1. Variables d'environnement (jamais committées)
 cp .env.example .env
-
-# 2. Dépendances (résout les 3 workspaces)
 npm install
-
-# 3. Base de données locale
-npm run db:up            # docker compose up -d
-
-# 4. Migrations
-npm run migrate:up       # applique le schéma
-npm run migrate:down     # revient en arrière d'une migration (réversibilité)
-
-# 5. Tests du moteur métier (Module 1)
-npm test
+npm run db:up
+npm run migrate:up
 ```
 
-## Capacités (modules livrés)
+Lancer l’API et le client dans deux terminaux :
 
-0. **Scaffold + schéma PostgreSQL** ✅
-1. **Moteur métier pur + tests** ✅ — génération de créneaux, score de priorité, quotas, promotion
-2. **API REST** ✅ — surfaces publiques tokenisées + back-office JWT (2FA TOTP optionnelle)
-3. **Formulaires publics multilingues** ✅ — accréditation, espace journaliste, newsroom (FR/EN/PT/ES)
-4. **Back-office** ✅ — coquille rail + recherche globale, file en grille triée par score, KPIs,
-   configuration guidée, lineup & créneaux, génération de planning, médias/newsroom/communications, équipe
-5. **Notifications** ✅ — simulation puis branchement Brevo/Twilio ; récapitulatifs périodiques
-6. **Comptes journalistes** ✅ — accès par lien magique **ou** email + mot de passe (par événement),
-   mot de passe oublié, planning personnel, ressources presse
-7. **Multi-locataire** ✅ — chaque client = une **organisation** isolée (events/équipe/données),
-   inscription **payante** (Stripe) ou sur invitation, super-admin plateforme. White-label : domaine perso + sous-domaine par event
-8. **Newsroom SEO** ✅ — communiqués à URL dédiée, balises meta/Open Graph rendues serveur, `sitemap.xml`/`robots.txt`, image de couverture, export PDF
-9. **Revue de presse** ✅ — collecte automatique des retombées après l'événement (délai J+3/8/30 choisi à l'inscription), dépôt liens/médias avec autorisation, classement par média + suivi des envois
-10. **Avis produit** ✅ — notation de l'app en back-office + modération super-admin + témoignages dynamiques sur la landing
+```bash
+npm --workspace server run dev
+npm --workspace client run dev
+```
 
-> Détails et endpoints : [`docs/`](docs/README.md). Notifications : nom d'expéditeur = « *{Événement}* Press Team » ; langue détectée du navigateur.
+- Client : `http://localhost:5173` par défaut, ou le port suivant si celui-ci est occupé.
+- API : `http://localhost:4000`
+- Santé : `GET http://localhost:4000/api/health`
 
-## Sécurité & RGPD
+## Vérifications
 
-- Identifiants des services externes **uniquement** en variables d'environnement (`.env`, jamais committé).
-- Accès au formulaire de demandes par **token unique non devinable** par journaliste.
-- Consentement RGPD explicite obligatoire (contrainte en base) ; droit à l'effacement par suppression en cascade ; purge possible à la clôture de l'événement.
+```bash
+npm test
+npm --workspace server run test
+npm --workspace server run typecheck
+npm --workspace client run typecheck
+npm run build
+```
+
+## Capacités principales
+
+- cinq profils d’événement : musique, salon/foire, conférence/séminaire, corporate et autre ;
+- vocabulaire adapté au profil, sans casser le contrat API historique `artists`/`stages` ;
+- accréditations, équipe multi-rôle, score de priorité, quotas et planning d’interviews ;
+- conférences de presse créées lorsque le format est confirmé, avec inscription ouverte, sur validation ou sur invitation ;
+- capacité transactionnelle, liste d’attente et promotion automatique ;
+- espace journaliste par lien personnel ou email/mot de passe, newsroom, médias et revue de presse ;
+- domaines dédiés, sous-domaines plateforme, branding et contenus multilingues ;
+- facturation Stripe et création du compte après confirmation du paiement ;
+- sécurité multi-tenant, MFA obligatoire pour les administrateurs et super-administrateurs.
+
+## Déploiement
+
+La production est disponible sur [pr-event-360-production-a23e.up.railway.app](https://pr-event-360-production-a23e.up.railway.app/).
+
+La commande `npm start` attend PostgreSQL, applique les migrations, initialise l’administrateur de bootstrap si configuré, puis démarre l’API et sert le build du client.
+
+Consulter le [guide de déploiement](docs/deployment.md) avant toute mise en production ou restauration.
+
+## Sécurité et données personnelles
+
+- le JWT back-office n’est pas stocké dans `localStorage` : il est placé dans `pr360_session`, cookie `HttpOnly`, `Secure` en production et `SameSite=Lax` ;
+- les mutations par cookie exigent `X-CSRF-Token` ;
+- la MFA TOTP est obligatoire pour les comptes `admin` et les super-admins plateforme ;
+- les liens d’espace journaliste sont aléatoires, valables 7 jours, rotatifs ; seul leur hash SHA-256 est conservé ;
+- les mots de passe sont hachés par Argon2 ;
+- le consentement RGPD est requis à l’accréditation et les suppressions sont en cascade.
+
+Voir [Sécurité & RGPD](docs/security-rgpd.md) et le [dossier de conformité](docs/rgpd/).

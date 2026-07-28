@@ -18,7 +18,7 @@ export async function addStage(eventId: string, name: string): Promise<Stage> {
   try {
     return await insertStage({ eventId, name });
   } catch (err) {
-    if (isUnique(err)) throw AppError.conflict('Une scène porte déjà ce nom dans cet événement');
+    if (isUnique(err)) throw AppError.conflict('Un espace porte déjà ce nom dans cet événement');
     throw err;
   }
 }
@@ -50,7 +50,7 @@ export async function addArtist(
 
   if (input.stageId) {
     const stage = await findStage(input.stageId, input.eventId);
-    if (!stage) throw AppError.badRequest('Scène inconnue pour cet événement');
+    if (!stage) throw AppError.badRequest('Espace inconnu pour cet événement');
   }
 
   return withTransaction(async (db) => {

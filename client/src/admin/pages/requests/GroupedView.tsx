@@ -6,6 +6,7 @@ import { STATUS_BADGE, STATUS_LABEL, TYPE_LABEL, formatSlot } from '../../lib/la
 import { printTable, type PrintTableGroup } from '../../lib/printRequests';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../../components/InfoBubble';
+import type { EventProfile } from '../../../lib/eventProfiles';
 import { useToast } from '../../components/Toast';
 import {
   QUEUE_COLUMNS,
@@ -26,6 +27,7 @@ export function GroupedView({
   eventName,
   branding,
   mode,
+  profile,
   statusF,
   setStatusF,
   onChanged,
@@ -34,6 +36,7 @@ export function GroupedView({
   eventName: string;
   branding: EventBranding | null;
   mode: 'interviews' | 'reports';
+  profile: EventProfile;
   statusF: RequestStatus | 'all';
   setStatusF: (s: RequestStatus | 'all') => void;
   onChanged: () => void;
@@ -121,10 +124,12 @@ export function GroupedView({
 
   const emptyLabel =
     mode === 'interviews'
-      ? 'Aucun artiste dans le lineup. Ajoutez des artistes pour gérer les interviews.'
-      : 'Aucun artiste dans le lineup. Ajoutez des artistes pour gérer les reportages.';
+      ? `Aucun ${profile.participantSingular.toLocaleLowerCase('fr')} dans le programme. Ajoutez-en pour gérer les interviews.`
+      : `Aucun ${profile.participantSingular.toLocaleLowerCase('fr')} dans le programme. Ajoutez-en pour gérer les reportages.`;
 
-  const heading = mode === 'interviews' ? "Demandes d'interview par artiste" : 'Reportages par artiste';
+  const heading = mode === 'interviews'
+    ? `Demandes d'interview par ${profile.participantSingular.toLocaleLowerCase('fr')}`
+    : `Reportages par ${profile.participantSingular.toLocaleLowerCase('fr')}`;
 
   function buildGroup(name: string, items: QueueItem[], quota: { used: number; limit: number } | null): PrintTableGroup {
     return {
@@ -194,6 +199,7 @@ export function GroupedView({
             count={items.length}
             quota={quota}
             noun={noun}
+            participantLabel={profile.participantSingular}
             toAccept={toAccept}
             busy={busy}
             onAcceptTopN={() => acceptTopN(items, toAccept)}
@@ -218,6 +224,7 @@ function SubjectGroup({
   count,
   quota,
   noun,
+  participantLabel,
   toAccept,
   busy,
   onAcceptTopN,
@@ -228,6 +235,7 @@ function SubjectGroup({
   count: number;
   quota: { used: number; limit: number } | null;
   noun: string;
+  participantLabel: string;
   toAccept: number;
   busy: boolean;
   onAcceptTopN: () => void;
@@ -250,7 +258,7 @@ function SubjectGroup({
               </span>
               <InfoBubble title="Quota">
                 <strong>Places accordées / maximum</strong> pour ce groupe. Une fois le maximum atteint, les
-                nouvelles demandes passent en liste d'attente. Le maximum se règle sur l'artiste (Configuration)
+                nouvelles demandes passent en liste d'attente. Le maximum se règle sur le profil « {participantLabel} » (Configuration)
                 ou par défaut dans Paramètres.
               </InfoBubble>
             </>

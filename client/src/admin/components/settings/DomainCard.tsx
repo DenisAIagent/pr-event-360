@@ -70,7 +70,7 @@ export function DomainCard({ eventId }: { eventId: string }) {
         <h3 style={{ fontSize: 'var(--text-lg)' }}>Domaine personnalisé</h3>
         <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '4px 0 0' }}>
           Servez les pages publiques de cet événement sous le domaine du client (ex.{' '}
-          <code>presse.mon-festival.com</code>).
+          <code>presse.mon-evenement.com</code>).
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export function DomainCard({ eventId }: { eventId: string }) {
           id="custom-domain"
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
-          placeholder="presse.mon-festival.com"
+          placeholder="presse.mon-evenement.com"
           autoCapitalize="none"
           spellCheck={false}
         />

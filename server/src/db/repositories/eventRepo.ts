@@ -10,13 +10,14 @@ import type {
   RequestTypeWeight,
   EmailTemplate,
 } from '../../domain';
-import type { Lang, RequestType } from '@pr-event-360/core';
+import type { EventType, Lang, RequestType } from '@pr-event-360/core';
 
 interface EventRow {
   id: string;
   organization_id: string;
   owner_user_id: string;
   name: string;
+  event_type: EventType;
   location: string | null;
   start_date: string | null;
   end_date: string | null;
@@ -45,6 +46,7 @@ const mapEvent = (r: EventRow): Event => ({
   organizationId: r.organization_id,
   ownerUserId: r.owner_user_id,
   name: r.name,
+  eventType: r.event_type,
   location: r.location,
   startDate: r.start_date,
   endDate: r.end_date,
@@ -87,6 +89,7 @@ export async function insertEvent(
     organizationId: string;
     ownerUserId: string;
     name: string;
+    eventType: EventType;
     location?: string | null;
     startDate?: string | null;
     endDate?: string | null;
@@ -95,13 +98,14 @@ export async function insertEvent(
   db: Queryable = pool,
 ): Promise<Event> {
   const { rows } = await db.query<EventRow>(
-    `INSERT INTO events (organization_id, owner_user_id, name, location, start_date, end_date, languages)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::lang_code[])
-     RETURNING id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
+    `INSERT INTO events (organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::lang_code[])
+     RETURNING id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [
       input.organizationId,
       input.ownerUserId,
       input.name,
+      input.eventType,
       input.location ?? null,
       input.startDate ?? null,
       input.endDate ?? null,
@@ -113,7 +117,7 @@ export async function insertEvent(
 
 export async function findEventById(id: string, db: Queryable = pool): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+    `SELECT id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE id = $1`,
     [id],
   );
@@ -126,7 +130,7 @@ export async function findEventByCustomDomain(
   db: Queryable = pool,
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+    `SELECT id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE custom_domain = $1`,
     [domain],
   );
@@ -142,7 +146,7 @@ export async function setEventCustomDomain(
   const { rows } = await db.query<EventRow>(
     `UPDATE events SET custom_domain = $2, custom_domain_verified = false
      WHERE id = $1
-     RETURNING id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
+     RETURNING id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [eventId, domain],
   );
   return rows[0] ? mapEvent(rows[0]) : null;
@@ -162,7 +166,7 @@ export async function findEventBySubdomain(
   db: Queryable = pool,
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+    `SELECT id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE subdomain_slug = $1`,
     [slug],
   );
@@ -177,7 +181,7 @@ export async function setEventSubdomain(
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
     `UPDATE events SET subdomain_slug = $2 WHERE id = $1
-     RETURNING id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
+     RETURNING id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [eventId, slug],
   );
   return rows[0] ? mapEvent(rows[0]) : null;
@@ -195,7 +199,7 @@ export async function deleteEvent(id: string, db: Queryable = pool): Promise<num
 
 export async function listEventsByOwner(ownerUserId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+    `SELECT id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE owner_user_id = $1 ORDER BY created_at DESC`,
     [ownerUserId],
   );
@@ -205,7 +209,7 @@ export async function listEventsByOwner(ownerUserId: string, db: Queryable = poo
 /** Tous les événements d'une organisation (admin de l'org). */
 export async function listEventsForOrg(organizationId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
-    `SELECT id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
+    `SELECT id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at
      FROM events WHERE organization_id = $1 ORDER BY created_at DESC`,
     [organizationId],
   );
@@ -215,7 +219,7 @@ export async function listEventsForOrg(organizationId: string, db: Queryable = p
 /** Événements auxquels l'utilisateur est explicitement assigné (membre). */
 export async function listEventsForMember(userId: string, db: Queryable = pool): Promise<Event[]> {
   const { rows } = await db.query<EventRow>(
-    `SELECT e.id, e.organization_id, e.owner_user_id, e.name, e.location, e.start_date, e.end_date, e.languages,
+    `SELECT e.id, e.organization_id, e.owner_user_id, e.name, e.event_type, e.location, e.start_date, e.end_date, e.languages,
             e.accreditation_deadline, e.custom_domain, e.custom_domain_verified, e.subdomain_slug, e.created_at
      FROM events e
      JOIN event_members m ON m.event_id = e.id
@@ -296,7 +300,7 @@ export async function setAccreditationDeadline(
 ): Promise<Event | null> {
   const { rows } = await db.query<EventRow>(
     `UPDATE events SET accreditation_deadline = $2 WHERE id = $1
-     RETURNING id, organization_id, owner_user_id, name, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
+     RETURNING id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [eventId, deadline],
   );
   return rows[0] ? mapEvent(rows[0]) : null;

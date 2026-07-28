@@ -1,113 +1,133 @@
 # Architecture
 
-## Monorepo (npm workspaces)
+## Monorepo
 
-```
-pr-event-360/
-├── packages/core/   Moteur métier PUR (aucune dépendance DB/HTTP), testable isolément
-├── server/          API REST Express + repositories + services + migrations
-└── client/          Front React + Vite (formulaires publics multilingues + back-office)
+```text
+PR Event 360/
+├── packages/core/  règles métier pures et types partagés
+├── server/         Express, services, repositories, migrations, cron
+├── client/         React/Vite, back-office et surfaces publiques
+└── docs/           documentation technique et conformité
 ```
 
-Le partage de types/logique se fait via `@pr-event-360/core`, consommé en TypeScript
-source par le serveur et le client.
+`@pr-event-360/core` est consommé par le client et le serveur. Il ne dépend ni de PostgreSQL ni d’Express.
 
 ## Stack
 
 | Couche | Choix |
 |---|---|
-| Frontend | React 18 · Vite 6 · TypeScript · React Router |
-| Backend | Node ≥ 20 · Express 4 · TypeScript · `tsx` (dev) |
-| Base de données | PostgreSQL (16 local / **18 prod Railway**) · SQL brut (`pg`) · migrations `node-pg-migrate` |
-| Auth back-office | JWT (`jsonwebtoken`) · hash `argon2` · 2FA TOTP · Google Identity (optionnel) |
-| Validation | `zod` (entrées HTTP, variables d'environnement) |
-| Sécurité HTTP | `helmet` · `express-rate-limit` · CORS |
-| Email / SMS | Brevo · Twilio — démarrage en **mode simulation** |
-| Stockage médias | Cloudinary (upload direct signé) |
-| Facturation | Stripe (abonnement, webhook) — dormant si non configuré |
-| Planification | `node-cron` (récaps, purge RGPD, collecte des retombées) |
-| Tests | Vitest (`packages/core`, `server`) |
+| Client | React 18, React Router 6, Vite 6, TypeScript |
+| Serveur | Node 20+, Express 4, TypeScript, `tsx` |
+| Données | PostgreSQL, SQL paramétré avec `pg` |
+| Migrations | `node-pg-migrate` |
+| Validation | Zod |
+| Auth | Argon2, JWT HS256, cookie/CSRF, TOTP, Google Identity |
+| Sécurité HTTP | Helmet, CSP, HSTS, CORS, rate limits |
+| Médias | Cloudinary, upload navigateur direct signé |
+| Paiement | Stripe Checkout et webhooks signés |
+| Notifications | Brevo/Twilio, simulation ou live |
+| Observabilité | Sentry optionnel |
+| Tests | Vitest et Playwright |
 
-## Découpage en couches (serveur)
+La version PostgreSQL est gérée par l’environnement d’hébergement ; le développement local utilise `postgres:16-alpine`.
 
-```
-routes/        Validation (zod) + auth + délégation. Aucune logique métier.
-  admin/*      Back-office (JWT requis)
-  public/*     Surfaces publiques (token journaliste ou accès libre)
-services/      Logique métier, orchestration, transactions
-db/
-  repositories/  Accès SQL (une fonction = une requête), mapping snake_case → camelCase
-  pool.ts        Pool pg + helper withTransaction
-config/env.ts  Chargement + validation des variables d'environnement (fail-fast)
-http/          AppError, enveloppe de réponse, asyncHandler
-middleware/    requireAuth, requireRole, requireEventEditor, validateBody, errorHandler
-lib/           jwt, argon2 wrappers, tokens, crypto (AES-256-GCM)
-```
+## Couches serveur
 
-**Le moteur `@pr-event-360/core`** contient la logique pure et déterministe :
-génération de créneaux d'interview, calcul du score de priorité, vérification des
-quotas, promotion de la liste d'attente. Il ne connaît ni la base ni HTTP → testable
-sans infrastructure (voir [business-logic.md](business-logic.md)).
-
-## Cycle de vie d'une requête (back-office)
-
-```
-Requête HTTP
-  └─ helmet / CORS / express.json
-  └─ Router /api/admin/...
-       └─ requireAuth            (vérifie session/Bearer + droits courants → req.user)
-       └─ requireRole / requireEventEditor   (selon la route)
-       └─ validateBody(schema)   (zod → req.body typé, sinon ZodError)
-       └─ asyncHandler(handler)
-            └─ getAccessibleEventOrThrow(eventId, user)   (isolation par événement)
-            └─ service métier  →  repository  →  SQL
-  └─ sendData(res, data)         (enveloppe { success, data })
-  └─ errorHandler                (AppError/ZodError → JSON propre, pas de fuite interne)
+```text
+HTTP
+  routes/             schémas Zod, middlewares, DTO
+    admin/            cookie/Bearer, tenant, rôle
+    public/           accès libre ou token journaliste
+  middleware/         auth, CSRF, validation, erreurs
+  services/           orchestration et transactions
+  db/repositories/    SQL paramétré, mapping des lignes
+  packages/core/      décisions pures
+PostgreSQL
 ```
 
-## Enveloppe de réponse
+Une route ne doit jamais se fier à un `eventId` du client sans appeler `getAccessibleEventOrThrow` ou appliquer une contrainte SQL équivalente.
 
-Toutes les réponses suivent un format unique :
+## Flux d’authentification
 
-```json
-{ "success": true,  "data": <payload> }
-{ "success": false, "error": "message lisible", "details": <optionnel> }
+### Back-office
+
+```text
+login email/Google
+  ├─ MFA active → challenge TOTP → session
+  └─ admin sans MFA → session restreinte → enrôlement obligatoire
+
+session = pr360_session HttpOnly + pr360_csrf lisible
+mutation cookie = cookie CSRF == X-CSRF-Token
 ```
 
-Le client (`client/src/lib/api.ts`) déballe cette enveloppe et lève une `ApiError`
-typée (status + message) en cas d'échec.
+Le Bearer explicite reste possible pour les clients API et tests. Les droits sont relus en base à chaque requête.
 
-## Routage front
+### Espace journaliste
 
-| Préfixe | Surface | Accès |
+```text
+acceptation accréditation
+  → token aléatoire envoyé
+  → hash + expiration en base
+  → /espace/:token
+
+login email/mot de passe
+  → nouveau token
+  → rotation atomique
+  → redirection /espace/:token
+```
+
+## Flux conférence
+
+```text
+RP crée brouillon
+  → ajoute participants/règles
+  → publie
+  → invite ou ouvre
+  → journaliste s’inscrit
+  → transaction capacité
+      ├─ registered
+      ├─ pending
+      └─ waitlisted
+  → annulation → promotion éventuelle
+```
+
+Les tables de conférence sont séparées des `requests`.
+
+## Routes client
+
+| Route | Surface | Authentification |
 |---|---|---|
-| `/admin/*` | Back-office (français) | JWT (login) |
-| `/accreditation/:eventId` | Formulaire public d'accréditation (multilingue) | Libre |
-| `/espace/:token` | Espace journaliste | Token unique non devinable |
-| `/evenement/:eventId/connexion` | Connexion journaliste (email + mot de passe) | Libre |
-| `/evenement/:eventId/mot-de-passe-oublie` · `/reinitialiser` | Réinitialisation du mot de passe journaliste | Libre / jeton |
-| `/espace-preview/:eventId` | Aperçu de l'espace (back-office) | JWT (lu depuis localStorage) |
-| `/newsroom/:eventId` | Espace presse public | Libre |
-| `/newsroom/:eventId/:slug` | Communiqué (URL dédiée SEO, `<head>` rendu serveur) | Libre |
+| `/admin/*` | back-office | cookie HttpOnly |
+| `/accreditation/:eventId` | formulaire | public |
+| `/espace/:token` | espace journaliste | token |
+| `/evenement/:eventId/connexion` | login journaliste | public |
+| `/newsroom/:eventId` | newsroom | public |
+| `/espace-preview/:eventId` | aperçu admin | cookie HttpOnly |
 
-### Domaines personnalisés (white-label)
+L’aperçu n’utilise pas `localStorage`.
 
-Servi sous le domaine d'un client, le serveur résout l'en-tête `Host` → événement
-(`siteService.resolveEventForHost`) et **injecte** un bloc `<script type="application/json"
-id="__pr_event__">` dans l'HTML (CSP-safe, non exécuté). La SPA le lit au démarrage
-(`lib/domainEvent.ts`) et passe en **mode domaine** : les surfaces publiques sont à la **racine**
-(`/`, `/newsroom`, `/connexion`…), l'`eventId` venant du contexte injecté. Détails :
-[custom-domains.md](custom-domains.md).
+## Réseau et contenu
 
-## Notifications : abstraction de fournisseur
+- l’API est sous `/api` ;
+- en production, Express sert `client/dist` et le catch-all SPA ;
+- le webhook Stripe reçoit le corps brut avant `express.json` ;
+- budget JSON : 6 Mio sous `/api/admin`, 100 Kio ailleurs ;
+- CSP et sanitisation protègent les contenus riches ;
+- SEO des communiqués injecté côté serveur.
 
-L'envoi (email/SMS) passe par une interface `EmailProvider` / `SmsProvider`. Le
-fournisseur actif est résolu à l'exécution selon la configuration **effective**
-(réglages chiffrés en base, sinon variables d'environnement) :
+## Tâches et effets externes
 
-- `NOTIFICATIONS_MODE=simulation` → fournisseur factice : rien n'est envoyé, le message
-  est journalisé/persisté pour visualisation (onglet Messages).
-- `NOTIFICATIONS_MODE=live` → Brevo (email), Twilio ou Brevo (SMS).
+- cron : récaps, purge RGPD, retombées ;
+- emails/SMS best-effort ;
+- uploads directs Cloudinary ;
+- webhooks Stripe idempotents ;
+- Sentry dormant sans DSN.
 
-Voir [business-logic.md](business-logic.md#notifications) et
-[security-rgpd.md](security-rgpd.md#gestion-des-secrets).
+## Principes de conception
+
+- événement comme frontière fonctionnelle ;
+- organisation comme frontière de tenant ;
+- décisions pures testables ;
+- transactions sur toute ressource contingentée ;
+- aucun secret dans le client ;
+- compatibilité des clés API historiques lors de l’adaptation du vocabulaire.

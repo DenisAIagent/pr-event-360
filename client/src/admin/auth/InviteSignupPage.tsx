@@ -95,7 +95,7 @@ export function InviteSignupPage() {
                 <input
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Ex. Agence Présence / Festival X"
+                  placeholder="Ex. Agence Présence / Événement X"
                   required
                   autoFocus
                 />

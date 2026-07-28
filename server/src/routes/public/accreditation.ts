@@ -23,6 +23,7 @@ publicAccreditationRouter.get(
     sendData(res, {
       id: event.id,
       name: event.name,
+      eventType: event.eventType,
       location: event.location,
       languages: event.languages,
       mediaTypes: mediaTypes.map((m) => ({ id: m.id, label: m.label })),

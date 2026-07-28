@@ -1,70 +1,88 @@
-# Domaines & sous-domaines (white-label)
+# Domaines et sous-domaines
 
-Chaque événement peut servir ses **surfaces publiques** (accréditation, espace journaliste,
-connexion, newsroom) sous une adresse dédiée, en URLs propres (sans `:eventId`). Deux modèles,
-configurables par le client dans le wizard **Configuration** (onglet) ou dans **Paramètres** :
+Chaque événement peut exposer ses surfaces publiques sur une adresse dédiée.
 
-| Modèle | Exemple | Côté client | Côté opérateur |
-|---|---|---|---|
-| **Sous-domaine plateforme** | `rockinrio.<PLATFORM_BASE_DOMAIN>` | choisit un **identifiant** (slug) — rien d'autre | un **wildcard** `*.<base>` (DNS + TLS) **une seule fois** |
-| **Domaine personnalisé** | `presse.mon-festival.com` | crée un **CNAME** | provisionner le **TLS par domaine** |
-
-Le **sous-domaine** est le plus simple (vraiment self-service : aucun DNS/TLS par événement) ;
-le **domaine personnalisé** offre le white-label total. Les deux coexistent.
-
-## Comment ça marche (2 couches)
-
-1. **Couche applicative** (intégrée) : un événement porte un `custom_domain`. Le serveur résout
-   l'en-tête `Host` → événement (`siteService.resolveEventForHost`, cache mémoire) et **injecte**
-   un bloc de données `<script type="application/json" id="__pr_event__">` dans la page (CSP-safe,
-   non exécuté). La SPA le lit au démarrage (`client/src/lib/domainEvent.ts`) et passe en **mode
-   domaine** : la racine `/` sert l'accréditation de cet événement, `/newsroom`, `/connexion`, etc.
-2. **Couche TLS/DNS** (opérationnelle, hors app) : il faut un **certificat HTTPS** pour chaque
-   domaine client. Voir « Provisionner le TLS » ci-dessous. Tant que le TLS n'est pas en place, le
-   domaine n'est pas joignable en HTTPS (l'app est prête, elle attend juste le certificat).
-
-> **Important** : les clients **n'ont pas accès à l'hébergeur**. Ils ne font qu'un **CNAME** chez
-> leur registrar ; l'opérateur saisit le domaine en back-office et provisionne le TLS.
-
-## Procédure (opérateur)
-
-1. **Back-office** → événement → **Paramètres** → carte **« Domaine personnalisé »** : saisir le
-   domaine (ex. `presse.mon-festival.com`) → **Enregistrer**. La cible CNAME s'affiche.
-2. **Le client** crée chez son registrar un enregistrement **CNAME** :
-   `presse.mon-festival.com` → **cible affichée** (`CUSTOM_DOMAIN_TARGET`, par défaut le host du
-   service).
-3. **Provisionner le TLS** (voir ci-dessous).
-4. Revenir sur la carte → **« Vérifier le DNS »** : contrôle que le domaine pointe bien sur la cible
-   (badge « Vérifié »). C'est informatif — la vérification DNS ne conditionne pas le service.
-
-## Activer les sous-domaines plateforme (réglage opérateur, une fois)
-
-1. Posséder un domaine de base (ex. `prevent360.app`) et créer un **wildcard DNS** `*.prevent360.app`
-   → le service (ou le fallback Cloudflare).
-2. Provisionner un **certificat wildcard** `*.prevent360.app` (Railway : ajouter le domaine wildcard
-   au service ; ou Cloudflare). Un seul certificat couvre **tous** les sous-domaines.
-3. Définir l'env **`PLATFORM_BASE_DOMAIN=prevent360.app`**. Dès lors, tout slug saisi par un client
-   (`rockinrio` → `rockinrio.prevent360.app`) est servi automatiquement — **aucune action par
-   événement**. Tant que `PLATFORM_BASE_DOMAIN` est absent, les slugs sont mémorisés mais dormants.
-
-## Provisionner le TLS (domaines personnalisés) — deux chemins
-
-| Chemin | Principe | Pour qui |
+| Modèle | Exemple | Permission |
 |---|---|---|
-| **Railway (manuel)** | Ajouter le domaine au service Railway (dashboard ou API) → cert Let's Encrypt auto une fois le CNAME en place. | Une **poignée** de domaines |
-| **Cloudflare for SaaS** | Mettre Cloudflare devant ; créer un *custom hostname* (API) → TLS émis **par domaine, automatiquement, à l'échelle**. Le client CNAME vers le *fallback hostname* Cloudflare. | Beaucoup de domaines / self-service |
+| Sous-domaine plateforme | `summit.<PLATFORM_BASE_DOMAIN>` | éditeur de l’événement |
+| Domaine personnalisé | `presse.exemple.com` | super-admin plateforme |
 
-La couche applicative est **identique** dans les deux cas ; seul le provisioning du certificat change.
-`CUSTOM_DOMAIN_TARGET` (env) règle la cible CNAME affichée (host Railway, ou fallback Cloudflare).
+Le domaine personnalisé est une opération plateforme, car son activation implique DNS, TLS et routage partagé.
 
-## Test en local
+## Sous-domaine plateforme
 
-- **Injection serveur** : `custom_domain` posé sur un event, build du client, serveur lancé, puis
-  `curl -H "Host: <domaine>" localhost:4000/` → l'HTML contient le bloc `__pr_event__`.
-- **Mode domaine navigateur** : mapper le domaine sur `127.0.0.1` (ex. `custom_domain='127.0.0.1'`)
-  et ouvrir `http://127.0.0.1:4000/` → la racine sert l'accréditation de l'événement.
+1. configurer un wildcard DNS `*.<base>` vers le service ;
+2. provisionner le certificat wildcard ;
+3. définir `PLATFORM_BASE_DOMAIN` sans protocole ;
+4. l’éditeur choisit un slug via `PUT /api/admin/events/:eventId/subdomain`.
+
+Le slug :
+
+- est normalisé en minuscules ;
+- accepte lettres ASCII, chiffres et tirets ;
+- est unique ;
+- refuse `www`, `admin`, `api`, `app`, `mail`, `static`, `assets` et `cdn`.
+
+Sans `PLATFORM_BASE_DOMAIN`, le slug est conservé mais dormant.
+
+## Domaine personnalisé
+
+1. le super-admin saisit le domaine via `PUT /api/admin/events/:eventId/domain` ;
+2. le client crée un CNAME vers `CUSTOM_DOMAIN_TARGET` ;
+3. l’opérateur provisionne le TLS ;
+4. le super-admin appelle `POST /:eventId/domain/verify` ;
+5. le statut vérifié reflète la résolution CNAME, ou la correspondance A/AAAA avec la cible.
+
+Le domaine :
+
+- ne contient ni protocole ni chemin ;
+- est normalisé ;
+- est unique ;
+- ne peut être un host réservé de la plateforme ;
+- est invalidé dans le cache après modification.
+
+## Routage
+
+`siteService` résout le `Host` vers un événement avec cache. Pour une page publique :
+
+1. le serveur injecte `__pr_event__` sous forme de JSON non exécutable ;
+2. la SPA active le mode domaine ;
+3. `/` sert l’accréditation ;
+4. `/connexion` et `/newsroom` n’exigent plus l’ID dans l’URL.
+
+Les routes `/api`, `/admin` et autres préfixes privés ne sont jamais remappées à partir d’un domaine client.
+
+## TLS
+
+- faible volume : ajouter chaque domaine au service Railway et attendre le certificat ;
+- volume important : Cloudflare for SaaS ou solution équivalente.
+
+La vérification DNS applicative ne remplace pas le certificat.
 
 ## Sécurité
 
-- Le domaine est **affecté par l'opérateur** (`requireEventEditor`) ; contrainte **UNIQUE** → pas de
-  collision/hijack. Le nom injecté est échappé (anti-XSS) ; l'API est **same-origin** par domaine.
+- mutation domaine réservée au super-admin ;
+- collision empêchée en base/service ;
+- hôtes de la plateforme exclus ;
+- `Host` normalisé et port supprimé ;
+- valeurs injectées échappées ;
+- URLs canoniques construites en HTTPS ;
+- aucun domaine client ne permet de prendre le contrôle d’une route admin/API.
+
+## Test local
+
+```bash
+curl -H "Host: presse.exemple.test" http://localhost:4000/
+```
+
+Vérifier la présence de `__pr_event__` et l’absence de données sensibles. Pour un test navigateur, mapper temporairement le domaine vers `127.0.0.1` et utiliser un environnement isolé.
+
+## Dépannage
+
+| Symptôme | Vérification |
+|---|---|
+| DNS non vérifié | CNAME/A, propagation, `CUSTOM_DOMAIN_TARGET` |
+| erreur certificat | domaine ajouté au proxy/hébergeur |
+| mauvais événement | unicité, cache invalidé, `Host` réel |
+| API inaccessible | CORS, origine `CLIENT_URL`, reverse proxy |
+| sitemap incorrect | `PUBLIC_BASE_URL` et état de publication |

@@ -5,6 +5,7 @@ import type { EventConfig, EventSettings, EmailTemplate, EventRecap, RecapFreque
 import { TRIGGER_LABEL, TYPE_LABEL } from '../../lib/labels';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../InfoBubble';
+import type { EventType } from '../../../lib/eventProfiles';
 
 /** Bloc d'explication réutilisable du score de priorité (concept central, opaque). */
 const SCORE_HELP = (
@@ -182,7 +183,15 @@ export function RecapCard({
   );
 }
 
-export function ConfigForm({ eventId, config }: { eventId: string; config: EventConfig }) {
+export function ConfigForm({
+  eventId,
+  config,
+  participantLabel = 'Participant',
+}: {
+  eventId: string;
+  config: EventConfig;
+  participantLabel?: string;
+}) {
   const apiAuthed = useAuthedApi();
   const [c, setC] = useState<EventConfig>(config);
   const [saved, setSaved] = useState(false);
@@ -208,19 +217,19 @@ export function ConfigForm({ eventId, config }: { eventId: string; config: Event
           label="Durée interview (min)"
           value={c.itwDurationMin}
           onChange={num('itwDurationMin')}
-          help="Durée d'un créneau d'interview. Sert à découper automatiquement les plages de disponibilité des artistes."
+          help="Durée d'un créneau d'interview. Sert à découper automatiquement les plages de disponibilité des participants."
         />
         <Num
           label="Battement entre interviews (min)"
           value={c.itwBufferMin}
           onChange={num('itwBufferMin')}
-          help="Temps de pause entre deux interviews qui se suivent (transition, respiration de l'artiste). Ex : 5 min."
+          help="Temps de pause entre deux interviews qui se suivent (transition et changement d'interlocuteur). Ex : 5 min."
         />
         <Num
-          label="Quota interviews / artiste (défaut)"
+          label={`Quota interviews / ${participantLabel.toLocaleLowerCase('fr')} (défaut)`}
           value={c.defaultItwQuota}
           onChange={num('defaultItwQuota')}
-          help="Nombre maximum d'interviews accordées par artiste, quand l'artiste n'a pas de quota propre. Au-delà, les demandes passent en liste d'attente."
+          help="Nombre maximum d'interviews accordées par participant quand aucun quota propre n'est défini. Au-delà, les demandes passent en liste d'attente."
         />
         <Num
           label="Bonus d'ancienneté / heure"
@@ -243,16 +252,24 @@ export function ConfigForm({ eventId, config }: { eventId: string; config: Event
   );
 }
 
-const PHOTO_RULE_PRESETS = [
-  'Concert entier',
-  '3 premiers titres',
-  '3 premiers titres, sans flash, depuis la fosse',
-  '3 derniers titres',
-  'Aucune photo en backstage',
-];
+const PHOTO_RULE_PRESETS: Record<EventType, string[]> = {
+  music: ['Concert entier', '3 premiers titres', '3 premiers titres, sans flash, depuis la fosse', '3 derniers titres', 'Aucune photo en backstage'],
+  trade_show: ["Accès libre pendant les horaires d'ouverture", "Photos sur accord de l'exposant", 'Aucune photo des zones confidentielles'],
+  conference: ['Photos autorisées pendant les sessions', 'Photos sans flash', 'Aucune photo des supports confidentiels'],
+  corporate: ['Photos autorisées pendant la présentation', 'Photos sur accord du porte-parole', 'Aucune photo des zones confidentielles'],
+  other: ['Photos autorisées pendant le programme public', 'Photos sur accord du participant', 'Aucune photo des zones confidentielles'],
+};
 
 /** Règles de prise de vue + contrat sur place + autorisation d'utilisation des photos. */
-export function PhotoRulesCard({ eventId, config }: { eventId: string; config: EventConfig }) {
+export function PhotoRulesCard({
+  eventId,
+  config,
+  eventType = 'music',
+}: {
+  eventId: string;
+  config: EventConfig;
+  eventType?: EventType;
+}) {
   const apiAuthed = useAuthedApi();
   const [rule, setRule] = useState(config.photoRule ?? '');
   const [contract, setContract] = useState(config.onsiteContract);
@@ -295,10 +312,10 @@ export function PhotoRulesCard({ eventId, config }: { eventId: string; config: E
           list="photo-rule-presets"
           value={rule}
           onChange={(e) => setRule(e.target.value)}
-          placeholder="Ex. 3 premiers titres, sans flash, depuis la fosse"
+          placeholder={`Ex. ${PHOTO_RULE_PRESETS[eventType][0]}`}
         />
         <datalist id="photo-rule-presets">
-          {PHOTO_RULE_PRESETS.map((p) => (
+          {PHOTO_RULE_PRESETS[eventType].map((p) => (
             <option key={p} value={p} />
           ))}
         </datalist>
@@ -472,7 +489,7 @@ export function Templates({
           <ul>
             <li><code>{'{{firstName}}'}</code> : prénom du journaliste</li>
             <li><code>{'{{event}}'}</code> : nom de l'événement</li>
-            <li><code>{'{{artist}}'}</code> : nom de l'artiste concerné</li>
+            <li><code>{'{{artist}}'}</code> : nom du participant concerné (artiste, exposant ou intervenant)</li>
             <li><code>{'{{slot}}'}</code> : jour + heure du créneau (ex : ven. 10 juil. · 14:00)</li>
             <li><code>{'{{link}}'}</code> : lien personnel d'accès du journaliste</li>
           </ul>

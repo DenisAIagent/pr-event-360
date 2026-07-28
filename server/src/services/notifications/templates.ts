@@ -8,6 +8,10 @@ export const TRIGGERS = {
   REQUEST_RECEIVED: 'request_received',
   REQUEST_ACCEPTED: 'request_accepted',
   REQUEST_REJECTED: 'request_rejected',
+  PRESS_CONFERENCE_INVITATION: 'press_conference_invitation',
+  PRESS_CONFERENCE_REGISTERED: 'press_conference_registered',
+  PRESS_CONFERENCE_PENDING: 'press_conference_pending',
+  PRESS_CONFERENCE_WAITLISTED: 'press_conference_waitlisted',
   COVERAGE_REQUEST: 'coverage_request',
 } as const;
 
@@ -59,6 +63,30 @@ export const DEFAULT_TEMPLATE_TEXT: Record<TriggerKey, Record<Lang, TemplateText
     en: { subject: '{{type}} – {{artist}}: request not approved', body: 'Hello {{firstName}}, your “{{type}}” request for {{artist}} ({{event}}) could not be approved.' },
     pt: { subject: '{{type}} – {{artist}}: pedido não aprovado', body: 'Olá {{firstName}}, o seu pedido «{{type}}» para {{artist}} ({{event}}) não pôde ser aprovado.' },
     es: { subject: '{{type}} – {{artist}}: solicitud no aprobada', body: 'Hola {{firstName}}, tu solicitud «{{type}}» para {{artist}} ({{event}}) no pudo ser aprobada.' },
+  },
+  press_conference_invitation: {
+    fr: { subject: '{{event}} — invitation à la conférence « {{conference}} »', body: 'Bonjour {{firstName}}, vous êtes invité·e à la conférence de presse « {{conference}} », prévue {{date}}. Connectez-vous à votre espace pour confirmer votre présence : {{link}}' },
+    en: { subject: '{{event}} — invitation to “{{conference}}”', body: 'Hello {{firstName}}, you are invited to the “{{conference}}” press conference on {{date}}. Sign in to your space to confirm your attendance: {{link}}' },
+    pt: { subject: '{{event}} — convite para «{{conference}}»', body: 'Olá {{firstName}}, está convidado·a para a conferência de imprensa «{{conference}}», em {{date}}. Entre no seu espaço para confirmar a presença: {{link}}' },
+    es: { subject: '{{event}} — invitación a «{{conference}}»', body: 'Hola {{firstName}}, estás invitado·a a la rueda de prensa «{{conference}}», prevista para {{date}}. Accede a tu espacio para confirmar tu asistencia: {{link}}' },
+  },
+  press_conference_registered: {
+    fr: { subject: '{{event}} — inscription confirmée', body: 'Bonjour {{firstName}}, votre inscription à la conférence de presse « {{conference}} » est confirmée pour {{date}}.' },
+    en: { subject: '{{event}} — registration confirmed', body: 'Hello {{firstName}}, your registration for the “{{conference}}” press conference is confirmed for {{date}}.' },
+    pt: { subject: '{{event}} — inscrição confirmada', body: 'Olá {{firstName}}, a sua inscrição na conferência de imprensa «{{conference}}» está confirmada para {{date}}.' },
+    es: { subject: '{{event}} — inscripción confirmada', body: 'Hola {{firstName}}, tu inscripción en la rueda de prensa «{{conference}}» está confirmada para {{date}}.' },
+  },
+  press_conference_pending: {
+    fr: { subject: '{{event}} — demande d’inscription reçue', body: 'Bonjour {{firstName}}, votre demande d’inscription à la conférence de presse « {{conference}} » pour {{date}} a bien été reçue. L’équipe presse doit encore la valider.' },
+    en: { subject: '{{event}} — registration request received', body: 'Hello {{firstName}}, your registration request for the “{{conference}}” press conference on {{date}} has been received and is awaiting approval.' },
+    pt: { subject: '{{event}} — pedido de inscrição recebido', body: 'Olá {{firstName}}, recebemos o seu pedido de inscrição na conferência de imprensa «{{conference}}» em {{date}}. Aguarda validação.' },
+    es: { subject: '{{event}} — solicitud de inscripción recibida', body: 'Hola {{firstName}}, hemos recibido tu solicitud para la rueda de prensa «{{conference}}» del {{date}}. Está pendiente de validación.' },
+  },
+  press_conference_waitlisted: {
+    fr: { subject: '{{event}} — liste d’attente', body: 'Bonjour {{firstName}}, la conférence de presse « {{conference}} » prévue {{date}} est complète. Votre inscription est placée en liste d’attente ; vous serez informé·e si une place se libère.' },
+    en: { subject: '{{event}} — waiting list', body: 'Hello {{firstName}}, the “{{conference}}” press conference on {{date}} is full. You have been placed on the waiting list and will be notified if a place becomes available.' },
+    pt: { subject: '{{event}} — lista de espera', body: 'Olá {{firstName}}, a conferência de imprensa «{{conference}}» em {{date}} está lotada. A sua inscrição ficou em lista de espera.' },
+    es: { subject: '{{event}} — lista de espera', body: 'Hola {{firstName}}, la rueda de prensa «{{conference}}» del {{date}} está completa. Tu inscripción está en lista de espera.' },
   },
   coverage_request: {
     fr: { subject: '{{event}} — partagez vos retombées presse', body: 'Bonjour {{firstName}}, {{event}} est terminé et le délai de publication que vous aviez indiqué ({{delay}} jours) est écoulé — merci ! Partagez vos publications (articles, réseaux, YouTube…) et vos photos dans votre espace pour constituer la revue de presse : {{link}}' },

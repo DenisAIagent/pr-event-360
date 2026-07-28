@@ -143,7 +143,7 @@ export function ReviewPage() {
           </div>
         </div>
         <div className="field">
-          <label>Structure / festival (optionnel)</label>
+          <label>Structure / organisation (optionnel)</label>
           <input value={authorOrg} onChange={(e) => setAuthorOrg(e.target.value)} maxLength={120} />
         </div>
 
