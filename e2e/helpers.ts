@@ -58,8 +58,47 @@ function base32Decode(str: string): Buffer {
   return Buffer.from(out);
 }
 
-function totp(secret: string): string {
-  const counter = Math.floor(Date.now() / 1000 / 30);
+// Le serveur applique un anti-rejeu TOTP (RFC 6238 §5.2) : un code n'est accepté
+// qu'une fois. Deux connexions dans la même fenêtre de 30 s présenteraient le même
+// code et la seconde serait refusée. On mémorise donc la dernière fenêtre consommée
+// — dans un fichier, car Playwright peut lancer un worker par spec (processus séparés)
+// — et on attend la fenêtre suivante si besoin.
+const COUNTER_FILE = `${SECRET_FILE}.counter`;
+
+function currentWindow(): number {
+  return Math.floor(Date.now() / 1000 / 30);
+}
+
+function readLastWindow(): number {
+  try {
+    return Number(fs.readFileSync(COUNTER_FILE, 'utf8').trim()) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Code TOTP garanti non rejoué. Le serveur tolère ±1 fenêtre : plutôt que d'attendre
+ * jusqu'à 30 s (ce qui ferait sauter le timeout de 30 s par test), on émet le code de
+ * la fenêtre SUIVANTE, déjà accepté et porteur d'un compteur strictement supérieur.
+ * On n'attend que si même cette avance ne suffit pas (deux connexions consécutives
+ * dans la même fenêtre).
+ */
+async function freshTotp(secret: string): Promise<string> {
+  const target = Math.max(currentWindow(), readLastWindow() + 1);
+  // Hors tolérance : patienter jusqu'à ce que `target` entre dans la fenêtre +1.
+  if (target > currentWindow() + 1) {
+    await sleep(Math.max(0, (target - 1) * 30_000 - Date.now()) + 250);
+  }
+  fs.writeFileSync(COUNTER_FILE, String(target), 'utf8');
+  return totpAt(secret, target);
+}
+
+function totpAt(secret: string, counter: number): string {
   const buf = Buffer.alloc(8);
   buf.writeBigUInt64BE(BigInt(counter));
   const hmac = crypto.createHmac('sha1', base32Decode(secret)).update(buf).digest();
@@ -99,7 +138,7 @@ async function enrollMfa(request: APIRequestContext, csrf: string): Promise<void
   await unwrap(
     await request.post('/api/admin/auth/mfa/enable', {
       headers: { 'x-csrf-token': csrf },
-      data: { code: totp(secret) },
+      data: { code: await freshTotp(secret) },
     }),
   );
 }
@@ -123,7 +162,7 @@ export async function apiLogin(request: APIRequestContext): Promise<Auth> {
     if (!secret) throw new Error('MFA requise mais aucun secret enrôlé (fichier temp absent)');
     const done = (await unwrap(
       await request.post('/api/admin/auth/login/mfa', {
-        data: { challenge: data.challenge, code: totp(secret) },
+        data: { challenge: data.challenge, code: await freshTotp(secret) },
       }),
     )) as { user: Record<string, unknown> };
     return { csrf: await csrfFrom(request), user: done.user };
@@ -158,7 +197,7 @@ export async function uiLogin(page: Page): Promise<void> {
     const secret = loadSecret();
     if (!secret) throw new Error('Étape MFA UI mais aucun secret enrôlé');
     const verify = page.getByRole('button', { name: 'Vérifier' });
-    await codeInput.fill(totp(secret));
+    await codeInput.fill(await freshTotp(secret));
     await verify.click();
   }
   await page.waitForURL('**/admin');
