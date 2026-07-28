@@ -2,7 +2,14 @@ import cron from 'node-cron';
 import { sendRecapsForFrequency } from './services/recapService';
 import { purgeExpiredJournalists } from './services/retentionService';
 import { sendCoverageRequests } from './services/coverageService';
+import { purgeAuditEntriesOlderThan } from './db/repositories/auditRepo';
 import { captureError } from './lib/sentry';
+
+/**
+ * Conservation du journal d'audit. Assez long pour instruire une violation ou une
+ * demande d'accès (art. 33/15), assez court pour rester proportionné (art. 5.1.e).
+ */
+const AUDIT_RETENTION_MONTHS = 12;
 
 /** Journalise ET remonte à Sentry (si configuré) l'échec d'une tâche planifiée. */
 function jobFailed(job: string): (err: unknown) => void {
@@ -46,6 +53,19 @@ export function startScheduler(): void {
           if (n > 0) console.log(`[rétention] ${n} journaliste(s) supprimé(s) (conservation > 12 mois)`);
         })
         .catch(jobFailed('rétention'));
+    },
+    { timezone: tz },
+  );
+
+  // Rétention du journal d'audit (RGPD art. 5.1.e) : purge quotidienne au-delà de 12 mois.
+  cron.schedule(
+    '45 3 * * *',
+    () => {
+      void purgeAuditEntriesOlderThan(AUDIT_RETENTION_MONTHS)
+        .then((n) => {
+          if (n > 0) console.log(`[audit] ${n} entrée(s) purgée(s) (conservation > ${AUDIT_RETENTION_MONTHS} mois)`);
+        })
+        .catch(jobFailed('audit-retention'));
     },
     { timezone: tz },
   );

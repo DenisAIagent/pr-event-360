@@ -9,7 +9,9 @@ import { loadEnv } from './config/env';
 import { sendData } from './http/respond';
 import { asyncHandler } from './http/asyncHandler';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { auditAdmin } from './middleware/audit';
 import { authRouter } from './routes/admin/auth';
+import { auditRouter } from './routes/admin/audit';
 import { eventsRouter } from './routes/admin/events';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
@@ -215,8 +217,14 @@ export function createApp(): Express {
 
   app.get('/api/health', (_req, res) => sendData(res, { status: 'ok' }));
 
+  // Journal d'audit : n'enregistre qu'un écouteur `finish`, il peut donc être monté
+  // AVANT les routeurs — `req.user` est renseigné par requireAuth au moment où
+  // l'écouteur s'exécute, une fois la réponse émise.
+  app.use('/api/admin', auditAdmin);
+
   // Back-office (auth requise dans les routers).
   app.use('/api/admin/auth', authRouter);
+  app.use('/api/admin/audit', auditRouter);
   app.use('/api/admin/events', eventsRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).

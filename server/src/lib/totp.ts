@@ -67,14 +67,33 @@ export function generateTotp(secret: string, windowOffset = 0): string {
   return hotp(secret, counter);
 }
 
+/**
+ * Vérifie un code TOTP et renvoie le compteur de fenêtre (30 s) qui l'a validé,
+ * ou `null` si le code est invalide. Le compteur permet l'anti-rejeu : un code
+ * déjà consommé ne doit plus être accepté pendant le reste de sa fenêtre.
+ * La comparaison est à temps constant (anti-oracle de timing sur le code).
+ */
+export function verifyTotpCounter(token: string, secret: string, window = 1): number | null {
+  const t = token.trim();
+  if (!/^\d{6}$/.test(t)) return null;
+  const base = Math.floor(Date.now() / 1000 / 30);
+  let matched: number | null = null;
+  for (let w = -window; w <= window; w++) {
+    // Pas de court-circuit : on parcourt toujours toutes les fenêtres.
+    if (timingSafeEqual6(hotp(secret, base + w), t)) matched = base + w;
+  }
+  return matched;
+}
+
+/** Comparaison à temps constant de deux codes à 6 chiffres. */
+function timingSafeEqual6(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a, 'utf8'), Buffer.from(b, 'utf8'));
+}
+
 /** Vérifie un code TOTP avec une tolérance de ±`window` fenêtres de 30 s. */
 export function verifyTotp(token: string, secret: string, window = 1): boolean {
-  const t = token.trim();
-  if (!/^\d{6}$/.test(t)) return false;
-  for (let w = -window; w <= window; w++) {
-    if (generateTotp(secret, w) === t) return true;
-  }
-  return false;
+  return verifyTotpCounter(token, secret, window) !== null;
 }
 
 /** URI otpauth:// à encoder dans le QR code. */

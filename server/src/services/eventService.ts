@@ -1,4 +1,4 @@
-import type { Lang, RequestType, UserRole } from '@pr-event-360/core';
+import type { EventType, Lang, RequestType, UserRole } from '@pr-event-360/core';
 import { withTransaction } from '../db/pool';
 import { AppError } from '../http/AppError';
 import type { Event, EventConfig } from '../domain';
@@ -32,7 +32,7 @@ export interface AccessActor {
 
 /** Texte d'autorisation d'utilisation des photos par défaut (éditable par le RP). */
 export const DEFAULT_PHOTO_TERMS =
-  "En tant que journaliste accrédité·e, vous êtes autorisé·e à réaliser et utiliser les photos/vidéos uniquement dans le cadre de la publication pour laquelle vous êtes accrédité·e. Vous vous engagez à créditer l'artiste et l'événement lors de toute exploitation (presse, web et réseaux sociaux). Toute autre utilisation — commerciale, revente ou cession à un tiers — est interdite sans autorisation écrite préalable. Les consignes de prise de vue communiquées par la production (durée, emplacement, nombre de titres) doivent être strictement respectées.";
+  "En tant que journaliste accrédité·e, vous êtes autorisé·e à réaliser et utiliser les photos/vidéos uniquement dans le cadre de la publication pour laquelle vous êtes accrédité·e. Vous vous engagez à créditer les personnes ou organisations concernées ainsi que l'événement lors de toute exploitation (presse, web et réseaux sociaux). Toute autre utilisation — commerciale, revente ou cession à un tiers — est interdite sans autorisation écrite préalable. Les consignes de prise de vue communiquées par l'organisation (durée, emplacement et conditions d'accès) doivent être strictement respectées.";
 
 const DEFAULT_CONFIG: EventConfig = {
   itwDurationMin: 15,
@@ -65,6 +65,7 @@ export interface CreateEventInput {
   organizationId: string;
   ownerUserId: string;
   name: string;
+  eventType: EventType;
   location?: string | null;
   startDate?: string | null;
   endDate?: string | null;
@@ -84,6 +85,7 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
         organizationId: input.organizationId,
         ownerUserId: input.ownerUserId,
         name: input.name,
+        eventType: input.eventType,
         location: input.location,
         startDate: input.startDate,
         endDate: input.endDate,
@@ -151,7 +153,10 @@ export async function getAccessibleEventOrThrow(eventId: string, actor: AccessAc
   }
   if (actor.role === 'admin' || actor.isPlatformAdmin) return event;
   const member = await isEventMember(eventId, actor.sub);
-  if (!member) throw AppError.forbidden('Vous n’êtes pas assigné à cet événement');
+  // 404 et non 403 : un 403 confirmerait l'existence de l'événement dans l'organisation
+  // (un membre restreint pouvait ainsi énumérer les événements clients auxquels il n'est
+  // pas assigné). Réponse identique au cas cross-tenant → aucun oracle d'existence.
+  if (!member) throw AppError.notFound('Événement introuvable');
   return event;
 }
 

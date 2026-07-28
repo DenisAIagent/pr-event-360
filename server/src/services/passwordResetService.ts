@@ -8,29 +8,43 @@ import {
   consumeResetToken,
 } from '../db/repositories/passwordResetRepo';
 import { findUserByEmail, updatePasswordHash } from '../db/repositories/userRepo';
+import { fireAndForget, withMinimumDuration } from '../lib/constantTime';
 import { ctaButton, sendBrandedEmail } from './notifications/email';
 
 // Durée de validité du lien de réinitialisation.
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 /**
+ * Plancher de temps de réponse. Le message renvoyé est déjà générique, mais la
+ * DURÉE du traitement trahissait le compte : ~697 ms pour un email connu (jeton
+ * créé + envoi SMTP synchrone) contre ~386 ms pour un inconnu, soit une
+ * énumération des comptes malgré le rate-limit. Le travail réel (lookup + 2
+ * écritures) tient largement sous ce plancher depuis que l'envoi est différé.
+ */
+const RESPONSE_FLOOR_MS = 500;
+
+/**
  * Démarre une réinitialisation : si un compte existe pour cet email, génère un
  * jeton à usage unique et envoie le lien par email. Ne révèle JAMAIS l'existence
- * du compte (réponse générique côté route) → résout toujours sans erreur.
+ * du compte — ni par le message, ni par le temps de réponse.
  */
 export async function requestPasswordReset(email: string): Promise<void> {
-  const normalized = email.toLowerCase();
-  const user = await findUserByEmail(normalized);
-  if (!user) return; // silencieux : anti-énumération
+  await withMinimumDuration(RESPONSE_FLOOR_MS, async () => {
+    const normalized = email.toLowerCase();
+    const user = await findUserByEmail(normalized);
+    if (!user) return; // silencieux : anti-énumération
 
-  // Un seul lien actif à la fois.
-  await deletePendingForUser(user.id);
+    // Un seul lien actif à la fois.
+    await deletePendingForUser(user.id);
 
-  const rawToken = generateResetToken();
-  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
-  await createResetToken({ userId: user.id, tokenHash: hashResetToken(rawToken), expiresAt });
+    const rawToken = generateResetToken();
+    const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+    await createResetToken({ userId: user.id, tokenHash: hashResetToken(rawToken), expiresAt });
 
-  await deliverResetLink(user.email, rawToken);
+    // Envoi hors du chemin de réponse : la latence SMTP était l'essentiel de l'écart
+    // de timing. Le jeton est déjà persisté, le lien partira quoi qu'il arrive ici.
+    fireAndForget('reset-password', () => deliverResetLink(user.email, rawToken));
+  });
 }
 
 /**

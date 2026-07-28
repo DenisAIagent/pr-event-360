@@ -223,23 +223,67 @@ export async function countActiveAdminsInOrg(organizationId: string, db: Queryab
 export async function getUserMfa(
   userId: string,
   db: Queryable = pool,
-): Promise<{ enabled: boolean; secret: string | null } | null> {
-  const { rows } = await db.query<{ mfa_enabled: boolean; mfa_secret: string | null }>(
-    'SELECT mfa_enabled, mfa_secret FROM users WHERE id = $1',
+): Promise<{ enabled: boolean; secret: string | null; pendingSecret: string | null } | null> {
+  const { rows } = await db.query<{
+    mfa_enabled: boolean;
+    mfa_secret: string | null;
+    mfa_pending_secret: string | null;
+  }>(
+    'SELECT mfa_enabled, mfa_secret, mfa_pending_secret FROM users WHERE id = $1',
     [userId],
   );
   const r = rows[0];
-  return r ? { enabled: r.mfa_enabled, secret: r.mfa_secret } : null;
+  return r
+    ? { enabled: r.mfa_enabled, secret: r.mfa_secret, pendingSecret: r.mfa_pending_secret }
+    : null;
 }
 
-export async function setUserMfaSecret(userId: string, secretEnc: string, db: Queryable = pool): Promise<void> {
-  await db.query('UPDATE users SET mfa_secret = $2, mfa_enabled = false WHERE id = $1', [userId, secretEnc]);
+export async function setUserMfaPendingSecret(
+  userId: string,
+  secretEnc: string,
+  db: Queryable = pool,
+): Promise<void> {
+  await db.query('UPDATE users SET mfa_pending_secret = $2 WHERE id = $1', [userId, secretEnc]);
 }
 
-export async function enableUserMfa(userId: string, db: Queryable = pool): Promise<void> {
-  await db.query('UPDATE users SET mfa_enabled = true WHERE id = $1', [userId]);
+export async function enableUserMfa(
+  userId: string,
+  expectedPendingSecret: string,
+  db: Queryable = pool,
+): Promise<boolean> {
+  const result = await db.query(
+    `UPDATE users
+     SET mfa_secret = mfa_pending_secret, mfa_pending_secret = NULL, mfa_enabled = true
+     WHERE id = $1 AND mfa_pending_secret = $2`,
+    [userId, expectedPendingSecret],
+  );
+  return result.rowCount === 1;
 }
 
 export async function clearUserMfa(userId: string, db: Queryable = pool): Promise<void> {
-  await db.query('UPDATE users SET mfa_secret = NULL, mfa_enabled = false WHERE id = $1', [userId]);
+  await db.query(
+    `UPDATE users
+     SET mfa_secret = NULL, mfa_pending_secret = NULL, mfa_enabled = false, mfa_last_counter = NULL
+     WHERE id = $1`,
+    [userId],
+  );
+}
+
+/**
+ * Anti-rejeu TOTP : consomme la fenêtre `counter` pour ce compte. Renvoie `false`
+ * si une fenêtre supérieure ou égale a déjà été consommée — c'est-à-dire si le code
+ * est un rejeu. L'écriture conditionnelle est atomique : deux requêtes concurrentes
+ * portant le même code ne peuvent pas réussir toutes les deux.
+ */
+export async function consumeMfaCounter(
+  userId: string,
+  counter: number,
+  db: Queryable = pool,
+): Promise<boolean> {
+  const result = await db.query(
+    `UPDATE users SET mfa_last_counter = $2
+     WHERE id = $1 AND (mfa_last_counter IS NULL OR mfa_last_counter < $2)`,
+    [userId, counter],
+  );
+  return result.rowCount === 1;
 }

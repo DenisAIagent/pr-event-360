@@ -1,10 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import {
+  EVENT_TYPES,
+  PRESS_CONFERENCE_REGISTRATION_MODES,
+  PRESS_CONFERENCE_REGISTRATION_STATUSES,
+  PRESS_CONFERENCE_STATUSES,
+} from '@pr-event-360/core';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { AppError } from '../../http/AppError';
 import { validateBody } from '../../middleware/validate';
-import { requireAuth, requireEventEditor, requireRole } from '../../middleware/auth';
+import { scopedRateLimit } from '../../middleware/rateLimit';
+import { requireAuth, requireEventEditor, requirePlatformAdmin, requireRole } from '../../middleware/auth';
 import {
   createEvent,
   getEventSettings,
@@ -33,6 +40,7 @@ import {
   customDomainTarget,
   platformBaseDomain,
   invalidateDomain,
+  isReservedCustomDomain,
   normalizeDomain,
 } from '../../services/siteService';
 import { sendRecap } from '../../services/recapService';
@@ -43,12 +51,25 @@ import {
   updateStage,
   deleteStage,
 } from '../../db/repositories/lineupRepo';
-import { listAccreditations, processAccreditation } from '../../services/accreditationService';
+import {
+  listAccreditations,
+  processAccreditation,
+  resendAccreditationAccess,
+} from '../../services/accreditationService';
 import { deleteJournalist } from '../../db/repositories/journalistRepo';
 import { changeRequestStatus } from '../../services/requestService';
 import { getDashboard, getQueue } from '../../services/queueService';
 import { generatePlanning } from '../../services/planningService';
 import { listNotificationsByEvent } from '../../db/repositories/notificationRepo';
+import {
+  createPressConference,
+  editPressConference,
+  getConferenceRegistrationsAdmin,
+  inviteJournalists,
+  listPressConferencesAdmin,
+  removePressConference,
+  setConferenceRegistrationStatus,
+} from '../../services/pressConferenceService';
 
 export const eventsRouter = Router();
 eventsRouter.use(requireAuth);
@@ -59,6 +80,7 @@ const REQUEST_TYPE = z.enum(['interview', 'photo_report', 'video_report']);
 // ── Événements ──────────────────────────────────────────────────────
 const CreateEventSchema = z.object({
   name: z.string().min(1),
+  eventType: z.enum(EVENT_TYPES),
   location: z.string().nullish(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
@@ -148,16 +170,19 @@ function base(): string | null {
 const DomainSchema = z.object({ domain: z.string().trim().max(253).nullable() });
 eventsRouter.put(
   '/:eventId/domain',
-  requireEventEditor,
+  requirePlatformAdmin,
   validateBody(DomainSchema),
   asyncHandler(async (req, res) => {
     const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const raw = (req.body as z.infer<typeof DomainSchema>).domain;
     const domain = raw ? normalizeDomain(raw) : null;
     if (domain && !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
-      throw AppError.badRequest('Domaine invalide (ex. presse.mon-festival.com)');
+      throw AppError.badRequest('Domaine invalide (ex. presse.mon-evenement.com)');
     }
     if (domain) {
+      if (isReservedCustomDomain(domain)) {
+        throw AppError.badRequest('Ce domaine est réservé à la plateforme');
+      }
       const other = await findEventByCustomDomain(domain);
       if (other && other.id !== event.id) {
         throw AppError.conflict('Ce domaine est déjà utilisé par un autre événement');
@@ -172,7 +197,7 @@ eventsRouter.put(
 
 eventsRouter.post(
   '/:eventId/domain/verify',
-  requireEventEditor,
+  requirePlatformAdmin,
   asyncHandler(async (req, res) => {
     const event = await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     if (!event.customDomain) throw AppError.badRequest('Aucun domaine personnalisé défini');
@@ -446,7 +471,7 @@ eventsRouter.put(
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof ArtistUpdateSchema>;
     const artist = await updateArtist(req.params.artistId!, req.params.eventId!, body);
-    if (!artist) throw AppError.notFound('Artiste introuvable.');
+    if (!artist) throw AppError.notFound('Participant introuvable.');
     sendData(res, artist);
   }),
 );
@@ -470,7 +495,7 @@ eventsRouter.put(
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const body = req.body as z.infer<typeof StageSchema>;
     const stage = await updateStage(req.params.stageId!, req.params.eventId!, body.name);
-    if (!stage) throw AppError.notFound('Scène introuvable.');
+    if (!stage) throw AppError.notFound('Espace introuvable.');
     sendData(res, stage);
   }),
 );
@@ -485,12 +510,123 @@ eventsRouter.delete(
   }),
 );
 
+// ── Conférences de presse ──────────────────────────────────────────
+const PressConferenceSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(5000).nullish(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime().nullish(),
+  venue: z.string().trim().max(300).nullish(),
+  capacity: z.number().int().nonnegative().nullish(),
+  registrationMode: z.enum(PRESS_CONFERENCE_REGISTRATION_MODES),
+  status: z.enum(PRESS_CONFERENCE_STATUSES),
+  allowedAccreditationTypes: z.array(z.enum(['presse', 'photo', 'video'])).min(1),
+  embargoUntil: z.string().datetime().nullish(),
+  livestreamUrl: z.string().url().max(2000).regex(/^https:\/\//i, 'URL https:// requise').nullish(),
+  participantIds: z.array(z.string().uuid()).max(100).default([]),
+});
+
+eventsRouter.get(
+  '/:eventId/press-conferences',
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(res, await listPressConferencesAdmin(req.params.eventId!));
+  }),
+);
+
+eventsRouter.post(
+  '/:eventId/press-conferences',
+  requireEventEditor,
+  validateBody(PressConferenceSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(
+      res,
+      await createPressConference(req.params.eventId!, req.body as z.infer<typeof PressConferenceSchema>),
+      201,
+    );
+  }),
+);
+
+eventsRouter.put(
+  '/:eventId/press-conferences/:conferenceId',
+  requireEventEditor,
+  validateBody(PressConferenceSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(
+      res,
+      await editPressConference(
+        req.params.eventId!,
+        req.params.conferenceId!,
+        req.body as z.infer<typeof PressConferenceSchema>,
+      ),
+    );
+  }),
+);
+
+eventsRouter.delete(
+  '/:eventId/press-conferences/:conferenceId',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await removePressConference(req.params.eventId!, req.params.conferenceId!);
+    sendData(res, { deleted: true });
+  }),
+);
+
+eventsRouter.get(
+  '/:eventId/press-conferences/:conferenceId/registrations',
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(
+      res,
+      await getConferenceRegistrationsAdmin(req.params.eventId!, req.params.conferenceId!),
+    );
+  }),
+);
+
+const ConferenceInviteSchema = z.object({ journalistIds: z.array(z.string().uuid()).min(1).max(500) });
+eventsRouter.post(
+  '/:eventId/press-conferences/:conferenceId/invitations',
+  requireEventEditor,
+  validateBody(ConferenceInviteSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const { journalistIds } = req.body as z.infer<typeof ConferenceInviteSchema>;
+    sendData(res, await inviteJournalists(req.params.eventId!, req.params.conferenceId!, journalistIds));
+  }),
+);
+
+const ConferenceRegistrationStatusSchema = z.object({
+  status: z.enum(PRESS_CONFERENCE_REGISTRATION_STATUSES),
+});
+eventsRouter.put(
+  '/:eventId/press-conferences/:conferenceId/registrations/:journalistId',
+  requireEventEditor,
+  validateBody(ConferenceRegistrationStatusSchema),
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const { status } = req.body as z.infer<typeof ConferenceRegistrationStatusSchema>;
+    sendData(
+      res,
+      await setConferenceRegistrationStatus(
+        req.params.eventId!,
+        req.params.conferenceId!,
+        req.params.journalistId!,
+        status,
+      ),
+    );
+  }),
+);
+
 // ── Accréditations ──────────────────────────────────────────────────
 eventsRouter.get(
   '/:eventId/accreditations',
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
-    sendData(res, await listAccreditations(req.params.eventId!));
+    res.setHeader('Cache-Control', 'no-store');
+    sendData(res, (await listAccreditations(req.params.eventId!)).map(toAccreditationDto));
   }),
 );
 
@@ -506,7 +642,36 @@ eventsRouter.post(
       req.params.journalistId!,
       body.action,
     );
-    sendData(res, journalist);
+    sendData(res, toAccreditationDto(journalist));
+  }),
+);
+
+export function toAccreditationDto(journalist: Awaited<ReturnType<typeof processAccreditation>>) {
+  const { passwordHash: _passwordHash, ...safe } = journalist;
+  return { ...safe, hasPassword: Boolean(journalist.passwordHash) };
+}
+
+// Chaque renvoi tourne le jeton (l'ancien lien meurt) et déclenche un email réel.
+// Sans plafond, un éditeur de l'événement peut spammer la boîte du journaliste :
+// nuisance ciblée, coût d'envoi et dégradation de délivrabilité du domaine.
+// Quota par couple événement+journaliste (et non par IP) : c'est la boîte visée
+// qu'on protège, pas l'appelant.
+const accessLinkResendLimiter = scopedRateLimit({
+  windowMs: 60 * 60_000,
+  limit: 3,
+  keyGenerator: (req) => `${req.params.eventId}:${req.params.journalistId}`,
+  message:
+    'Trop de renvois pour ce journaliste. Réessayez dans une heure — le dernier lien envoyé reste valable.',
+});
+
+eventsRouter.post(
+  '/:eventId/accreditations/:journalistId/access-link/resend',
+  requireEventEditor,
+  accessLinkResendLimiter,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await resendAccreditationAccess(req.params.eventId!, req.params.journalistId!);
+    sendData(res, { sent: true });
   }),
 );
 
