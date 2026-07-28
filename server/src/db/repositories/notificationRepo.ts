@@ -78,3 +78,19 @@ export async function listNotificationsByEvent(
   );
   return rows.map(map);
 }
+
+/**
+ * Purge RGPD/rétention : supprime les notifications plus anciennes que `months`
+ * mois (table à croissance continue — une ligne par email/SMS envoyé). Renvoie
+ * le nombre de lignes supprimées. Aligné sur la rétention du journal d'audit.
+ */
+export async function purgeNotificationsOlderThan(
+  months: number,
+  db: Queryable = pool,
+): Promise<number> {
+  const { rowCount } = await db.query(
+    `DELETE FROM notifications WHERE created_at < now() - make_interval(months => $1)`,
+    [months],
+  );
+  return rowCount ?? 0;
+}

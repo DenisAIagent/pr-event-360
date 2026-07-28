@@ -17,6 +17,9 @@ export function createBrevoEmailProvider(config: BrevoEmailConfig): EmailProvide
       try {
         const res = await fetch(BREVO_EMAIL_URL, {
           method: 'POST',
+          // Timeout explicite : un provider qui « pend » sans répondre ne doit pas
+          // immobiliser la requête HTTP métier indéfiniment (contagion de panne).
+          signal: AbortSignal.timeout(8_000),
           headers: {
             'api-key': config.apiKey,
             'content-type': 'application/json',
@@ -57,6 +60,8 @@ export function createBrevoSmsProvider(config: BrevoSmsConfig): SmsProvider {
       try {
         const res = await fetch(BREVO_SMS_URL, {
           method: 'POST',
+          // Timeout explicite : même justification que le provider email (anti-pendage).
+          signal: AbortSignal.timeout(8_000),
           headers: {
             'api-key': config.apiKey,
             'content-type': 'application/json',

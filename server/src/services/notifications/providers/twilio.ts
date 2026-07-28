@@ -18,6 +18,8 @@ export function createTwilioSmsProvider(config: TwilioConfig): SmsProvider {
         const form = new URLSearchParams({ To: message.to, From: config.from, Body: message.body });
         const res = await fetch(url, {
           method: 'POST',
+          // Timeout explicite : même justification que le provider email (anti-pendage).
+          signal: AbortSignal.timeout(8_000),
           headers: {
             authorization: `Basic ${auth}`,
             'content-type': 'application/x-www-form-urlencoded',

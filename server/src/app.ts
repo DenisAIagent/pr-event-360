@@ -19,6 +19,7 @@ import { searchRouter } from './routes/admin/search';
 import { organizationsRouter } from './routes/admin/organizations';
 import { billingRouter } from './routes/admin/billing';
 import { handleWebhook } from './services/billingService';
+import { pool } from './db/pool';
 import { resolveEventForHost } from './services/siteService';
 import { findEventById, getBranding } from './db/repositories/eventRepo';
 import { findPressReleaseBySlug } from './db/repositories/pressReleaseRepo';
@@ -215,7 +216,16 @@ export function createApp(): Express {
   // Limiteur strict pour le login journaliste (anti-bruteforce).
   const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
 
-  app.get('/api/health', (_req, res) => sendData(res, { status: 'ok' }));
+  // Sonde de santé : vérifie réellement la base (une instance dont le pool est
+  // mort doit être marquée unhealthy pour que la plateforme la redémarre).
+  app.get('/api/health', asyncHandler(async (_req, res) => {
+    try {
+      await pool.query('SELECT 1');
+      sendData(res, { status: 'ok' });
+    } catch {
+      res.status(503).json({ status: 'degraded', detail: 'base de données injoignable' });
+    }
+  }));
 
   // Journal d'audit : n'enregistre qu'un écouteur `finish`, il peut donc être monté
   // AVANT les routeurs — `req.user` est renseigné par requireAuth au moment où

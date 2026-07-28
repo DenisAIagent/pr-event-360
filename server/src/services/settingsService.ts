@@ -114,8 +114,12 @@ export const MANAGED_KEYS = [
 
 type ManagedKey = (typeof MANAGED_KEYS)[number]['key'];
 
-// Cache mémoire des surcharges DB déchiffrées, invalidé à chaque écriture.
-let overridesCache: Map<string, string> | null = null;
+// Cache mémoire des surcharges DB déchiffrées, invalidé à chaque écriture
+// ET expiré par TTL : avec plusieurs instances, une écriture faite sur une
+// autre instance ne passe pas par invalidateCache() locale — le TTL borne la
+// dérive de configuration entre replicas (max 30 s).
+const OVERRIDES_TTL_MS = 30_000;
+let overridesCache: { map: Map<string, string>; at: number } | null = null;
 
 function invalidateCache(): void {
   overridesCache = null;
@@ -127,7 +131,7 @@ export function __resetSettingsCache(): void {
 }
 
 async function dbOverrides(): Promise<Map<string, string>> {
-  if (overridesCache) return overridesCache;
+  if (overridesCache && Date.now() - overridesCache.at < OVERRIDES_TTL_MS) return overridesCache.map;
   const map = new Map<string, string>();
   if (isEncryptionAvailable()) {
     const rows = await getAllSecrets();
@@ -139,7 +143,7 @@ async function dbOverrides(): Promise<Map<string, string>> {
       }
     }
   }
-  overridesCache = map;
+  overridesCache = { map, at: Date.now() };
   return map;
 }
 

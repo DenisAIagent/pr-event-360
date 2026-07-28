@@ -74,7 +74,11 @@ export function CommunicationsTab() {
                 className={`badge ${n.status === 'sent' ? 'badge-success' : 'badge-warn'}`}
                 style={{ marginLeft: 8 }}
               >
-                {n.status === 'sent' ? `Envoyée · ${n.recipientCount} destinataires` : 'Brouillon'}
+                {n.status === 'sent'
+                  ? `Envoyée · ${n.recipientCount} destinataires`
+                  : n.status === 'sending'
+                    ? 'Envoi en cours…'
+                    : 'Brouillon'}
               </span>
               <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
                 {n.sentAt ? new Date(n.sentAt).toLocaleString('fr-FR') : 'Non envoyée'}

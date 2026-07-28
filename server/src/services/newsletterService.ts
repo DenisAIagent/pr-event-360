@@ -1,7 +1,7 @@
 import { AppError } from '../http/AppError';
 import { getBranding } from '../db/repositories/eventRepo';
 import { listJournalistsByEvent } from '../db/repositories/journalistRepo';
-import { findNewsletter, markNewsletterSent } from '../db/repositories/newsletterRepo';
+import { findNewsletter, beginNewsletterSend, markNewsletterSent } from '../db/repositories/newsletterRepo';
 import { insertNotification } from '../db/repositories/notificationRepo';
 import { getEventOrThrow } from './eventService';
 import { getEmailProvider } from './notifications/providers';
@@ -25,7 +25,6 @@ export async function sendNewsletter(
 ): Promise<SendResult> {
   const newsletter = await findNewsletter(eventId, newsletterId);
   if (!newsletter) throw AppError.notFound('Newsletter introuvable');
-  if (newsletter.status === 'sent') throw AppError.badRequest('Cette newsletter a déjà été envoyée');
 
   const event = await getEventOrThrow(eventId);
   const branding = await getBranding(eventId);
@@ -34,6 +33,14 @@ export async function sendNewsletter(
   const all = await listJournalistsByEvent(eventId);
   const recipients = all.filter((j) => idSet.has(j.id) && j.email);
   if (recipients.length === 0) throw AppError.badRequest('Aucun destinataire valide sélectionné');
+
+  // Revendication atomique juste AVANT le premier envoi (après toutes les
+  // validations en lecture) : deux clics concurrents — ou deux instances — ne
+  // peuvent pas passer tous les deux ; le second échoue ici, donc aucun
+  // destinataire ne reçoit la newsletter en double.
+  if (!(await beginNewsletterSend(eventId, newsletterId))) {
+    throw AppError.badRequest('Cette newsletter a déjà été envoyée ou est en cours d’envoi');
+  }
 
   const provider = await getEmailProvider();
   let sent = 0;

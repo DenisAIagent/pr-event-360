@@ -8,7 +8,7 @@ interface Row {
   event_id: string;
   subject: string;
   body_html: string;
-  status: 'draft' | 'sent';
+  status: 'draft' | 'sending' | 'sent';
   recipient_count: number;
   sent_at: string | null;
   created_at: string;
@@ -84,6 +84,26 @@ export async function markNewsletterSent(
      WHERE event_id = $1 AND id = $2`,
     [eventId, id, recipientCount],
   );
+}
+
+/**
+ * Revendique l'envoi de manière ATOMIQUE : draft → sending en une seule UPDATE
+ * conditionnelle. Renvoie false si la newsletter est déjà en cours d'envoi ou
+ * envoyée — deux appels concurrents ne peuvent donc pas passer tous les deux
+ * (anti double envoi). Une newsletter restée 'sending' (crash en cours d'envoi)
+ * n'est plus rejouable : c'est le prix choisi contre les envois en double.
+ */
+export async function beginNewsletterSend(
+  eventId: string,
+  id: string,
+  db: Queryable = pool,
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `UPDATE newsletters SET status = 'sending'
+     WHERE event_id = $1 AND id = $2 AND status = 'draft'`,
+    [eventId, id],
+  );
+  return (rowCount ?? 0) > 0;
 }
 
 /** Supprime un brouillon. Les newsletters déjà envoyées sont conservées (archive). */

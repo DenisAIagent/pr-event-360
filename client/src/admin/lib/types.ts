@@ -124,7 +124,7 @@ export interface Newsletter {
   id: string;
   subject: string;
   bodyHtml: string;
-  status: 'draft' | 'sent';
+  status: 'draft' | 'sending' | 'sent';
   recipientCount: number;
   sentAt: string | null;
   createdAt: string;
