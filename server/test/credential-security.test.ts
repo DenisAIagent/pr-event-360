@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { hashJournalistToken } from '../src/lib/token';
 import { findJournalistByToken } from '../src/db/repositories/journalistRepo';
 import { createPendingSignup } from '../src/db/repositories/pendingSignupRepo';
-import { toAccreditationDto } from '../src/routes/admin/events';
+import { toAccreditationDto } from '../src/routes/admin/eventPipeline';
 
 describe('credentials sensibles', () => {
   it('recherche un accès journaliste par hash et exige une expiration future', async () => {

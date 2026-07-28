@@ -272,11 +272,33 @@ const mapEnriched = (r: EnrichedDbRow): EnrichedRequestRow => ({
   slotEnd: r.slot_end,
 });
 
+export interface EnrichedListFilters {
+  type?: string;
+  status?: string;
+  /** Borne dure de lignes chargées (défense contre les très gros événements). */
+  limit?: number;
+}
+
+/**
+ * Demandes enrichies d'un événement. Les filtres sont poussés en SQL (ne pas
+ * charger la totalité de la table pour filtrer côté JS) et le résultat est
+ * TOUJOURS borné par `limit` (défaut 1000) : une collection potentiellement
+ * non bornée ne doit jamais être chargée intégralement.
+ */
 export async function listEnrichedByEvent(
   eventId: string,
+  filters: EnrichedListFilters = {},
   db: Queryable = pool,
 ): Promise<EnrichedRequestRow[]> {
-  const { rows } = await db.query<EnrichedDbRow>(`${ENRICHED_SELECT} WHERE r.event_id = $1`, [eventId]);
+  const limit = Math.min(Math.max(filters.limit ?? 1000, 1), 5000);
+  const { rows } = await db.query<EnrichedDbRow>(
+    `${ENRICHED_SELECT} WHERE r.event_id = $1
+       AND ($2::text IS NULL OR r.type = $2::request_type)
+       AND ($3::text IS NULL OR r.status = $3::request_status)
+     ORDER BY r.created_at DESC
+     LIMIT $4`,
+    [eventId, filters.type ?? null, filters.status ?? null, limit],
+  );
   return rows.map(mapEnriched);
 }
 

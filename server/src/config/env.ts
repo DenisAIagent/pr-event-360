@@ -34,6 +34,10 @@ const EnvSchema = z.object({
   // Sentry (suivi des erreurs serveur). Optionnel : sans DSN, aucune télémétrie (dormant).
   SENTRY_DSN: z.string().optional(),
 
+  // Redis (compteurs de rate-limit partagés entre instances). Optionnel :
+  // sans lui, les limiteurs restent en mémoire locale (compteurs par instance).
+  REDIS_URL: z.string().optional(),
+
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),
   EMAIL_PROVIDER: z.enum(['brevo']).default('brevo'),

@@ -272,13 +272,21 @@ export async function searchJournalists(
   }));
 }
 
+/**
+ * Journalistes d'un événement, résultat TOUJOURS borné (défaut 2000) : une
+ * collection potentiellement non bornée n'est jamais chargée intégralement.
+ * Les appelants métier qui doivent balayer tous les journalistes (newsletter,
+ * communiqué) passent une borne explicite adaptée à leur cas d'usage.
+ */
 export async function listJournalistsByEvent(
   eventId: string,
+  opts: { limit?: number } = {},
   db: Queryable = pool,
 ): Promise<Journalist[]> {
+  const limit = Math.min(Math.max(opts.limit ?? 2000, 1), 20000);
   const { rows } = await db.query<JournalistRow>(
-    `SELECT ${COLS} FROM journalists WHERE event_id = $1 ORDER BY created_at DESC`,
-    [eventId],
+    `SELECT ${COLS} FROM journalists WHERE event_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    [eventId, limit],
   );
   return rows.map(map);
 }

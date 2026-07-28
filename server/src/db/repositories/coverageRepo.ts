@@ -77,9 +77,10 @@ export async function listCoverageByJournalist(
   return rows.map(map);
 }
 
+/** Retombées d'un événement, bornées à 2000 lignes (défense volume). */
 export async function listCoverageByEvent(eventId: string, db: Queryable = pool): Promise<PressCoverage[]> {
   const { rows } = await db.query<Row>(
-    `SELECT ${COLS} FROM press_coverage WHERE event_id = $1 ORDER BY media_category ASC, created_at DESC`,
+    `SELECT ${COLS} FROM press_coverage WHERE event_id = $1 ORDER BY media_category ASC, created_at DESC LIMIT 2000`,
     [eventId],
   );
   return rows.map(map);

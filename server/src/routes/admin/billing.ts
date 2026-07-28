@@ -5,10 +5,11 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
 import { isBillingEnabled, priceLabel, startCheckout, type CheckoutInput } from '../../services/billingService';
+import { sharedStoreOrUndefined } from '../../lib/rateLimitStore';
 
 export const billingRouter = Router();
 
-const limiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+const limiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
 
 // Config publique : le client sait s'il peut proposer l'abonnement + le prix affiché.
 billingRouter.get(

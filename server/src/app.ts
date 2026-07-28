@@ -13,6 +13,9 @@ import { auditAdmin } from './middleware/audit';
 import { authRouter } from './routes/admin/auth';
 import { auditRouter } from './routes/admin/audit';
 import { eventsRouter } from './routes/admin/events';
+import { eventDomainsRouter } from './routes/admin/eventDomains';
+import { eventLineupRouter } from './routes/admin/eventLineup';
+import { eventPipelineRouter } from './routes/admin/eventPipeline';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
@@ -20,6 +23,8 @@ import { organizationsRouter } from './routes/admin/organizations';
 import { billingRouter } from './routes/admin/billing';
 import { handleWebhook } from './services/billingService';
 import { pool } from './db/pool';
+import { sharedStoreOrUndefined } from './lib/rateLimitStore';
+import { metricsMiddleware, renderMetrics } from './middleware/metrics';
 import { resolveEventForHost } from './services/siteService';
 import { findEventById, getBranding } from './db/repositories/eventRepo';
 import { findPressReleaseBySlug } from './db/repositories/pressReleaseRepo';
@@ -194,6 +199,8 @@ export function createApp(): Express {
   // (5173 → 4000). credentials:true impose une origine explicite (pas de '*').
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
   app.use(cookieParser());
+  // Compteurs de requêtes (voir /api/metrics).
+  app.use(metricsMiddleware);
 
   // Webhook Stripe : la vérification de signature exige le CORPS BRUT → déclaré AVANT
   // express.json (qui consommerait/parserait le corps).
@@ -212,9 +219,10 @@ export function createApp(): Express {
   app.use(express.json({ limit: '100kb' }));
 
   // Limite de débit sur les surfaces publiques sensibles (anti-abus).
-  const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true });
+  // Store partagé Redis si configuré (compteurs cohérents entre instances).
+  const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, store: sharedStoreOrUndefined() });
   // Limiteur strict pour le login journaliste (anti-bruteforce).
-  const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+  const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
 
   // Sonde de santé : vérifie réellement la base (une instance dont le pool est
   // mort doit être marquée unhealthy pour que la plateforme la redémarre).
@@ -227,6 +235,13 @@ export function createApp(): Express {
     }
   }));
 
+  // Métriques applicatives au format Prometheus (compteurs par route, durées,
+  // pool PG). Aucune donnée sensible : méthodes, chemins de routes, statuts.
+  app.get('/api/metrics', (_req, res) => {
+    res.setHeader('content-type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.send(renderMetrics());
+  });
+
   // Journal d'audit : n'enregistre qu'un écouteur `finish`, il peut donc être monté
   // AVANT les routeurs — `req.user` est renseigné par requireAuth au moment où
   // l'écouteur s'exécute, une fois la réponse émise.
@@ -235,7 +250,12 @@ export function createApp(): Express {
   // Back-office (auth requise dans les routers).
   app.use('/api/admin/auth', authRouter);
   app.use('/api/admin/audit', auditRouter);
+  // Sous-ressources événement, scindées par domaine (cœur, domaines,
+  // programmation, pipeline presse) — mêmes chemins qu'avant la scission.
   app.use('/api/admin/events', eventsRouter);
+  app.use('/api/admin/events', eventDomainsRouter);
+  app.use('/api/admin/events', eventLineupRouter);
+  app.use('/api/admin/events', eventPipelineRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).
   app.use('/api/admin/events', commsRouter);

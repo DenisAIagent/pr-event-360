@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { loadEnv } from './config/env';
 import { initSentry } from './lib/sentry';
 import { pool } from './db/pool';
+import { initRateLimitStore } from './lib/rateLimitStore';
 import { startScheduler } from './scheduler';
 
 async function main(): Promise<void> {
@@ -10,6 +11,9 @@ async function main(): Promise<void> {
 
   // Vérifie la connexion DB au démarrage.
   await pool.query('SELECT 1');
+
+  // Compteurs de rate-limit partagés entre instances (dormant sans REDIS_URL).
+  await initRateLimitStore();
 
   const app = createApp();
   app.listen(env.PORT, () => {

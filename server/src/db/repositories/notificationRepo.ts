@@ -68,15 +68,47 @@ export async function insertNotification(
   return map(rows[0]!);
 }
 
+export interface NotificationPage {
+  items: NotificationRecord[];
+  /** Curseur keyset vers la page suivante (null = fin de liste). */
+  nextCursor: string | null;
+}
+
+/**
+ * Messages d'un événement, paginés par CURSEUR keyset (created_at, id) : la
+ * table croît en continu (une ligne par email/SMS), un chargement intégral est
+ * donc proscrit. `before` = curseur renvoyé par la page précédente.
+ */
 export async function listNotificationsByEvent(
   eventId: string,
+  opts: { limit?: number; before?: string } = {},
   db: Queryable = pool,
-): Promise<NotificationRecord[]> {
+): Promise<NotificationPage> {
+  const limit = Math.min(Math.max(opts.limit ?? 100, 1), 200);
+  let beforeTs: string | null = null;
+  let beforeId: string | null = null;
+  if (opts.before) {
+    const [ts, id] = opts.before.split('~');
+    if (ts && id && !Number.isNaN(Date.parse(ts))) {
+      beforeTs = ts;
+      beforeId = id;
+    }
+  }
   const { rows } = await db.query<NotificationRow>(
-    `SELECT ${COLS} FROM notifications WHERE event_id = $1 ORDER BY created_at DESC`,
-    [eventId],
+    `SELECT ${COLS} FROM notifications
+     WHERE event_id = $1
+       AND ($2::timestamptz IS NULL OR (created_at, id) < ($2::timestamptz, $3::uuid))
+     ORDER BY created_at DESC, id DESC
+     LIMIT $4`,
+    [eventId, beforeTs, beforeId, limit + 1],
   );
-  return rows.map(map);
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  return {
+    items: page.map(map),
+    nextCursor: hasMore && last ? `${new Date(last.created_at).toISOString()}~${last.id}` : null,
+  };
 }
 
 /**

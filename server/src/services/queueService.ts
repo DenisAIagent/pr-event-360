@@ -61,7 +61,9 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
 
   const [enriched, artists, grantedByArtist, acceptedPhotoByArtist, acceptedVideoByArtist] =
     await Promise.all([
-      listEnrichedByEvent(eventId),
+      // Filtres poussés en SQL + résultat borné (1000 par défaut côté repo) :
+      // la file ne charge jamais la totalité des demandes d'un événement.
+      listEnrichedByEvent(eventId, { type: filters.type, status: filters.status }),
       listArtists(eventId),
       grantedInterviewCountsByEvent(eventId),
       acceptedPhotoCountsByEvent(eventId),
@@ -72,8 +74,6 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
   const now = nowMs();
 
   const items: QueueItem[] = enriched
-    .filter((r) => (filters.type ? r.type === filters.type : true))
-    .filter((r) => (filters.status ? r.status === filters.status : true))
     .map((r) => {
       // Tous les quotas sont propres à l'artiste (interviews / photo / vidéo).
       // NULL ⇒ illimité ⇒ pas de compteur affiché.

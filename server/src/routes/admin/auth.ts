@@ -8,6 +8,7 @@ import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { issueSession, clearSession, csrfValid } from '../../lib/session';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
+import { sharedStoreOrUndefined } from '../../lib/rateLimitStore';
 
 /** Si le résultat contient un jeton, ouvre la session (cookie httpOnly + CSRF) avant de répondre. */
 function withSession<T extends object>(res: Response, result: T, status = 200): void {
@@ -31,9 +32,10 @@ export const authRouter = Router();
 
 // Limite de débit sur la réinitialisation de mot de passe (surface publique) :
 // anti force brute sur les jetons et anti-énumération des comptes.
-const resetLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+// Store partagé Redis si configuré (sinon le bruteforce serait ×N instances).
+const resetLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
 // Anti force brute / credential-stuffing sur le login admin (le plus ciblé).
-const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -80,7 +82,7 @@ authRouter.post(
 
 // ── Double authentification (TOTP) ──────────────────────────────────
 const MfaCodeSchema = z.object({ code: z.string().min(6).max(8) });
-const mfaLoginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true });
+const mfaLoginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
 
 // 2e étape du login : challenge (issu de /login) + code TOTP → jeton de session.
 authRouter.post(

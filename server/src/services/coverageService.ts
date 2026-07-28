@@ -41,7 +41,8 @@ export async function sendCoverageRequests(): Promise<void> {
  */
 export async function remindCoverage(eventId: string, journalistId?: string): Promise<number> {
   const event = await getEventOrThrow(eventId);
-  let journalists = (await listJournalistsByEvent(eventId)).filter(
+  // Balayage complet volontaire (recherche des non-relancés) — borne haute explicite.
+  let journalists = (await listJournalistsByEvent(eventId, { limit: 20000 })).filter(
     (j) => j.accStatus === 'acceptee' && j.email,
   );
   if (journalistId) {

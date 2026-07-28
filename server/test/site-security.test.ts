@@ -8,7 +8,7 @@ vi.mock('../src/db/repositories/eventRepo', () => ({
 import * as eventRepo from '../src/db/repositories/eventRepo';
 import { isReservedCustomDomain, resolveEventForHost } from '../src/services/siteService';
 import { loadEnv } from '../src/config/env';
-import { eventsRouter } from '../src/routes/admin/events';
+import { eventDomainsRouter } from '../src/routes/admin/eventDomains';
 import { requirePlatformAdmin } from '../src/middleware/auth';
 
 const event = (verified: boolean) => ({
@@ -55,7 +55,7 @@ describe('routage Host des événements', () => {
   it('réserve affectation et vérification des domaines au super-admin plateforme', () => {
     const protectedPaths = ['/:eventId/domain', '/:eventId/domain/verify'];
     for (const path of protectedPaths) {
-      const layer = (eventsRouter as unknown as { stack: Array<{ route?: { path: string; stack: Array<{ handle: unknown }> } }> })
+      const layer = (eventDomainsRouter as unknown as { stack: Array<{ route?: { path: string; stack: Array<{ handle: unknown }> } }> })
         .stack.find((candidate) => candidate.route?.path === path);
       expect(layer?.route?.stack.some((handler) => handler.handle === requirePlatformAdmin)).toBe(true);
     }

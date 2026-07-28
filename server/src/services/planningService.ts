@@ -29,7 +29,9 @@ export async function generatePlanning(eventId: string): Promise<PlanningResult>
   const now = nowMs();
 
   return withTransaction(async (db) => {
-    const enriched = await listEnrichedByEvent(eventId, db);
+    // Le planning porte sur les demandes récentes bornées (1000 par défaut) :
+    // au-delà, l'événement relèverait d'un traitement par lots dédié.
+    const enriched = await listEnrichedByEvent(eventId, {}, db);
 
     const acceptedByArtist = new Map<string, EnrichedRequestRow[]>();
     for (const r of enriched) {

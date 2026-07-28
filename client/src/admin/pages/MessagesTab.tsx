@@ -1,16 +1,72 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { NotificationRow } from '../lib/types';
 import { TRIGGER_LABEL } from '../lib/labels';
 
+interface MessagesPage {
+  items: NotificationRow[];
+  nextCursor: string | null;
+}
+
+const PAGE_SIZE = 100;
+
 export function MessagesTab() {
   const { eventId = '' } = useParams();
   const apiAuthed = useAuthedApi();
-  const { data, loading, error } = useFetch<NotificationRow[]>(
-    () => apiAuthed.get<NotificationRow[]>(`/admin/events/${eventId}/messages`),
-    [eventId],
+  // Pagination par curseur : la table des messages croît en continu, on charge
+  // par pages de 100 avec un bouton « Charger plus » (jamais la totalité).
+  const [messages, setMessages] = useState<NotificationRow[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadPage = useCallback(
+    async (before: string | null) => {
+      const qs = `?limit=${PAGE_SIZE}${before ? `&before=${encodeURIComponent(before)}` : ''}`;
+      return apiAuthed.get<MessagesPage>(`/admin/events/${eventId}/messages${qs}`);
+    },
+    [apiAuthed, eventId],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setMessages([]);
+    loadPage(null)
+      .then((page) => {
+        if (cancelled) return;
+        setMessages(page.items);
+        setNextCursor(page.nextCursor);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Erreur de chargement');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPage]);
+
+  async function loadMore() {
+    if (!nextCursor) return;
+    setLoadingMore(true);
+    try {
+      const page = await loadPage(nextCursor);
+      setMessages((prev) => [...prev, ...page.items]);
+      setNextCursor(page.nextCursor);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur de chargement');
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
   const { data: notif } = useFetch<{ mode: 'live' | 'simulation' }>(
     () => apiAuthed.get<{ mode: 'live' | 'simulation' }>('/admin/notif-mode'),
     [],
@@ -33,8 +89,8 @@ export function MessagesTab() {
           Configurez le mode « live » dans Intégrations pour activer l'envoi réel.
         </p>
       )}
-      {data?.length === 0 && <p className="muted">Aucun message {isLive ? '' : 'simulé '}pour l'instant.</p>}
-      {data?.map((m) => (
+      {messages.length === 0 && <p className="muted">Aucun message {isLive ? '' : 'simulé '}pour l'instant.</p>}
+      {messages.map((m) => (
         <article key={m.id} className="card" style={{ padding: 'var(--space-3)' }}>
           <div className="section-head" style={{ marginBottom: 'var(--space-1)' }}>
             <strong>{TRIGGER_LABEL[m.triggerKey] ?? m.triggerKey}</strong>
@@ -55,6 +111,11 @@ export function MessagesTab() {
           <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--text-sm)', whiteSpace: 'pre-wrap' }}>{m.body}</p>
         </article>
       ))}
+      {nextCursor && (
+        <button className="btn btn-ghost" onClick={loadMore} disabled={loadingMore}>
+          {loadingMore ? 'Chargement…' : 'Charger plus'}
+        </button>
+      )}
     </div>
   );
 }

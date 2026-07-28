@@ -18,7 +18,8 @@ export async function sendPressReleaseEmail(
   const event = await getEventOrThrow(eventId);
   const branding = await getBranding(eventId);
 
-  const all = await listJournalistsByEvent(eventId);
+  // Balayage complet volontaire (tous les accrédités acceptés) — borne haute explicite.
+  const all = await listJournalistsByEvent(eventId, { limit: 20000 });
   const recipients = all.filter((j) => j.accStatus === 'acceptee' && j.email);
   if (recipients.length === 0) return { sent: 0, failed: 0, total: 0 };
 

@@ -30,7 +30,8 @@ export async function sendNewsletter(
   const branding = await getBranding(eventId);
 
   const idSet = new Set(journalistIds);
-  const all = await listJournalistsByEvent(eventId);
+  // Balayage complet volontaire (sélection par ids) — borne haute explicite.
+  const all = await listJournalistsByEvent(eventId, { limit: 20000 });
   const recipients = all.filter((j) => idSet.has(j.id) && j.email);
   if (recipients.length === 0) throw AppError.badRequest('Aucun destinataire valide sélectionné');
 

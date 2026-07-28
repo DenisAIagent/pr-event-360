@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import rateLimit, { type RateLimitRequestHandler } from 'express-rate-limit';
 import { sendError } from '../http/respond';
+import { sharedStoreOrUndefined } from '../lib/rateLimitStore';
 
 interface ScopedLimiterOptions {
   /** Fenêtre glissante, en millisecondes. */
@@ -38,6 +39,9 @@ export function scopedRateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     skipFailedRequests,
+    // Store Redis partagé entre instances si REDIS_URL est configuré, sinon
+    // MemoryStore local (undefined = défaut d'express-rate-limit).
+    store: sharedStoreOrUndefined(),
     // Un keyGenerator explicite remplace celui par défaut (basé sur l'IP) : la
     // validation IPv6 d'express-rate-limit ne s'applique alors pas.
     ...(keyGenerator ? { keyGenerator } : {}),
