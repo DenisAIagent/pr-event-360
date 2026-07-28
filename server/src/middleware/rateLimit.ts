@@ -11,6 +11,13 @@ interface ScopedLimiterOptions {
   keyGenerator?: (req: Request) => string;
   /** Message renvoyé au client une fois le quota atteint. */
   message?: string;
+  /**
+   * Ne compte que les requêtes abouties (status < 400). À activer quand le quota
+   * protège une ressource ciblée par clé : sans lui, des appels refusés en amont
+   * (404 cross-tenant, 403) consomment le quota du propriétaire légitime et
+   * permettent à un tiers de bloquer ses envois pendant la fenêtre.
+   */
+  skipFailedRequests?: boolean;
 }
 
 /**
@@ -23,12 +30,14 @@ export function scopedRateLimit({
   limit,
   keyGenerator,
   message = 'Trop de requêtes, réessayez plus tard.',
+  skipFailedRequests = false,
 }: ScopedLimiterOptions): RateLimitRequestHandler {
   return rateLimit({
     windowMs,
     limit,
     standardHeaders: true,
     legacyHeaders: false,
+    skipFailedRequests,
     // Un keyGenerator explicite remplace celui par défaut (basé sur l'IP) : la
     // validation IPv6 d'express-rate-limit ne s'applique alors pas.
     ...(keyGenerator ? { keyGenerator } : {}),

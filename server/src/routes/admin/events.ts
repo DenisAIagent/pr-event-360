@@ -669,6 +669,9 @@ const accessLinkResendLimiter = scopedRateLimit({
   windowMs: 60 * 60_000,
   limit: 3,
   keyGenerator: (req) => `${req.params.eventId}:${req.params.journalistId}`,
+  // Les appels refusés (404 cross-tenant, journaliste inconnu) ne consomment pas
+  // le quota : un tiers ne peut pas bloquer les renvois légitimes du propriétaire.
+  skipFailedRequests: true,
   message:
     'Trop de renvois pour ce journaliste. Réessayez dans une heure — le dernier lien envoyé reste valable.',
 });
