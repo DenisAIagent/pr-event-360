@@ -17,11 +17,14 @@ Pour une mutation authentifiée par cookie, envoyer `X-CSRF-Token` avec la valeu
 
 Le JWT dure 12 h. Les routes ne renvoient pas le JWT au JavaScript : elles posent le cookie HttpOnly. Rôle, activation, abonnement, statut plateforme, révocation du mot de passe et obligation MFA sont contrôlés en base.
 
-## Santé
+Les limites de débit utilisent un store Redis partagé lorsque `REDIS_URL` est défini (compteurs cohérents entre instances) ; sinon elles retombent sur la mémoire du processus.
 
-| Méthode | Route | Accès |
-|---|---|---|
-| GET | `/api/health` | public |
+## Santé et métriques
+
+| Méthode | Route | Accès | Description |
+|---|---|---|---|
+| GET | `/api/health` | public | `SELECT 1` PostgreSQL, 503 si inaccessible |
+| GET | `/api/metrics` | public | compteurs Prometheus par route, durées, pool PG ; aucune donnée sensible |
 
 ## Authentification — `/api/admin/auth`
 
@@ -148,11 +151,11 @@ Corps de création/mise à jour :
 | POST | `/:eventId/accreditations/:journalistId/process` | accès événement | `accept | reject` |
 | POST | `/:eventId/accreditations/:journalistId/access-link/resend` | éditeur | rotation et renvoi |
 | DELETE | `/:eventId/accreditations/:journalistId` | éditeur | effacement RGPD |
-| GET | `/:eventId/requests?type=&status=` | accès événement | file triée |
+| GET | `/:eventId/requests?type=&status=&limit=` | accès événement | file triée, filtres en SQL, `limit` 1000 par défaut (max 5000) |
 | POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
 | POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |
 | GET | `/:eventId/dashboard` | accès événement | KPIs |
-| GET | `/:eventId/messages` | accès événement | notifications |
+| GET | `/:eventId/messages?limit=&before=` | accès événement | notifications paginées `{ items, nextCursor }` ; `limit` 100 par défaut (max 200), curseur keyset `before` |
 
 ### Médias, newsroom et communications
 

@@ -1,6 +1,6 @@
 # Documentation technique — PR Event 360
 
-État de la documentation : **18 juillet 2026**. Elle décrit la version actuellement déployée, incluant les profils d’événement et les conférences de presse.
+État de la documentation : **29 juillet 2026**. Elle décrit la version actuellement déployée, incluant les profils d’événement, les conférences de presse, la pagination des grandes listes, le store de limitation de débit Redis optionnel et les métriques Prometheus.
 
 PR Event 360 gère les relations presse des festivals et concerts, mais aussi des salons, foires, conférences, séminaires, lancements et événements corporate. Le profil choisi à la création adapte les libellés visibles tout en conservant un modèle technique commun.
 

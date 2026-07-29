@@ -25,8 +25,9 @@ PR Event 360/
 | Sécurité HTTP | Helmet, CSP, HSTS, CORS, rate limits |
 | Médias | Cloudinary, upload navigateur direct signé |
 | Paiement | Stripe Checkout et webhooks signés |
-| Notifications | Brevo/Twilio, simulation ou live |
-| Observabilité | Sentry optionnel |
+| Notifications | Brevo/Twilio, simulation ou live, timeouts 8 s |
+| Limitation de débit | express-rate-limit, store Redis partagé si `REDIS_URL` (fail-open mémoire sinon) |
+| Observabilité | Sentry optionnel, métriques Prometheus `GET /api/metrics` |
 | Tests | Vitest et Playwright |
 
 La version PostgreSQL est gérée par l’environnement d’hébergement ; le développement local utilise `postgres:16-alpine`.
@@ -44,6 +45,8 @@ HTTP
   packages/core/      décisions pures
 PostgreSQL
 ```
+
+Le domaine événement est servi par quatre routeurs cohésifs montés sur `/api/admin/events` : `events.ts` (cœur), `eventDomains.ts` (sous-domaines et domaines), `eventLineup.ts` (lieux, participants, conférences) et `eventPipeline.ts` (accréditations, demandes, planning, messages).
 
 Une route ne doit jamais se fier à un `eventId` du client sans appeler `getAccessibleEventOrThrow` ou appliquer une contrainte SQL équivalente.
 
@@ -112,13 +115,15 @@ L’aperçu n’utilise pas `localStorage`.
 - en production, Express sert `client/dist` et le catch-all SPA ;
 - le webhook Stripe reçoit le corps brut avant `express.json` ;
 - budget JSON : 6 Mio sous `/api/admin`, 100 Kio ailleurs ;
+- `GET /api/health` exécute un `SELECT 1` et répond 503 si PostgreSQL est inaccessible ;
 - CSP et sanitisation protègent les contenus riches ;
 - SEO des communiqués injecté côté serveur.
 
 ## Tâches et effets externes
 
-- cron : récaps, purge RGPD, retombées ;
-- emails/SMS best-effort ;
+- cron : récaps, purges RGPD (journalistes, audit, notifications à 12 mois), retombées ;
+- chaque cron est protégé par un verrou consultatif PostgreSQL (`pg_try_advisory_lock`) : plusieurs instances peuvent tourner sans exécuter un job en double ;
+- emails/SMS best-effort avec timeout explicite de 8 s ;
 - uploads directs Cloudinary ;
 - webhooks Stripe idempotents ;
 - Sentry dormant sans DSN.

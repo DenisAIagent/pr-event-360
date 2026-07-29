@@ -58,6 +58,10 @@ Les valeurs brutes ne sont envoyées que dans le lien.
 
 Intégrations plateforme chiffrées AES-256-GCM : nom, ciphertext, IV, tag et timestamps.
 
+### `audit_log`
+
+Journal des actions du back-office (acteur, action, cible, date). Purge quotidienne au-delà de 12 mois (voir [business-logic.md](business-logic.md#tâches-planifiées)).
+
 ## Événements
 
 ### `events`
@@ -208,5 +212,7 @@ Durcissements et extensions récentes :
 | 0042 | `pending-signup-hardening` | aucun mot de passe avant preuve Stripe |
 | 0043 | `event-type` | cinq profils d’événement |
 | 0044 | `press-conferences` | conférences, participants et inscriptions |
+| 0045 | `mfa-totp-replay-guard` | anti-rejeu des codes TOTP |
+| 0046 | `audit-log` | journal d’audit des actions admin |
 
 `start:prod` applique toute migration en attente avant de démarrer l’application.

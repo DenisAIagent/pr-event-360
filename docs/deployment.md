@@ -4,8 +4,9 @@
 
 - URL : [https://pr-event-360-production-a23e.up.railway.app/](https://pr-event-360-production-a23e.up.railway.app/)
 - hébergeur : Railway ;
-- santé : `GET /api/health` ;
-- dernier déploiement vérifié avec la migration `0044_press-conferences`.
+- santé : `GET /api/health` (exécute `SELECT 1`, répond 503 si PostgreSQL est inaccessible) ;
+- métriques : `GET /api/metrics` (format Prometheus) ;
+- dernier déploiement vérifié avec la migration `0046_audit-log`.
 
 La région effective des services Railway/PostgreSQL doit être confirmée dans le dashboard avant toute affirmation RGPD.
 
@@ -38,7 +39,8 @@ La région effective des services Railway/PostgreSQL doit être confirmée dans 
 - domaines : `CUSTOM_DOMAIN_TARGET`, `PLATFORM_BASE_DOMAIN` ;
 - Brevo : `BREVO_API_KEY`, expéditeur et SMS ;
 - Twilio : SID, token et numéro ;
-- Cloudinary : cloud, clé, secret et preset signé.
+- Cloudinary : cloud, clé, secret et preset signé ;
+- `REDIS_URL` : store partagé des limites de débit. Sans Redis, les compteurs restent en mémoire par instance (comportement historique). Si Redis devient injoignable, la limitation se relâche (fail-open) plutôt que de bloquer le trafic.
 
 Voir [.env.example](../.env.example).
 
@@ -166,7 +168,8 @@ curl -fsS https://<domaine>/api/health
 
 Puis contrôler :
 
-- migrations `0001` à `0044` ;
+- migrations `0001` à `0046` ;
+- `GET /api/metrics` répond au format Prometheus et les compteurs s’incrémentent ;
 - login + MFA admin ;
 - création d’un événement de chaque type ;
 - création/publication d’une conférence ;

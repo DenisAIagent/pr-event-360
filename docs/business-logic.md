@@ -113,16 +113,20 @@ Déclencheurs principaux :
 
 Les gabarits sont multilingues. Un échec fournisseur est persisté mais ne rollback pas l’action métier. En `simulation`, aucun message externe n’est envoyé.
 
+L’envoi d’une newsletter passe par une transition atomique `draft → sending` : deux déclenchements concurrents ne produisent qu’un seul envoi, le second est refusé.
+
 ## Tâches planifiées
 
-Fuseau : Europe/Paris.
+Fuseau : Europe/Paris. Chaque tâche s’exécute sous verrou consultatif PostgreSQL (`pg_try_advisory_lock`) : plusieurs instances peuvent tourner sans doublonner un envoi ou une purge.
 
 | Cron | Tâche |
 |---|---|
 | `0 8 * * *` | récapitulatif quotidien |
 | `0 8 * * 1` | récapitulatif hebdomadaire |
 | `30 3 * * *` | purge journalistes 12 mois après la fin |
+| `45 3 * * *` | purge du journal d’audit au-delà de 12 mois |
 | `0 9 * * *` | demande de retombées à fin + délai |
+| `15 4 * * *` | purge du journal des notifications au-delà de 12 mois |
 
 ## Revue de presse
 

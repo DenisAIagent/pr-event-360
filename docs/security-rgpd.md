@@ -1,6 +1,6 @@
 # Sécurité et RGPD
 
-Dernière mise à jour : 18 juillet 2026.
+Dernière mise à jour : 29 juillet 2026.
 
 ## Authentification back-office
 
@@ -157,6 +157,8 @@ Les tokens de reset, invitation et espace sont hashés.
 - confiance limitée à un proxy en production ;
 - surfaces publiques 30 req/min ;
 - auth sensible 10 req/15 min ;
+- compteurs de limitation partagés via Redis si `REDIS_URL` est défini (cohérents entre instances, fail-open si Redis injoignable), sinon en mémoire par processus ;
+- appels sortants Brevo/Twilio bornés par un timeout de 8 s ;
 - erreurs internes masquées en production.
 
 ## RGPD
@@ -166,7 +168,8 @@ Les tokens de reset, invitation et espace sont hashés.
 - droit à l’effacement par cascade ;
 - suppression d’un journaliste : demandes, conférences et retombées ;
 - suppression événement/organisation : données rattachées ;
-- purge automatique 12 mois après fin ;
+- purge automatique des journalistes 12 mois après la fin de l’événement ;
+- purge des journaux d’audit et de notifications au-delà de 12 mois ;
 - double consentement pour médias uploadés dans la revue de presse ;
 - Sentry client avec `sendDefaultPii=false` ;
 - dossiers opérationnels dans [rgpd/](rgpd/).
