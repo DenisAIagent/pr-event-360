@@ -94,6 +94,7 @@ Une conférence est affichée après confirmation et publication par le RP :
 | Communications | newsletters ciblées et aperçu |
 | Revue de presse | retombées, suivi et relances |
 | Bilan | KPIs, exports CSV Excel, impression PDF du bilan presse |
+| Jour J | check-in QR, badge, agenda interviews/conférences du jour (mobile) |
 | Paramètres | poids, templates, clôture, récap et domaines |
 | Apparence | logo et couleurs |
 | Aperçu | accréditation, espace et newsroom dans une iframe authentifiée par cookie |
@@ -109,6 +110,13 @@ Une conférence est affichée après confirmation et publication par le RP :
 - attribution automatique des créneaux par priorité ;
 - exports PDF (impression navigateur) et **CSV Excel-friendly** (filtre UI + export serveur) ;
 - **collaboration** : assignation à un membre, notes internes, timeline (statuts + notes), filtres « Miennes / Non assignées ».
+
+### Jour J (terrain)
+
+- vue mobile **Jour J** : stats d'arrivée, liste des accrédités, interviews et conférences du jour ;
+- **check-in** par recherche, code collé ou scan caméra (BarcodeDetector) ;
+- **badge QR** signé HMAC pour chaque accrédité (admin + espace journaliste) ;
+- check-in conférence via statut `checked_in` existant.
 
 ### Bilan et exports
 

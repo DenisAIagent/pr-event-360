@@ -31,6 +31,7 @@ import {
   issueJournalistSession,
   journalistTokenFromCookie,
 } from '../../lib/journalistSession';
+import { buildJournalistBadge } from '../../services/dayOfService';
 
 export const publicSpaceRouter = Router();
 
@@ -263,5 +264,15 @@ publicSpaceRouter.get(
     );
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ success: true, data: payload });
+  }),
+);
+
+/** Badge QR de check-in (arrivée presse) pour le journaliste authentifié. */
+publicSpaceRouter.get(
+  '/:token/badge',
+  asyncHandler(async (req, res) => {
+    const journalist = await requireJournalist(resolveSpaceToken(req));
+    res.setHeader('Cache-Control', 'no-store');
+    sendData(res, await buildJournalistBadge(journalist.eventId, journalist.id));
   }),
 );

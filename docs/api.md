@@ -163,6 +163,18 @@ Corps de création/mise à jour :
 | POST | `/:eventId/requests/:requestId/notes` | accès événement | `{ body }` note interne |
 
 `GET …/requests` accepte aussi `?assignedTo=me|unassigned|<uuid>`.
+
+### Jour J / check-in
+
+| Méthode | Route | Description |
+|---|---|---|
+| GET | `/:eventId/day-of?date=YYYY-MM-DD` | agenda du jour + arrivées |
+| POST | `/:eventId/check-in` | `{ journalistId }` ou `{ code }` (QR signé) |
+| POST | `/:eventId/check-in/undo` | annule le check-in d'arrivée |
+| GET | `/:eventId/journalists/:id/badge` | QR data URL + code |
+| POST | `/:eventId/press-conferences/:id/check-in` | présence conférence |
+
+Public espace journaliste : `GET /api/public/space/:token/badge`.
 | GET | `/:eventId/requests?type=&status=&limit=` | accès événement | file triée, filtres en SQL, `limit` 1000 par défaut (max 5000) |
 | POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
 | POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |

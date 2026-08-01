@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   NotebookText,
   BarChart3,
+  CalendarCheck,
   LogOut,
   ChevronDown,
   Presentation,
@@ -100,6 +101,7 @@ export function Sidebar() {
     { to: `${base}/requests`, label: 'Demandes', icon: Inbox },
     { to: `${base}/accreditations`, label: 'Accréditations', icon: UserCheck },
     { to: `${base}/press-conferences`, label: 'Conférences presse', icon: Presentation },
+    { to: `${base}/jour`, label: 'Jour J', icon: CalendarCheck },
   ];
   const CONTENU: NavDef[] = [
     { to: `${base}/media`, label: 'Médiathèque', icon: Image },

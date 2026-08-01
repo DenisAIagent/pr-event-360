@@ -180,6 +180,8 @@ export interface Journalist {
   consent: boolean;
   /** Hash argon2 du mot de passe d'espace (null = aucun mot de passe défini). Jamais sérialisé tel quel. */
   passwordHash: string | null;
+  /** Présence enregistrée à l'entrée presse (Jour J), null si pas encore check-in. */
+  checkedInAt: string | null;
   createdAt: string;
 }
 

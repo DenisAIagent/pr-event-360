@@ -174,5 +174,9 @@
   "space.password.forgotLink": "Olvidé mi contraseña",
   "space.gdpr.title": "Mis datos (RGPD)",
   "space.gdpr.hint": "Descargue una copia estructurada de sus datos (derecho de acceso y portabilidad, art. 15 y 20).",
-  "space.gdpr.download": "Descargar mis datos (JSON)"
+  "space.gdpr.download": "Descargar mis datos (JSON)",
+  "space.badge.title": "Acreditación QR",
+  "space.badge.hint": "Muestre este código QR en la entrada de prensa.",
+  "space.badge.show": "Mostrar mi QR",
+  "space.badge.printHint": "Presente este QR en la entrada de prensa"
 }

@@ -19,6 +19,7 @@ import { eventLineupRouter } from './routes/admin/eventLineup';
 import { eventPipelineRouter } from './routes/admin/eventPipeline';
 import { eventExportsRouter } from './routes/admin/eventExports';
 import { eventCollabRouter } from './routes/admin/eventCollab';
+import { eventDayOfRouter } from './routes/admin/eventDayOf';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
@@ -285,6 +286,8 @@ export function createApp(): Express {
   app.use('/api/admin/events', eventExportsRouter);
   // Collaboration : assignation, notes, timeline des demandes.
   app.use('/api/admin/events', eventCollabRouter);
+  // Jour J : agenda du jour, check-in QR, badge.
+  app.use('/api/admin/events', eventDayOfRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).
   app.use('/api/admin/events', commsRouter);

@@ -174,5 +174,9 @@
   "space.password.forgotLink": "Forgot password",
   "space.gdpr.title": "My data (GDPR)",
   "space.gdpr.hint": "Download a structured copy of your data (right of access and portability, art. 15 and 20).",
-  "space.gdpr.download": "Download my data (JSON)"
+  "space.gdpr.download": "Download my data (JSON)",
+  "space.badge.title": "Access badge",
+  "space.badge.hint": "Show this QR code at the press entrance for check-in.",
+  "space.badge.show": "Show my QR badge",
+  "space.badge.printHint": "Show this QR at the press entrance"
 }

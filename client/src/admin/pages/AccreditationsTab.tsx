@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BadgeCheck, Download } from 'lucide-react';
+import { BadgeCheck, Download, QrCode } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
@@ -94,6 +94,36 @@ export function AccreditationsTab() {
       toast.success('Nouveau lien personnel envoyé par email.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Envoi impossible, réessayez.');
+    }
+  }
+
+  async function showBadge(journalistId: string) {
+    try {
+      const badge = await apiAuthed.get<{
+        qrDataUrl: string;
+        journalist: { firstName: string; lastName: string | null; media: string | null };
+        event: { name: string };
+      }>(`/admin/events/${eventId}/journalists/${journalistId}/badge`);
+      const w = window.open('', '_blank', 'width=360,height=520');
+      if (!w) {
+        toast.error('Popup bloquée — autorisez les fenêtres pour afficher le badge.');
+        return;
+      }
+      const name = `${badge.journalist.firstName} ${badge.journalist.lastName ?? ''}`.trim();
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>Badge ${name}</title>
+        <style>body{font-family:system-ui,sans-serif;text-align:center;padding:24px}
+        img{width:240px;height:240px} h1{font-size:18px;margin:12px 0 4px}
+        .m{color:#666;font-size:13px}</style></head><body>
+        <div class="m">${badge.event.name}</div>
+        <h1>${name}</h1>
+        <div class="m">${badge.journalist.media ?? ''}</div>
+        <img src="${badge.qrDataUrl}" alt="QR check-in"/>
+        <p class="m">Présentez ce QR à l’entrée presse</p>
+        <script>window.onload=function(){window.print()}</script>
+        </body></html>`);
+      w.document.close();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Badge impossible');
     }
   }
 
@@ -285,9 +315,19 @@ export function AccreditationsTab() {
                     </button>
                   </div>
                 ) : a.accStatus === 'acceptee' ? (
-                  <button className="btn btn-ghost btn-sm" onClick={() => resendAccess(a.id)}>
-                    Renvoyer un lien
-                  </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => resendAccess(a.id)}>
+                      Renvoyer un lien
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      title="Badge QR check-in"
+                      onClick={() => void showBadge(a.id)}
+                    >
+                      <QrCode size={14} /> Badge
+                    </button>
+                  </div>
                 ) : (
                   <span className="muted">—</span>
                 )}

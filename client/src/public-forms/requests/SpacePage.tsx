@@ -453,6 +453,51 @@ export function SpacePage({
           {tab === 'account' && (
             <div className="stack" style={{ gap: 'var(--space-5)' }}>
               {!readOnly && (
+                <section className="card stack" aria-labelledby="sec-badge">
+                  <h2 id="sec-badge" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
+                    {t('space.badge.title')}
+                  </h2>
+                  <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
+                    {t('space.badge.hint')}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ alignSelf: 'flex-start' }}
+                    onClick={() => {
+                      void api
+                        .get<{
+                          qrDataUrl: string;
+                          event: { name: string };
+                          journalist: { firstName: string; lastName: string | null; media: string | null };
+                        }>(`/public/space/${spaceKey}/badge`)
+                        .then((badge) => {
+                          const w = window.open('', '_blank', 'width=360,height=520');
+                          if (!w) return;
+                          const name = `${badge.journalist.firstName} ${badge.journalist.lastName ?? ''}`.trim();
+                          w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${name}</title>
+                            <style>body{font-family:system-ui,sans-serif;text-align:center;padding:24px}
+                            img{width:240px;height:240px} h1{font-size:18px;margin:12px 0 4px}
+                            .m{color:#666;font-size:13px}</style></head><body>
+                            <div class="m">${badge.event.name}</div>
+                            <h1>${name}</h1>
+                            <div class="m">${badge.journalist.media ?? ''}</div>
+                            <img src="${badge.qrDataUrl}" alt="QR"/>
+                            <p class="m">${t('space.badge.printHint')}</p>
+                            <script>window.onload=function(){window.print()}</script>
+                            </body></html>`);
+                          w.document.close();
+                        })
+                        .catch((err: unknown) => {
+                          setPwdError(err instanceof Error ? err.message : t('common.error'));
+                        });
+                    }}
+                  >
+                    {t('space.badge.show')}
+                  </button>
+                </section>
+              )}
+              {!readOnly && (
                 <section className="card stack" aria-labelledby="sec-gdpr">
                   <h2 id="sec-gdpr" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
                     {t('space.gdpr.title')}

@@ -22,6 +22,7 @@ interface JournalistRow {
   publish_delay_days: number;
   consent: boolean;
   password_hash: string | null;
+  checked_in_at: string | null;
   created_at: string;
 }
 
@@ -43,12 +44,13 @@ const map = (r: JournalistRow): Journalist => ({
   publishDelayDays: r.publish_delay_days,
   consent: r.consent,
   passwordHash: r.password_hash,
+  checkedInAt: r.checked_in_at,
   createdAt: r.created_at,
 });
 
 const COLS = `id, event_id, first_name, last_name, email, phone, media,
   media_type_id, audience, prev_article, lang, accreditation_type, acc_status,
-  commit_publish, publish_delay_days, consent, password_hash, created_at`;
+  commit_publish, publish_delay_days, consent, password_hash, checked_in_at, created_at`;
 
 export interface CreateJournalistInput {
   eventId: string;
@@ -342,4 +344,47 @@ export async function deleteJournalist(
     journalistId,
   ]);
   return rowCount ?? 0;
+}
+
+/** Enregistre le check-in d'arrivée (idempotent si déjà présent). */
+export async function setJournalistCheckedIn(
+  eventId: string,
+  journalistId: string,
+  db: Queryable = pool,
+): Promise<Journalist | null> {
+  const { rows } = await db.query<JournalistRow>(
+    `UPDATE journalists
+     SET checked_in_at = COALESCE(checked_in_at, now())
+     WHERE event_id = $1 AND id = $2 AND acc_status = 'acceptee'
+     RETURNING ${COLS}`,
+    [eventId, journalistId],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
+/** Annule le check-in d'arrivée. */
+export async function clearJournalistCheckedIn(
+  eventId: string,
+  journalistId: string,
+  db: Queryable = pool,
+): Promise<Journalist | null> {
+  const { rows } = await db.query<JournalistRow>(
+    `UPDATE journalists SET checked_in_at = NULL
+     WHERE event_id = $1 AND id = $2
+     RETURNING ${COLS}`,
+    [eventId, journalistId],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
+export async function countCheckedInByEvent(
+  eventId: string,
+  db: Queryable = pool,
+): Promise<number> {
+  const { rows } = await db.query<{ count: string }>(
+    `SELECT count(*)::int AS count FROM journalists
+     WHERE event_id = $1 AND checked_in_at IS NOT NULL AND acc_status = 'acceptee'`,
+    [eventId],
+  );
+  return Number(rows[0]!.count);
 }

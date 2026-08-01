@@ -24,6 +24,7 @@ import { NewsroomTab } from './pages/NewsroomTab';
 import { CommunicationsTab } from './pages/CommunicationsTab';
 import { RevuePresseTab } from './pages/RevuePresseTab';
 import { BilanTab } from './pages/BilanTab';
+import { DayOfPage } from './pages/DayOfPage';
 import { PreviewTab } from './pages/PreviewTab';
 import { TeamPage } from './pages/TeamPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
@@ -89,6 +90,7 @@ export function AdminApp() {
               <Route path="communications" element={<CommunicationsTab />} />
               <Route path="revue-presse" element={<RevuePresseTab />} />
               <Route path="bilan" element={<BilanTab />} />
+              <Route path="jour" element={<DayOfPage />} />
               <Route path="preview" element={<PreviewTab />} />
               <Route path="settings" element={<SettingsTab />} />
               <Route path="branding" element={<BrandingTab />} />
