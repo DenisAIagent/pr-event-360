@@ -266,7 +266,7 @@ La réponse GET inclut `eventType`. La soumission exige le consentement et refus
 
 ### Espace journaliste — `/api/public/space`
 
-Le segment `:token` accepte soit le bearer du lien magique, soit `me` (session cookie `pr360_journalist`).
+Le segment `:token` accepte soit le bearer du lien magique, soit `me` (session JWT cookie `pr360_jspace`). Les mutations via session exigent le CSRF double-submit (`pr360_csrf` + `X-CSRF-Token`).
 
 | Méthode | Route | Description |
 |---|---|---|

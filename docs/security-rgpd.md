@@ -46,7 +46,7 @@ Google Identity applique la même politique MFA. L’ID token est vérifié côt
 - hash SHA-256 uniquement en base ;
 - expiration 7 jours ;
 - rotation à l’acceptation, au renvoi du lien, au login par mot de passe **et à l’échange de session** (`POST /api/public/space/session`) ;
-- après ouverture du lien magique, cookie HttpOnly `pr360_journalist` ; l’URL est nettoyée (`/espace`) ;
+- après ouverture du lien magique, cookie JWT HttpOnly `pr360_jspace` (`typ:jspace`, claims jid/eid — pas le bearer brut) ; l’URL est nettoyée (`/espace`) ;
 - les appels suivants passent par le segment `/me` (token lu dans le cookie) ;
 - lookup par hash et contrôle de l’expiration ;
 - `Referrer-Policy: no-referrer` pour ne pas transmettre le token de l’URL.

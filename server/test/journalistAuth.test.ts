@@ -27,45 +27,56 @@ vi.mock('../src/services/notifications/email', () => ({
 import { setSpacePassword } from '../src/services/journalistAuthService';
 import * as repo from '../src/db/repositories/journalistRepo';
 import { AppError } from '../src/http/AppError';
+import type { Journalist } from '../src/domain';
 
-const accepted = (over: Record<string, unknown> = {}) => ({
-  id: 'j1',
-  eventId: 'evt-1',
-  firstName: 'Léa',
-  accStatus: 'acceptee',
-  passwordHash: null,
-  ...over,
-});
+const accepted = (over: Record<string, unknown> = {}): Journalist =>
+  ({
+    id: 'j1',
+    eventId: 'evt-1',
+    firstName: 'Léa',
+    lastName: null,
+    email: 'lea@example.test',
+    phone: null,
+    media: null,
+    mediaTypeId: null,
+    audience: null,
+    prevArticle: null,
+    lang: 'fr',
+    accreditationType: 'presse',
+    accStatus: 'acceptee',
+    commitPublish: true,
+    publishDelayDays: 0,
+    consent: true,
+    passwordHash: null,
+    checkedInAt: null,
+    createdAt: 'now',
+    ...over,
+  }) as Journalist;
 
 afterEach(() => vi.clearAllMocks());
 
 describe('setSpacePassword — anti-détournement du lien magique', () => {
   it('autorise le PREMIER réglage (aucun mot de passe encore défini)', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted() as never);
-    await setSpacePassword('tok', 'motdepassefort12');
+    await setSpacePassword(accepted(), 'motdepassefort12');
     expect(repo.setJournalistPassword).toHaveBeenCalledOnce();
   });
 
   it('REFUSE de remplacer un mot de passe existant via le seul lien magique', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ passwordHash: 'argon2$hash' }) as never);
-    await expect(setSpacePassword('tok', 'nouveaumotdepasse12')).rejects.toBeInstanceOf(AppError);
+    await expect(
+      setSpacePassword(accepted({ passwordHash: 'argon2$hash' }), 'nouveaumotdepasse12'),
+    ).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 
-  it('refuse si le token est inconnu', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(null as never);
-    await expect(setSpacePassword('inconnu', 'motdepassefort12')).rejects.toBeInstanceOf(AppError);
-  });
-
   it('refuse si l’accréditation n’est pas acceptée', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ accStatus: 'pas_encore_traite' }) as never);
-    await expect(setSpacePassword('tok', 'motdepassefort12')).rejects.toBeInstanceOf(AppError);
+    await expect(
+      setSpacePassword(accepted({ accStatus: 'pas_encore_traite' }), 'motdepassefort12'),
+    ).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 
   it('refuse un mot de passe trop court (< 12)', async () => {
-    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted() as never);
-    await expect(setSpacePassword('tok', 'court')).rejects.toBeInstanceOf(AppError);
+    await expect(setSpacePassword(accepted(), 'court')).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 });

@@ -20,8 +20,8 @@ const LoginSchema = z.object({
 });
 
 /**
- * Login journaliste par email + mot de passe (compte par événement). Renvoie le token
- * d'espace : le client redirige ensuite vers /espace/:token.
+ * Login journaliste par email + mot de passe (compte par événement). Pose un
+ * cookie JWT de session ; le client redirige vers /espace (sans token dans l'URL).
  */
 publicJournalistAuthRouter.post(
   '/login',
@@ -29,8 +29,8 @@ publicJournalistAuthRouter.post(
   asyncHandler(async (req, res) => {
     const { eventId, email, password } = req.body as z.infer<typeof LoginSchema>;
     const result = await journalistLogin(eventId, email, password);
-    // Session cookie HttpOnly : le front redirige vers /espace (sans token dans l'URL).
-    issueJournalistSession(res, result.token);
+    // Session JWT httpOnly : le front redirige vers /espace (sans bearer dans l'URL).
+    issueJournalistSession(res, result.claims);
     sendData(res, { firstName: result.firstName, session: true as const });
   }),
 );

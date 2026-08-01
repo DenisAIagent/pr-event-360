@@ -12,7 +12,6 @@ import { AppError } from '../http/AppError';
 import { nowMs } from '../lib/clock';
 import { getConfig } from '../db/repositories/eventRepo';
 import { findArtist, findSlot, findStage } from '../db/repositories/lineupRepo';
-import { findJournalistByToken } from '../db/repositories/journalistRepo';
 import {
   addHistory,
   countAcceptedPhotos,
@@ -43,7 +42,7 @@ const ADMIN_SETTABLE: RequestStatus[] = [
 ];
 
 export interface SubmitRequestInput {
-  token: string;
+  journalist: Journalist;
   type: RequestType;
   artistId?: string | null;
   slotId?: string | null;
@@ -52,12 +51,13 @@ export interface SubmitRequestInput {
 }
 
 /**
- * Soumission d'une demande par le journaliste (accès par token). Vérifie le
- * quota correspondant : si atteint, la demande est placée AUTOMATIQUEMENT en
- * « Liste d'attente » ; sinon « Pas encore traité ». Envoie l'accusé de réception.
+ * Soumission d'une demande par le journaliste (session ou lien magique déjà
+ * résolu). Vérifie le quota correspondant : si atteint, la demande est placée
+ * AUTOMATIQUEMENT en « Liste d'attente » ; sinon « Pas encore traité ».
+ * Envoie l'accusé de réception.
  */
 export async function submitRequest(input: SubmitRequestInput): Promise<RequestRecord> {
-  const journalist = await requireAccreditedJournalist(input.token);
+  const journalist = requireAccepted(input.journalist);
   const event = await getEventOrThrow(journalist.eventId);
   const profile = getEventProfile(event.eventType);
   const config = await getConfig(journalist.eventId);
@@ -135,8 +135,8 @@ export async function submitRequest(input: SubmitRequestInput): Promise<RequestR
 }
 
 /** Liste des demandes d'un journaliste (espace public), avec historique. */
-export async function listJournalistRequests(token: string) {
-  const journalist = await requireAccreditedJournalist(token);
+export async function listJournalistRequests(journalist: Journalist) {
+  requireAccepted(journalist);
   const requests = await listEnrichedByJournalist(journalist.id);
   return Promise.all(
     requests.map(async (r) => ({
@@ -276,9 +276,7 @@ async function promoteBest(
   });
 }
 
-async function requireAccreditedJournalist(token: string): Promise<Journalist> {
-  const journalist = await findJournalistByToken(token);
-  if (!journalist) throw AppError.notFound('Espace introuvable');
+function requireAccepted(journalist: Journalist): Journalist {
   if (journalist.accStatus !== 'acceptee') {
     throw AppError.forbidden('Accréditation non encore acceptée');
   }

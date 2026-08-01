@@ -142,7 +142,7 @@ export function PrivacyPage() {
               <code>pr360_csrf</code> — protection CSRF double-submit ;
             </li>
             <li>
-              <code>pr360_journalist</code> — session espace journaliste (HttpOnly), posée après le lien
+              <code>pr360_jspace</code> — session JWT espace journaliste (HttpOnly), posée après le lien
               magique ou le login.
             </li>
           </ul>
