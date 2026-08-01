@@ -32,7 +32,7 @@ export function SpacePage({
   const navigate = useNavigate();
   // Clé d'API : `me` (session cookie) après échange, ou token URL en rétrocompat / e2e.
   const [spaceKey, setSpaceKey] = useState(urlToken && urlToken !== 'me' ? urlToken : 'me');
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, applyLang } = useI18n();
   const [data, setData] = useState<SpaceResponse | null>(previewData ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<SpaceTab>('requests');
@@ -53,14 +53,14 @@ export function SpacePage({
   async function load(key: string = spaceKey) {
     const res = await api.get<SpaceResponse>(`/public/space/${key}`);
     setData(res);
-    if (isLang(res.journalist.lang)) setLang(res.journalist.lang);
+    if (isLang(res.journalist.lang)) applyLang(res.journalist.lang);
   }
 
   useEffect(() => {
     // Mode aperçu : on utilise les données injectées, pas d'appel réseau.
     if (previewData) {
       setData(previewData);
-      if (isLang(previewData.journalist.lang)) setLang(previewData.journalist.lang);
+      if (isLang(previewData.journalist.lang)) applyLang(previewData.journalist.lang);
       return;
     }
     let cancelled = false;

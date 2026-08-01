@@ -42,7 +42,7 @@ const EMPTY: FormState = {
 export function AccreditationPage() {
   const eventId = useEventId();
   const links = useEventLinks();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, applyLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   usePageTitle(event ? `Accréditation presse — ${event.name}` : null);
   const [loadError, setLoadError] = useState(false);
@@ -62,7 +62,7 @@ export function AccreditationPage() {
       .then((ev) => {
         setEvent(ev);
         // Aligne la langue de l'UI sur les langues actives de l'événement.
-        if (!ev.languages.includes(lang) && ev.languages[0]) setLang(ev.languages[0]);
+        if (!ev.languages.includes(lang) && ev.languages[0]) applyLang(ev.languages[0]);
       })
       .catch(() => setLoadError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps

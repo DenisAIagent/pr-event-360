@@ -17,7 +17,7 @@ export function JournalistResetPasswordPage() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const navigate = useNavigate();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, applyLang } = useI18n();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -29,7 +29,7 @@ export function JournalistResetPasswordPage() {
       .get<PublicEvent>(`/public/events/${eventId}`)
       .then((ev) => {
         setEvent(ev);
-        if (!ev.languages.includes(lang) && ev.languages[0]) setLang(ev.languages[0]);
+        if (!ev.languages.includes(lang) && ev.languages[0]) applyLang(ev.languages[0]);
       })
       .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
