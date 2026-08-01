@@ -140,7 +140,8 @@ export function GroupedView({
     };
   }
   function exportGroups(groups: PrintTableGroup[]) {
-    printTable({ eventName, branding, heading, generatedAt: nowStr(), columns: QUEUE_COLUMNS, groups });
+    const opened = printTable({ eventName, branding, heading, generatedAt: nowStr(), columns: QUEUE_COLUMNS, groups });
+    if (!opened) toast.error('Autorisez les fenêtres surgissantes pour générer le PDF.');
   }
   function exportAll() {
     exportGroups(

@@ -112,7 +112,7 @@ export function PlanningView({
       rows: items.map(planningCells),
     }));
     if (noSlot.length) groups.push({ title: 'Sans créneau attribué', rows: noSlot.map(planningCells) });
-    printTable({
+    const opened = printTable({
       eventName,
       branding,
       heading: 'Planning des interviews',
@@ -120,6 +120,7 @@ export function PlanningView({
       columns: PLANNING_COLUMNS,
       groups,
     });
+    if (!opened) toast.error('Autorisez les fenêtres surgissantes pour générer le PDF.');
   }
 
   function exportCsv() {

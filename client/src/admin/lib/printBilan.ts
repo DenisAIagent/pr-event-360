@@ -1,6 +1,9 @@
 /**
  * Bilan presse imprimable (Enregistrer en PDF via la boîte d'impression navigateur).
+ * La coquille — identité de l'événement, suppression des mentions du navigateur,
+ * attente du logo — vient de `lib/printDocument`.
  */
+import { printBrandedDocument, resolveAccent } from '../../lib/printDocument';
 
 export interface BilanPrintData {
   event: {
@@ -97,12 +100,7 @@ function rankTable(title: string, items: Array<{ name: string; count: number }>)
 
 /** Ouvre une fenêtre d'impression du bilan presse. */
 export function printBilan(data: BilanPrintData): void {
-  const accent = /^#[0-9a-fA-F]{6}$/.test(data.branding?.accentColor ?? '')
-    ? data.branding!.accentColor!
-    : '#4f46e5';
-  const logo = data.branding?.logoUrl
-    ? `<img src="${esc(data.branding.logoUrl)}" alt="" class="logo" />`
-    : '';
+  const accent = resolveAccent(data.branding);
   const generated = new Date(data.generatedAt).toLocaleString('fr-FR', {
     dateStyle: 'long',
     timeStyle: 'short',
@@ -126,15 +124,7 @@ export function printBilan(data: BilanPrintData): void {
     )
     .join('');
 
-  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8" />
-  <title>Bilan presse — ${esc(data.event.name)}</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; margin: 24px; font-size: 12px; }
-    header { border-bottom: 3px solid ${accent}; padding-bottom: 12px; margin-bottom: 20px;
-             display: flex; align-items: center; gap: 16px; }
-    .logo { max-height: 52px; max-width: 180px; object-fit: contain; }
-    h1 { font-size: 20px; margin: 0; }
+  const styles = `
     .sub { color: #666; font-size: 11px; margin-top: 4px; }
     .cards { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
     .card { border: 1px solid #e3e3e3; border-radius: 8px; padding: 12px 16px; min-width: 110px;
@@ -149,19 +139,10 @@ export function printBilan(data: BilanPrintData): void {
          border-bottom: 2px solid ${accent}; padding: 4px 6px; }
     td { padding: 4px 6px; border-bottom: 1px solid #eee; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; width: 4em; }
-    footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid #e3e3e3;
-             color: #888; font-size: 10px; }
-    @media print { body { margin: 12mm; } .cards { gap: 6px; } }
     @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-  </style></head><body>
-  <header>
-    ${logo}
-    <div>
-      <h1>Bilan presse — ${esc(data.event.name)}</h1>
-      <div class="sub">${esc(data.event.location ?? 'Lieu non précisé')} · ${esc(period)}</div>
-      <div class="sub">Généré le ${esc(generated)}</div>
-    </div>
-  </header>
+  `;
+
+  const body = `
   <div class="cards">${cards}</div>
   <div class="grid">
     ${kvTable('Accréditations par statut', k.byAccStatus, ACC_STATUS)}
@@ -171,16 +152,19 @@ export function printBilan(data: BilanPrintData): void {
     ${kvTable('Retombées par catégorie', k.coverageByCategory, {})}
     ${rankTable('Médias les plus représentés', data.highlights.topMedia)}
     ${rankTable('Participants les plus demandés', data.highlights.topParticipants)}
-  </div>
-  <footer>PR Event 360 — document confidentiel · ${esc(data.event.name)}</footer>
-  <script>window.onload = function () { window.focus(); window.print(); };</script>
-  </body></html>`;
+  </div>`;
 
-  const w = window.open('', '_blank');
-  if (!w) {
+  const opened = printBrandedDocument({
+    title: `Bilan presse — ${data.event.name}`,
+    branding: data.branding,
+    heading: `Bilan presse — ${data.event.name}`,
+    subtitle: `${data.event.location ?? 'Lieu non précisé'} · ${period} · généré le ${generated}`,
+    footerLeft: data.event.name,
+    footerRight: 'Bilan presse · document confidentiel',
+    styles,
+    body,
+  });
+  if (!opened) {
     throw new Error('Impossible d’ouvrir la fenêtre d’impression (popup bloquée).');
   }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
 }
