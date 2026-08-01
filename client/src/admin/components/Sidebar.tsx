@@ -24,6 +24,7 @@ import {
   LogOut,
   ChevronDown,
   Presentation,
+  Users2,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
@@ -187,7 +188,12 @@ export function Sidebar() {
             {PRIMARY.map((n) => (
               <NavItem key={n.to} {...n} />
             ))}
-            {isEditor && <NavItem to={`${base}/lineup`} label="Configuration" icon={SlidersHorizontal} />}
+            {isEditor && (
+              <>
+                <NavItem to={`${base}/lineup`} label="Configuration" icon={SlidersHorizontal} />
+                <NavItem to={`${base}/production`} label="Contacts prod" icon={Users2} />
+              </>
+            )}
 
             {isEditor && (
               <>

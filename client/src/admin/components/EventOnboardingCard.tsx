@@ -53,7 +53,8 @@ export function EventOnboardingCard() {
         <li>
           <span className="n">1</span>
           <span>
-            <Link to={`${base}/lineup`}>Configuration</Link> — participants, quotas, contacts production
+            <Link to={`${base}/lineup`}>Configuration</Link> (participants) puis{' '}
+            <Link to={`${base}/production`}>Contacts prod</Link>
           </span>
         </li>
         <li>

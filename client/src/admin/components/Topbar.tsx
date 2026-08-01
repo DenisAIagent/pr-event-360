@@ -11,6 +11,7 @@ const PAGE_LABEL: Record<string, string> = {
   accreditations: 'Accréditations',
   'press-conferences': 'Conférences de presse',
   lineup: 'Configuration',
+  production: 'Contacts production',
   media: 'Médiathèque',
   newsroom: 'Newsroom',
   communications: 'Communications',

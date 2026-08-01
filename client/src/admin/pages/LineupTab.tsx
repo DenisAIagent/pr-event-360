@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Check, ArrowRight, ArrowLeft, Users2 } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import { ProductionContacts } from '../components/lineup/ProductionContacts';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import type { ArtistWithSlots, EventSettings, EventSummary, Lineup, Stage } from '../lib/types';
@@ -322,10 +321,21 @@ export function LineupTab() {
           </section>
 
           {artists.length > 0 && (
-            <ProductionContacts
-              eventId={eventId}
-              artists={artists.map((a) => ({ id: a.id, name: a.name }))}
-            />
+            <section className="share-card" style={{ marginTop: 'var(--space-3)' }}>
+              <div className="share-head">
+                <strong>
+                  <Users2 size={16} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+                  Contacts production
+                </strong>
+                <Link to={`/admin/events/${eventId}/production`} className="btn btn-primary btn-sm">
+                  Gérer les contacts →
+                </Link>
+              </div>
+              <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
+                Managers et productions d’artistes : page dédiée pour ajouter un contact et envoyer le
+                lien de validation des interviews.
+              </p>
+            </section>
           )}
         </>
       )}

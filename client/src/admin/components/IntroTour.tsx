@@ -57,7 +57,7 @@ const STEPS: Step[] = [
     title: '3. Configuration & production',
     body: 'Ajoutez scènes et participants, puis déclarez des contacts production. Ils reçoivent un lien pour donner un avis sur les interviews — sans modifier vos quotas.',
     tips: [
-      'Onglet Configuration → contacts production',
+      'Menu « Contacts prod » à côté de Configuration',
       'L’avis est consultatif : vous restez décisionnaire',
     ],
   },

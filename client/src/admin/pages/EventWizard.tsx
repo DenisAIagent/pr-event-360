@@ -556,9 +556,9 @@ function DoneStep({ eventId, onOpen }: { eventId: string; onOpen: () => void }) 
         <li>
           <span className="n">1</span>
           <span>
-            Complétez la{' '}
-            <Link to={`${base}/lineup`}>configuration</Link> (participants) et ajoutez des{' '}
-            <strong>contacts production</strong> s’ils doivent valider les interviews.
+            Complétez la <Link to={`${base}/lineup`}>configuration</Link> (participants), puis
+            l’onglet <Link to={`${base}/production`}>Contacts prod</Link> pour les validations
+            d’interviews.
           </span>
         </li>
         <li>
