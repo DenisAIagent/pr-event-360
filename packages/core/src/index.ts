@@ -6,3 +6,4 @@ export * from './scoring/priorityScore.js';
 export * from './quotas/checkQuota.js';
 export * from './waitlist/promote.js';
 export * from './pressConferences/registrationDecision.js';
+export * from './productionJobTitles.js';

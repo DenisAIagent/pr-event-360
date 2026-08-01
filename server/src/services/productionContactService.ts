@@ -1,3 +1,4 @@
+import { isProductionJobTitle } from '@pr-event-360/core';
 import { generateJournalistToken, hashJournalistToken } from '../lib/token';
 import { loadEnv } from '../config/env';
 import { AppError } from '../http/AppError';
@@ -53,9 +54,14 @@ async function assertArtistsInEvent(artistIds: string[], eventId: string): Promi
   }
 }
 
-function normalizeJobTitle(jobTitle?: string | null): string | null {
+function normalizeJobTitle(jobTitle?: string | null): string {
   const t = jobTitle?.trim() ?? '';
-  return t.length > 0 ? t : null;
+  if (!t || !isProductionJobTitle(t)) {
+    throw AppError.badRequest(
+      'Fonction invalide. Choisissez notamment « Régie artiste » ou « Régisseur de tournée ».',
+    );
+  }
+  return t;
 }
 
 export async function createProductionContact(input: {

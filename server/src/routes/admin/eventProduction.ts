@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { PRODUCTION_JOB_TITLES } from '@pr-event-360/core';
 import { asyncHandler } from '../../http/asyncHandler';
 import { sendData } from '../../http/respond';
 import { requireAuth, requireEventEditor } from '../../middleware/auth';
@@ -24,7 +25,9 @@ eventProductionRouter.use(requireAuth);
 
 const ContactSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  jobTitle: z.string().trim().max(200).nullish(),
+  jobTitle: z.enum(PRODUCTION_JOB_TITLES, {
+    errorMap: () => ({ message: 'Fonction invalide — choisissez une valeur de la liste.' }),
+  }),
   email: z.string().trim().email().max(320),
   artistIds: z.array(z.string().uuid()).max(200).default([]),
 });

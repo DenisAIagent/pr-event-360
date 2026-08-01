@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mail, Send, Trash2, Users2 } from 'lucide-react';
+import { PRODUCTION_JOB_TITLES, PRODUCTION_JOB_TITLE_HINTS } from '@pr-event-360/core';
 import { useAuthedApi } from '../../auth/AuthContext';
 import { useFetch } from '../../lib/useFetch';
 import { useToast } from '../Toast';
@@ -9,7 +10,7 @@ import { EmptyState } from '../EmptyState';
 export interface ProductionContact {
   id: string;
   name: string;
-  /** Fonction / poste (manager, attaché production…). */
+  /** Fonction / poste (liste prédéfinie : régie artiste, régisseur de tournée…). */
   jobTitle: string | null;
   email: string;
   tokenExpiresAt: string | null;
@@ -103,7 +104,9 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
         <h3 style={{ margin: 0 }}>Contacts production</h3>
         <p className="muted" style={{ margin: '4px 0 0' }}>
           Chaque contact reçoit un lien personnel pour donner son avis sur les demandes adressées à ses
-          artistes. Vous gardez la décision finale.
+          artistes. Vous gardez la décision finale. Pensez à inviter à la fois la{' '}
+          <strong>régie artiste</strong> (festival) et le <strong>régisseur de tournée</strong> (sur place
+          avec l’artiste) : tous deux doivent connaître les interviews validées.
         </p>
       </div>
 
@@ -168,13 +171,23 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
           </div>
           <div className="field">
             <label htmlFor="pc-job">Fonction</label>
-            <input
+            <select
               id="pc-job"
-              autoComplete="organization-title"
-              placeholder="Manager, attaché production…"
               value={form.jobTitle}
               onChange={(e) => setForm((f) => ({ ...f, jobTitle: e.target.value }))}
-            />
+            >
+              <option value="">— Choisir —</option>
+              {PRODUCTION_JOB_TITLES.map((title) => (
+                <option key={title} value={title}>
+                  {title}
+                </option>
+              ))}
+            </select>
+            {form.jobTitle && PRODUCTION_JOB_TITLE_HINTS[form.jobTitle as keyof typeof PRODUCTION_JOB_TITLE_HINTS] && (
+              <span className="field-hint">
+                {PRODUCTION_JOB_TITLE_HINTS[form.jobTitle as keyof typeof PRODUCTION_JOB_TITLE_HINTS]}
+              </span>
+            )}
           </div>
           <div className="field">
             <label htmlFor="pc-email">Mail</label>
