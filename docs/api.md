@@ -152,6 +152,11 @@ Corps de création/mise à jour :
 | POST | `/:eventId/accreditations/:journalistId/access-link/resend` | éditeur | rotation et renvoi |
 | DELETE | `/:eventId/accreditations/:journalistId` | éditeur | effacement RGPD |
 | GET | `/:eventId/accreditations/:journalistId/export` | éditeur | export JSON art. 15/20 |
+| GET | `/:eventId/exports/accreditations.csv` | accès événement | CSV journalistes (Excel FR) |
+| GET | `/:eventId/exports/requests.csv` | accès événement | CSV demandes (`?type=&status=`) |
+| GET | `/:eventId/exports/planning.csv` | accès événement | CSV planning interviews |
+| GET | `/:eventId/exports/coverage.csv` | accès événement | CSV retombées |
+| GET | `/:eventId/exports/bilan` | accès événement | JSON agrégé bilan presse |
 | GET | `/:eventId/requests?type=&status=&limit=` | accès événement | file triée, filtres en SQL, `limit` 1000 par défaut (max 5000) |
 | POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
 | POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |

@@ -173,6 +173,7 @@ Les tokens de reset, invitation et espace sont hashés.
 - score de priorité sans décision automatisée finale ;
 - droit à l’effacement par cascade ;
 - **export JSON art. 15/20** (espace journaliste + back-office) ;
+- exports opérationnels CSV / bilan (PII) : authentifiés, scopés multi-tenant, `Cache-Control: no-store` ;
 - suppression d’un journaliste : demandes, conférences et retombées ;
 - suppression événement/organisation : données rattachées ;
 - purge automatique des journalistes 12 mois après la fin de l’événement ;

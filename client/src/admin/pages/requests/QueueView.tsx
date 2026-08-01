@@ -5,6 +5,7 @@ import { useFetch } from '../../lib/useFetch';
 import type { EventBranding, QueueItem, RequestStatus, RequestType } from '../../lib/types';
 import { STATUS_BADGE, STATUS_LABEL, TYPE_LABEL, formatSlot } from '../../lib/labels';
 import { printTable } from '../../lib/printRequests';
+import { downloadCsv, fetchServerCsv } from '../../lib/csvDownload';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../../components/InfoBubble';
 import { EmptyState } from '../../components/EmptyState';
@@ -132,6 +133,41 @@ export function QueueView({
     });
   }
 
+  function exportCsv() {
+    const list = queue.data ?? [];
+    downloadCsv(
+      'demandes-filtre.csv',
+      ['Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut', 'Participant', 'Créneau'],
+      list.map((i) => [
+        Math.round(i.score),
+        TYPE_LABEL[i.type],
+        requesterName(i),
+        i.requester.media ?? '',
+        i.requester.email,
+        STATUS_LABEL[i.status],
+        i.subject.artistName ?? '',
+        formatSlot(i.subject) ?? '',
+      ]),
+    );
+    toast.success('CSV téléchargé (filtre courant).');
+  }
+
+  async function exportCsvFull() {
+    try {
+      const qs = new URLSearchParams();
+      if (typeF !== 'all') qs.set('type', typeF);
+      if (statusF !== 'all') qs.set('status', statusF);
+      const q = qs.toString();
+      await fetchServerCsv(
+        `/admin/events/${eventId}/exports/requests.csv${q ? `?${q}` : ''}`,
+        'demandes.csv',
+      );
+      toast.success('CSV serveur téléchargé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible.');
+    }
+  }
+
   return (
     <>
       <div className="toolbar">
@@ -143,8 +179,14 @@ export function QueueView({
         <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
         <StatusFilter value={statusF} onChange={setStatusF} />
         <div className="tb-spacer" />
+        <button className="btn btn-ghost btn-sm" onClick={exportCsv} disabled={(queue.data?.length ?? 0) === 0}>
+          <Icon name="download" /> CSV
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvFull()}>
+          <Icon name="download" /> CSV complet
+        </button>
         <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
-          <Icon name="download" /> Exporter
+          <Icon name="download" /> PDF
         </button>
       </div>
 

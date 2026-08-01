@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch';
 import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
 import { printTable } from '../lib/printRequests';
+import { downloadCsv, fetchServerCsv } from '../lib/csvDownload';
 import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonRows } from '../components/Skeleton';
@@ -156,6 +157,29 @@ export function AccreditationsTab() {
       (statusF === 'all' || a.accStatus === statusF),
   );
 
+  function exportCsvFiltered() {
+    const headers = ['Nom', 'Email', 'Média', 'Type', 'Langue', 'Statut'];
+    const rows = filtered.map((a) => [
+      `${a.firstName} ${a.lastName ?? ''}`.trim(),
+      a.email,
+      a.media ?? '',
+      a.accreditationType ? ACC_TYPE_LABEL[a.accreditationType] : '',
+      a.lang.toUpperCase(),
+      ACC_STATUS_LABEL[a.accStatus],
+    ]);
+    downloadCsv('accreditations-filtre.csv', headers, rows);
+    toast.success('CSV téléchargé (filtre courant).');
+  }
+
+  async function exportCsvFull() {
+    try {
+      await fetchServerCsv(`/admin/events/${eventId}/exports/accreditations.csv`, 'accreditations.csv');
+      toast.success('CSV complet téléchargé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible.');
+    }
+  }
+
   function exportPdf() {
     const rows = filtered.map((a) => [
       `${a.firstName} ${a.lastName ?? ''}`.trim(),
@@ -196,14 +220,22 @@ export function AccreditationsTab() {
             {o.l}
           </button>
         ))}
-        <button
-          className="btn btn-ghost btn-sm"
-          style={{ marginLeft: 'auto' }}
-          onClick={exportPdf}
-          disabled={filtered.length === 0}
-        >
-          <Download size={15} /> Exporter en PDF
-        </button>
+        <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={exportCsvFiltered}
+            disabled={filtered.length === 0}
+            title="CSV du filtre affiché"
+          >
+            <Download size={15} /> CSV
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvFull()} title="Export serveur complet">
+            <Download size={15} /> CSV complet
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={filtered.length === 0}>
+            <Download size={15} /> PDF
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>

@@ -17,6 +17,7 @@ import { eventsRouter } from './routes/admin/events';
 import { eventDomainsRouter } from './routes/admin/eventDomains';
 import { eventLineupRouter } from './routes/admin/eventLineup';
 import { eventPipelineRouter } from './routes/admin/eventPipeline';
+import { eventExportsRouter } from './routes/admin/eventExports';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
 import { searchRouter } from './routes/admin/search';
@@ -279,6 +280,8 @@ export function createApp(): Express {
   app.use('/api/admin/events', eventDomainsRouter);
   app.use('/api/admin/events', eventLineupRouter);
   app.use('/api/admin/events', eventPipelineRouter);
+  // Exports CSV + bilan presse (lecture, tout membre avec accès événement).
+  app.use('/api/admin/events', eventExportsRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).
   app.use('/api/admin/events', commsRouter);

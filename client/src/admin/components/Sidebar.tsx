@@ -19,6 +19,7 @@ import {
   Star,
   ShieldCheck,
   NotebookText,
+  BarChart3,
   LogOut,
   ChevronDown,
   Presentation,
@@ -105,6 +106,7 @@ export function Sidebar() {
     { to: `${base}/newsroom`, label: 'Newsroom', icon: Newspaper },
     { to: `${base}/communications`, label: 'Communications', icon: Megaphone },
     { to: `${base}/revue-presse`, label: 'Revue de presse', icon: NotebookText },
+    { to: `${base}/bilan`, label: 'Bilan', icon: BarChart3 },
   ];
   const REGLAGES: NavDef[] = [
     { to: `${base}/settings`, label: 'Paramètres', icon: Settings },

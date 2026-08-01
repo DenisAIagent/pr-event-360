@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   Newspaper, Globe, Tv, Radio, Share2, PlayCircle, Mic, Image as ImageIcon, Video, Link2,
-  Layers, UserCheck, Clock, BellRing, Send, X, ExternalLink,
+  Layers, UserCheck, Clock, BellRing, Send, X, ExternalLink, Download,
 } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import { EmptyState } from '../components/EmptyState';
 import { MEDIA_CATEGORIES, type PressCoverageItem } from '../../lib/mediaCategories';
+import { fetchServerCsv } from '../lib/csvDownload';
 
 interface CoverageTracking {
   journalistId: string;
@@ -90,12 +91,26 @@ export function RevuePresseTab() {
 
   return (
     <div className="stack" style={{ gap: 'var(--space-5)' }}>
-      <div>
-        <h2 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Revue de presse</h2>
-        <p className="muted" style={{ marginTop: 4, maxWidth: 640 }}>
-          Les retombées déposées par vos journalistes, classées par média. Chacun reçoit
-          automatiquement une invitation à les partager selon le délai qu'il a indiqué à l'inscription.
-        </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 280px' }}>
+          <h2 style={{ fontSize: 'var(--text-xl)', margin: 0 }}>Revue de presse</h2>
+          <p className="muted" style={{ marginTop: 4, maxWidth: 640 }}>
+            Les retombées déposées par vos journalistes, classées par média. Chacun reçoit
+            automatiquement une invitation à les partager selon le délai qu'il a indiqué à l'inscription.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={() => {
+            void fetchServerCsv(`/admin/events/${eventId}/exports/coverage.csv`, 'retombees.csv')
+              .then(() => toast.success('CSV retombées téléchargé.'))
+              .catch((err: unknown) => toast.error(err instanceof Error ? err.message : 'Export impossible.'));
+          }}
+          disabled={data.items.length === 0}
+        >
+          <Download size={14} /> CSV
+        </button>
       </div>
 
       {/* Résumé */}

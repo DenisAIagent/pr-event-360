@@ -4,6 +4,7 @@ import { useFetch } from '../../lib/useFetch';
 import type { EventBranding, Lineup, QueueItem, RequestStatus } from '../../lib/types';
 import { STATUS_BADGE, STATUS_LABEL, TYPE_LABEL, formatSlot } from '../../lib/labels';
 import { printTable, type PrintTableGroup } from '../../lib/printRequests';
+import { downloadCsv, fetchServerCsv } from '../../lib/csvDownload';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../../components/InfoBubble';
 import type { EventProfile } from '../../../lib/eventProfiles';
@@ -150,6 +151,35 @@ export function GroupedView({
     );
   }
 
+  function exportCsv() {
+    const rows: Array<Array<string | number>> = [];
+    for (const e of ordered) {
+      for (const i of grouped.get(e.id) ?? []) {
+        rows.push([
+          e.name,
+          Math.round(i.score),
+          TYPE_LABEL[i.type],
+          requesterName(i),
+          i.requester.media ?? '',
+          i.requester.email,
+          STATUS_LABEL[i.status],
+          formatSlot(i.subject) ?? '',
+        ]);
+      }
+    }
+    downloadCsv('demandes-groupees.csv', ['Groupe', 'Score', 'Type', 'Journaliste', 'Média', 'Email', 'Statut', 'Créneau'], rows);
+    toast.success('CSV téléchargé.');
+  }
+
+  async function exportCsvFull() {
+    try {
+      await fetchServerCsv(`/admin/events/${eventId}/exports/requests.csv`, 'demandes.csv');
+      toast.success('CSV serveur téléchargé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible.');
+    }
+  }
+
   return (
     <>
       <div className="filters">
@@ -168,14 +198,25 @@ export function GroupedView({
           </>
         )}
         <StatusFilter value={statusF} onChange={setStatusF} />
-        <button
-          className="btn btn-ghost btn-sm"
-          style={{ marginLeft: 'auto' }}
-          onClick={exportAll}
-          disabled={ordered.every((e) => (grouped.get(e.id)?.length ?? 0) === 0)}
-        >
-          <Icon name="download" /> Exporter en PDF
-        </button>
+        <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={exportCsv}
+            disabled={ordered.every((e) => (grouped.get(e.id)?.length ?? 0) === 0)}
+          >
+            <Icon name="download" /> CSV
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvFull()}>
+            <Icon name="download" /> CSV complet
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={exportAll}
+            disabled={ordered.every((e) => (grouped.get(e.id)?.length ?? 0) === 0)}
+          >
+            <Icon name="download" /> PDF
+          </button>
+        </div>
       </div>
 
       {(queue.loading || lineup.loading) && <p className="muted">Chargement…</p>}

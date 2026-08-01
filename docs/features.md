@@ -93,6 +93,7 @@ Une conférence est affichée après confirmation et publication par le RP :
 | Newsroom | communiqués et SEO |
 | Communications | newsletters ciblées et aperçu |
 | Revue de presse | retombées, suivi et relances |
+| Bilan | KPIs, exports CSV Excel, impression PDF du bilan presse |
 | Paramètres | poids, templates, clôture, récap et domaines |
 | Apparence | logo et couleurs |
 | Aperçu | accréditation, espace et newsroom dans une iframe authentifiée par cookie |
@@ -106,7 +107,13 @@ Une conférence est affichée après confirmation et publication par le RP :
 - vue planning chronologique ;
 - action groupée dans la limite du quota ;
 - attribution automatique des créneaux par priorité ;
-- exports via l’impression navigateur.
+- exports PDF (impression navigateur) et **CSV Excel-friendly** (filtre UI + export serveur).
+
+### Bilan et exports
+
+- onglet **Bilan** : KPIs accréditations / demandes / retombées, tops médias et participants ;
+- CSV serveur UTF-8 BOM + `;` : accréditations, demandes, planning, retombées ;
+- bilan imprimable → « Enregistrer en PDF » (branding de l’événement).
 
 ### Conférences côté RP
 

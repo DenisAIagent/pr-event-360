@@ -4,6 +4,7 @@ import { useFetch } from '../../lib/useFetch';
 import type { EventBranding, QueueItem, RequestStatus } from '../../lib/types';
 import { STATUS_LABEL, formatSlotDate } from '../../lib/labels';
 import { printTable, type PrintTableGroup } from '../../lib/printRequests';
+import { downloadCsv, fetchServerCsv } from '../../lib/csvDownload';
 import { Icon } from '../../../components/Icon';
 import { InfoBubble } from '../../components/InfoBubble';
 import { useToast } from '../../components/Toast';
@@ -121,6 +122,45 @@ export function PlanningView({
     });
   }
 
+  function exportCsv() {
+    const rows: Array<Array<string | number>> = [];
+    for (const [day, items] of days) {
+      for (const i of items) {
+        rows.push([
+          formatSlotDate(day),
+          timeRange(i),
+          i.subject.artistName ?? '',
+          requesterName(i),
+          i.requester.media ?? '',
+          i.requester.email,
+          STATUS_LABEL[i.status],
+        ]);
+      }
+    }
+    for (const i of noSlot) {
+      rows.push([
+        'Sans créneau',
+        timeRange(i),
+        i.subject.artistName ?? '',
+        requesterName(i),
+        i.requester.media ?? '',
+        i.requester.email,
+        STATUS_LABEL[i.status],
+      ]);
+    }
+    downloadCsv('planning.csv', ['Jour', 'Créneau', 'Participant', 'Journaliste', 'Média', 'Email', 'Statut'], rows);
+    toast.success('CSV téléchargé.');
+  }
+
+  async function exportCsvServer() {
+    try {
+      await fetchServerCsv(`/admin/events/${eventId}/exports/planning.csv`, 'planning.csv');
+      toast.success('CSV planning serveur téléchargé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible.');
+    }
+  }
+
   const empty = days.length === 0 && noSlot.length === 0;
 
   return (
@@ -135,14 +175,20 @@ export function PlanningView({
         >
           <Icon name="check" /> {busy ? 'Génération…' : 'Générer le planning'}
         </button>
+        <button className="btn btn-ghost btn-sm" onClick={exportCsv} disabled={empty}>
+          <Icon name="download" /> CSV
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvServer()}>
+          <Icon name="download" /> CSV serveur
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={exportPlanning} disabled={empty}>
+          <Icon name="download" /> PDF
+        </button>
         <InfoBubble title="Générer le planning">
           Attribue les créneaux aux interviews <strong>acceptées</strong>, par priorité (meilleur score →
           créneau le plus tôt). Vous pouvez le relancer à tout moment&nbsp;: il <strong>recalcule et
           réattribue</strong> tous les créneaux. Les demandes non acceptées ne sont pas planifiées.
         </InfoBubble>
-        <button className="btn btn-ghost btn-sm" onClick={exportPlanning} disabled={empty}>
-          <Icon name="download" /> Exporter en PDF
-        </button>
       </div>
       <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-2)' }}>
         « Générer le planning » attribue automatiquement les créneaux aux interviews{' '}
