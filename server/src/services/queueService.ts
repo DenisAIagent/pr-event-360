@@ -32,11 +32,15 @@ export interface QueueItem {
     slotEnd: string | null;
   };
   quota: { used: number; limit: number } | null; // null si pas de quota applicable (ex. vidéo)
+  assignedTo: { id: string; fullName: string } | null;
+  notesCount: number;
 }
 
 export interface QueueFilters {
   type?: RequestType;
   status?: RequestStatus;
+  /** uuid | 'unassigned' */
+  assignedTo?: string;
 }
 
 /**
@@ -63,7 +67,11 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
     await Promise.all([
       // Filtres poussés en SQL + résultat borné (1000 par défaut côté repo) :
       // la file ne charge jamais la totalité des demandes d'un événement.
-      listEnrichedByEvent(eventId, { type: filters.type, status: filters.status }),
+      listEnrichedByEvent(eventId, {
+        type: filters.type,
+        status: filters.status,
+        assignedTo: filters.assignedTo,
+      }),
       listArtists(eventId),
       grantedInterviewCountsByEvent(eventId),
       acceptedPhotoCountsByEvent(eventId),
@@ -116,6 +124,11 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
           slotEnd: r.slotEnd,
         },
         quota,
+        assignedTo:
+          r.assignedToId && r.assignedToName
+            ? { id: r.assignedToId, fullName: r.assignedToName }
+            : null,
+        notesCount: r.notesCount,
       };
     });
 

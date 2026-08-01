@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Inbox, Mic, Camera, Video, Clock, Check, ArrowUp, type LucideIcon } from 'lucide-react';
+import { Inbox, Mic, Camera, Video, Clock, Check, ArrowUp, MessageSquare, type LucideIcon } from 'lucide-react';
 import { useAuthedApi } from '../../auth/AuthContext';
 import { useFetch } from '../../lib/useFetch';
 import type { EventBranding, QueueItem, RequestStatus, RequestType } from '../../lib/types';
@@ -11,6 +11,7 @@ import { InfoBubble } from '../../components/InfoBubble';
 import { EmptyState } from '../../components/EmptyState';
 import { SkeletonRows } from '../../components/Skeleton';
 import { useToast } from '../../components/Toast';
+import { RequestDetailDrawer } from '../../components/RequestDetailDrawer';
 import {
   QUEUE_COLUMNS,
   TYPE_FILTERS,
@@ -21,6 +22,8 @@ import {
   toCells,
   nowStr,
 } from './shared';
+
+type AssignFilter = 'all' | 'me' | 'unassigned';
 
 const TYPE_TAG_CLASS: Record<RequestType, string> = {
   interview: 't-itw',
@@ -59,13 +62,17 @@ export function QueueView({
 }) {
   const apiAuthed = useAuthedApi();
   const toast = useToast();
+  const [assignF, setAssignF] = useState<AssignFilter>('all');
+  const [detail, setDetail] = useState<QueueItem | null>(null);
   const query = useMemo(() => {
     const p = new URLSearchParams();
     if (typeF !== 'all') p.set('type', typeF);
     if (statusF !== 'all') p.set('status', statusF);
+    if (assignF === 'me') p.set('assignedTo', 'me');
+    if (assignF === 'unassigned') p.set('assignedTo', 'unassigned');
     const s = p.toString();
     return s ? `?${s}` : '';
-  }, [typeF, statusF]);
+  }, [typeF, statusF, assignF]);
 
   const queue = useFetch<QueueItem[]>(
     () => apiAuthed.get<QueueItem[]>(`/admin/events/${eventId}/requests${query}`),
@@ -178,6 +185,23 @@ export function QueueView({
         ))}
         <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
         <StatusFilter value={statusF} onChange={setStatusF} />
+        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
+        {(
+          [
+            { v: 'all' as const, l: 'Toutes' },
+            { v: 'me' as const, l: 'Miennes' },
+            { v: 'unassigned' as const, l: 'Non assignées' },
+          ] as const
+        ).map((f) => (
+          <button
+            key={f.v}
+            className="chip"
+            aria-pressed={assignF === f.v}
+            onClick={() => setAssignF(f.v)}
+          >
+            {f.l}
+          </button>
+        ))}
         <div className="tb-spacer" />
         <button className="btn btn-ghost btn-sm" onClick={exportCsv} disabled={(queue.data?.length ?? 0) === 0}>
           <Icon name="download" /> CSV
@@ -224,7 +248,14 @@ export function QueueView({
               </div>
             </div>
             {items.map((r, i) => (
-              <QueueRow key={r.id} item={r} maxScore={maxScore} onChange={changeStatus} active={i === activeIdx} />
+              <QueueRow
+                key={r.id}
+                item={r}
+                maxScore={maxScore}
+                onChange={changeStatus}
+                active={i === activeIdx}
+                onOpen={() => setDetail(r)}
+              />
             ))}
             <div className="q-foot">
               <div>
@@ -234,6 +265,17 @@ export function QueueView({
           </div>
         </>
       )}
+
+      <RequestDetailDrawer
+        eventId={eventId}
+        item={detail}
+        open={!!detail}
+        onClose={() => setDetail(null)}
+        onChanged={() => {
+          queue.reload();
+          onChanged();
+        }}
+      />
     </>
   );
 }
@@ -244,11 +286,13 @@ function QueueRow({
   maxScore,
   onChange,
   active,
+  onOpen,
 }: {
   item: QueueItem;
   maxScore: number;
   onChange: (id: string, s: RequestStatus) => void;
   active?: boolean;
+  onOpen: () => void;
 }) {
   const subject = item.subject.artistName ?? item.subject.stageName ?? '—';
   const slot = formatSlot(item.subject);
@@ -259,9 +303,25 @@ function QueueRow({
   const initials =
     `${item.requester.firstName?.[0] ?? ''}${item.requester.lastName?.[0] ?? ''}`.toUpperCase() || '—';
 
+  const assignInitials = item.assignedTo
+    ? item.assignedTo.fullName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase() ?? '')
+        .join('')
+    : null;
+
   return (
     <div
       className={`row ${tier}${item.status === 'liste_attente' ? ' is-waitlist' : ''}${active ? ' is-active' : ''}`}
+      style={{ cursor: 'pointer' }}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onOpen();
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="c-score">
         <div className="score-bar">
@@ -305,15 +365,34 @@ function QueueRow({
             </div>
           </div>
         )}
+        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          {item.assignedTo && (
+            <span
+              className="badge"
+              title={`Assigné à ${item.assignedTo.fullName}`}
+              style={{ fontSize: 11 }}
+            >
+              {assignInitials} · {item.assignedTo.fullName.split(' ')[0]}
+            </span>
+          )}
+          {(item.notesCount ?? 0) > 0 && (
+            <span className="muted" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <MessageSquare size={11} /> {item.notesCount}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="c-stat">
         <span className={`badge ${STATUS_BADGE[item.status]}`}>{STATUS_LABEL[item.status]}</span>
       </div>
 
-      <div className="c-act">
+      <div className="c-act" onClick={(e) => e.stopPropagation()}>
         <QueueActions item={item} onChange={onChange} />
         <StatusSelect item={item} onChange={onChange} />
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onOpen} title="Détail & notes">
+          Notes
+        </button>
       </div>
     </div>
   );

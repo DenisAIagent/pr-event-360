@@ -157,6 +157,12 @@ Corps de création/mise à jour :
 | GET | `/:eventId/exports/planning.csv` | accès événement | CSV planning interviews |
 | GET | `/:eventId/exports/coverage.csv` | accès événement | CSV retombées |
 | GET | `/:eventId/exports/bilan` | accès événement | JSON agrégé bilan presse |
+| GET | `/:eventId/assignees` | accès événement | membres assignables |
+| PATCH | `/:eventId/requests/:requestId/assign` | accès événement | `{ userId: uuid \| null }` |
+| GET | `/:eventId/requests/:requestId/timeline` | accès événement | historique + notes |
+| POST | `/:eventId/requests/:requestId/notes` | accès événement | `{ body }` note interne |
+
+`GET …/requests` accepte aussi `?assignedTo=me|unassigned|<uuid>`.
 | GET | `/:eventId/requests?type=&status=&limit=` | accès événement | file triée, filtres en SQL, `limit` 1000 par défaut (max 5000) |
 | POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
 | POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |

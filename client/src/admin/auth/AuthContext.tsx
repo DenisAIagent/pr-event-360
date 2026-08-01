@@ -175,6 +175,7 @@ export function useAuthedApi() {
       get: <T,>(path: string) => guard(api.get<T>(path)),
       post: <T,>(path: string, body?: unknown) => guard(api.post<T>(path, body)),
       put: <T,>(path: string, body?: unknown) => guard(api.put<T>(path, body)),
+      patch: <T,>(path: string, body?: unknown) => guard(api.patch<T>(path, body)),
       delete: <T,>(path: string) => guard(api.del<T>(path)),
     };
   }, [logout]);

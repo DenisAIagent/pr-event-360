@@ -193,6 +193,7 @@ export interface RequestRecord {
   stageId: string | null;
   message: string | null;
   status: RequestStatus;
+  assignedTo: string | null;
   createdAt: string;
 }
 
@@ -202,7 +203,19 @@ export interface RequestStatusHistoryEntry {
   status: RequestStatus;
   changedAt: string;
   changedBy: string | null;
+  changedByName: string | null;
   note: string | null;
+}
+
+export interface RequestNote {
+  id: string;
+  requestId: string;
+  eventId: string;
+  authorId: string | null;
+  authorName: string | null;
+  body: string;
+  kind: 'note' | 'assignment';
+  createdAt: string;
 }
 
 // Catégories de média pour la revue de presse (retombées classées).

@@ -254,7 +254,37 @@ export interface QueueItem {
     slotEnd: string | null;
   };
   quota: { used: number; limit: number } | null;
+  assignedTo: { id: string; fullName: string } | null;
+  notesCount: number;
 }
+
+export interface RequestAssignee {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+}
+
+export type RequestTimelineItem =
+  | {
+      kind: 'status';
+      at: string;
+      status: RequestStatus;
+      author: { id: string; fullName: string } | null;
+      note: string | null;
+    }
+  | {
+      kind: 'note';
+      at: string;
+      author: { id: string; fullName: string } | null;
+      body: string;
+    }
+  | {
+      kind: 'assignment';
+      at: string;
+      author: { id: string; fullName: string } | null;
+      body: string;
+    };
 
 export interface Dashboard {
   total: number;

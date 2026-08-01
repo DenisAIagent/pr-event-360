@@ -85,7 +85,7 @@ Une conférence est affichée après confirmation et publication par le RP :
 
 | Onglet | Fonction |
 |---|---|
-| Demandes | file, groupes par participant, planning, score, transitions |
+| Demandes | file, groupes, planning, score, **assignation, notes, timeline** |
 | Accréditations | acceptation, refus, renvoi du lien, export, effacement |
 | Configuration | lieux, participants, disponibilités, quotas et règles |
 | Conférences de presse | CRUD, publication, participants, invitations, inscriptions, check-in |
@@ -107,7 +107,8 @@ Une conférence est affichée après confirmation et publication par le RP :
 - vue planning chronologique ;
 - action groupée dans la limite du quota ;
 - attribution automatique des créneaux par priorité ;
-- exports PDF (impression navigateur) et **CSV Excel-friendly** (filtre UI + export serveur).
+- exports PDF (impression navigateur) et **CSV Excel-friendly** (filtre UI + export serveur) ;
+- **collaboration** : assignation à un membre, notes internes, timeline (statuts + notes), filtres « Miennes / Non assignées ».
 
 ### Bilan et exports
 

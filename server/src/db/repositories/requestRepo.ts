@@ -1,6 +1,6 @@
 import { pool } from '../pool';
 import type { Queryable } from '../types';
-import type { RequestRecord, RequestStatusHistoryEntry } from '../../domain';
+import type { RequestNote, RequestRecord, RequestStatusHistoryEntry } from '../../domain';
 import {
   GRANTED_INTERVIEW_STATUSES,
   type Lang,
@@ -18,6 +18,7 @@ interface RequestRow {
   stage_id: string | null;
   message: string | null;
   status: RequestStatus;
+  assigned_to: string | null;
   created_at: string;
 }
 const map = (r: RequestRow): RequestRecord => ({
@@ -30,9 +31,10 @@ const map = (r: RequestRow): RequestRecord => ({
   stageId: r.stage_id,
   message: r.message,
   status: r.status,
+  assignedTo: r.assigned_to,
   createdAt: r.created_at,
 });
-const COLS = `id, event_id, journalist_id, type, artist_id, slot_id, stage_id, message, status, created_at`;
+const COLS = `id, event_id, journalist_id, type, artist_id, slot_id, stage_id, message, status, assigned_to, created_at`;
 
 export interface CreateRequestInput {
   eventId: string;
@@ -128,13 +130,21 @@ export async function addHistory(
   );
 }
 
+interface HistoryDbRow extends HistoryRow {
+  changed_by_name: string | null;
+}
+
 export async function listHistory(
   requestId: string,
   db: Queryable = pool,
 ): Promise<RequestStatusHistoryEntry[]> {
-  const { rows } = await db.query<HistoryRow>(
-    `SELECT id, request_id, status, changed_at, changed_by, note
-     FROM request_status_history WHERE request_id = $1 ORDER BY changed_at ASC`,
+  const { rows } = await db.query<HistoryDbRow>(
+    `SELECT h.id, h.request_id, h.status, h.changed_at, h.changed_by, h.note,
+            u.full_name AS changed_by_name
+     FROM request_status_history h
+     LEFT JOIN users u ON u.id = h.changed_by
+     WHERE h.request_id = $1
+     ORDER BY h.changed_at ASC`,
     [requestId],
   );
   return rows.map((r) => ({
@@ -143,8 +153,83 @@ export async function listHistory(
     status: r.status,
     changedAt: r.changed_at,
     changedBy: r.changed_by,
+    changedByName: r.changed_by_name,
     note: r.note,
   }));
+}
+
+export async function updateRequestAssignment(
+  requestId: string,
+  eventId: string,
+  assignedTo: string | null,
+  db: Queryable = pool,
+): Promise<RequestRecord | null> {
+  const { rows } = await db.query<RequestRow>(
+    `UPDATE requests SET assigned_to = $3
+     WHERE id = $1 AND event_id = $2
+     RETURNING ${COLS}`,
+    [requestId, eventId, assignedTo],
+  );
+  return rows[0] ? map(rows[0]) : null;
+}
+
+interface NoteRow {
+  id: string;
+  request_id: string;
+  event_id: string;
+  author_id: string | null;
+  author_name: string | null;
+  body: string;
+  kind: 'note' | 'assignment';
+  created_at: string;
+}
+
+const mapNote = (r: NoteRow): RequestNote => ({
+  id: r.id,
+  requestId: r.request_id,
+  eventId: r.event_id,
+  authorId: r.author_id,
+  authorName: r.author_name,
+  body: r.body,
+  kind: r.kind,
+  createdAt: r.created_at,
+});
+
+export async function insertRequestNote(
+  input: {
+    requestId: string;
+    eventId: string;
+    authorId: string | null;
+    body: string;
+    kind?: 'note' | 'assignment';
+  },
+  db: Queryable = pool,
+): Promise<RequestNote> {
+  const { rows } = await db.query<NoteRow>(
+    `INSERT INTO request_notes (request_id, event_id, author_id, body, kind)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, request_id, event_id, author_id, body, kind, created_at,
+       (SELECT full_name FROM users WHERE id = $3) AS author_name`,
+    [input.requestId, input.eventId, input.authorId, input.body, input.kind ?? 'note'],
+  );
+  return mapNote(rows[0]!);
+}
+
+export async function listRequestNotes(
+  requestId: string,
+  eventId: string,
+  db: Queryable = pool,
+): Promise<RequestNote[]> {
+  const { rows } = await db.query<NoteRow>(
+    `SELECT n.id, n.request_id, n.event_id, n.author_id, n.body, n.kind, n.created_at,
+            u.full_name AS author_name
+     FROM request_notes n
+     LEFT JOIN users u ON u.id = n.author_id
+     WHERE n.request_id = $1 AND n.event_id = $2
+     ORDER BY n.created_at ASC`,
+    [requestId, eventId],
+  );
+  return rows.map(mapNote);
 }
 
 // ── Comptages de quota (dérivés du statut) ──────────────────────────
@@ -202,6 +287,9 @@ export interface EnrichedRequestRow {
   slotDay: string | null;
   slotStart: string | null;
   slotEnd: string | null;
+  assignedToId: string | null;
+  assignedToName: string | null;
+  notesCount: number;
 }
 
 interface EnrichedDbRow {
@@ -227,6 +315,9 @@ interface EnrichedDbRow {
   slot_day: string | null;
   slot_start: string | null;
   slot_end: string | null;
+  assigned_to: string | null;
+  assigned_to_name: string | null;
+  notes_count: string | number;
 }
 
 const ENRICHED_SELECT = `
@@ -237,7 +328,10 @@ const ENRICHED_SELECT = `
          rtw.multiplier AS type_multiplier,
          a.id AS artist_id, a.name AS artist_name,
          s.id AS stage_id, s.name AS stage_name,
-         sl.id AS slot_id, sl.day AS slot_day, sl.start_time AS slot_start, sl.end_time AS slot_end
+         sl.id AS slot_id, sl.day AS slot_day, sl.start_time AS slot_start, sl.end_time AS slot_end,
+         r.assigned_to,
+         au.full_name AS assigned_to_name,
+         (SELECT count(*)::int FROM request_notes rn WHERE rn.request_id = r.id) AS notes_count
   FROM requests r
   JOIN journalists j ON j.id = r.journalist_id
   LEFT JOIN media_types mt ON mt.id = j.media_type_id
@@ -245,6 +339,7 @@ const ENRICHED_SELECT = `
   LEFT JOIN artists a ON a.id = r.artist_id
   LEFT JOIN stages s ON s.id = r.stage_id
   LEFT JOIN interview_slots sl ON sl.id = r.slot_id
+  LEFT JOIN users au ON au.id = r.assigned_to
 `;
 
 const mapEnriched = (r: EnrichedDbRow): EnrichedRequestRow => ({
@@ -270,11 +365,16 @@ const mapEnriched = (r: EnrichedDbRow): EnrichedRequestRow => ({
   slotDay: r.slot_day,
   slotStart: r.slot_start,
   slotEnd: r.slot_end,
+  assignedToId: r.assigned_to,
+  assignedToName: r.assigned_to_name,
+  notesCount: Number(r.notes_count ?? 0),
 });
 
 export interface EnrichedListFilters {
   type?: string;
   status?: string;
+  /** uuid | 'unassigned' — filtre d'assignation */
+  assignedTo?: string;
   /** Borne dure de lignes chargées (défense contre les très gros événements). */
   limit?: number;
 }
@@ -291,13 +391,18 @@ export async function listEnrichedByEvent(
   db: Queryable = pool,
 ): Promise<EnrichedRequestRow[]> {
   const limit = Math.min(Math.max(filters.limit ?? 1000, 1), 5000);
+  const assignedTo = filters.assignedTo;
+  const unassigned = assignedTo === 'unassigned';
+  const assignedUuid = assignedTo && assignedTo !== 'unassigned' ? assignedTo : null;
   const { rows } = await db.query<EnrichedDbRow>(
     `${ENRICHED_SELECT} WHERE r.event_id = $1
        AND ($2::text IS NULL OR r.type = $2::request_type)
        AND ($3::text IS NULL OR r.status = $3::request_status)
+       AND ($4::boolean IS NOT TRUE OR r.assigned_to IS NULL)
+       AND ($5::uuid IS NULL OR r.assigned_to = $5)
      ORDER BY r.created_at DESC
-     LIMIT $4`,
-    [eventId, filters.type ?? null, filters.status ?? null, limit],
+     LIMIT $6`,
+    [eventId, filters.type ?? null, filters.status ?? null, unassigned, assignedUuid, limit],
   );
   return rows.map(mapEnriched);
 }

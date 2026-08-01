@@ -142,7 +142,13 @@ eventPipelineRouter.get(
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     const type = REQUEST_TYPE.optional().parse(req.query.type || undefined);
     const status = STATUS.optional().parse(req.query.status || undefined);
-    sendData(res, await getQueue(req.params.eventId!, { type, status }));
+    // assignedTo : uuid | "me" | "unassigned"
+    const rawAssigned = typeof req.query.assignedTo === 'string' ? req.query.assignedTo : undefined;
+    let assignedTo: string | undefined;
+    if (rawAssigned === 'me') assignedTo = req.user!.sub;
+    else if (rawAssigned === 'unassigned') assignedTo = 'unassigned';
+    else if (rawAssigned && z.string().uuid().safeParse(rawAssigned).success) assignedTo = rawAssigned;
+    sendData(res, await getQueue(req.params.eventId!, { type, status, assignedTo }));
   }),
 );
 
