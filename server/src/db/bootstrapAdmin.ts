@@ -27,10 +27,9 @@ async function main(): Promise<void> {
     console.log('Bootstrap admin ignoré : ADMIN_EMAIL/ADMIN_PASSWORD non définis.');
     return;
   }
-  if (password.length < 12) {
-    throw new Error('ADMIN_PASSWORD doit faire au moins 12 caractères (politique de mot de passe).');
-  }
 
+  // Compte déjà présent : on garantit les rôles sans retoucher le mot de passe.
+  // (ADMIN_PASSWORD peut être un ancien secret court — ne doit pas bloquer le démarrage.)
   const existing = await findUserByEmail(email);
   if (existing) {
     if (existing.role !== 'admin') await updateUserRole(existing.id, 'admin');
@@ -39,6 +38,12 @@ async function main(): Promise<void> {
     }
     console.log(`Compte « ${email} » garanti admin + super-admin plateforme.`);
     return;
+  }
+
+  if (password.length < 12) {
+    throw new Error(
+      'ADMIN_PASSWORD doit faire au moins 12 caractères pour créer le premier admin (politique de mot de passe).',
+    );
   }
 
   const org =
