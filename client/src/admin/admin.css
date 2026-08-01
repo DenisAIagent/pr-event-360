@@ -3004,6 +3004,51 @@ select.status-select {
   background: #000;
   object-fit: cover;
 }
+.dayof-filter {
+  width: 100%;
+  overflow-x: auto;
+}
+.dayof-filter button {
+  flex: 1 1 auto;
+  min-height: 40px;
+  white-space: nowrap;
+}
+.dayof-arrival {
+  padding: 14px !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch !important;
+}
+.dayof-arrival-main {
+  min-width: 0;
+}
+.dayof-arrival-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dayof-manual-btn {
+  width: 100%;
+  min-height: 52px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+.dayof-arrival.is-present {
+  background: color-mix(in srgb, var(--color-success, #16a34a) 7%, #fff);
+}
+.dayof-checkin summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.dayof-checkin summary::-webkit-details-marker {
+  display: none;
+}
 
 /* ── Recherche globale (dropdown du header) ── */
 .search-wrap {
