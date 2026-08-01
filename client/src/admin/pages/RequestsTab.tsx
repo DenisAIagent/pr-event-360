@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Inbox, Mic, Camera, Video, Clock, Users } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
@@ -23,6 +23,14 @@ export function RequestsTab() {
   const [statusF, setStatusF] = useState<RequestStatus | 'all'>('all');
 
   const dash = useFetch<Dashboard>(() => apiAuthed.get<Dashboard>(`/admin/events/${eventId}/dashboard`), [eventId]);
+
+  // Ouvrir cet onglet vaut consultation des avis production : le compteur du
+  // rail retombe à zéro. Best-effort — un échec ne doit pas gêner la lecture.
+  useEffect(() => {
+    if (!eventId) return;
+    void apiAuthed.post(`/admin/events/${eventId}/reviews/seen`, {}).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId]);
   const ev = useFetch<EventSummary>(() => apiAuthed.get<EventSummary>(`/admin/events/${eventId}`), [eventId]);
   const eventName = ev.data?.name ?? 'Événement';
   const branding = ev.data?.branding ?? null;

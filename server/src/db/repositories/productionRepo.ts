@@ -220,3 +220,113 @@ export async function reviewsByContact(contactId: string, db: Queryable = pool):
   );
   return new Map(rows.map((r) => [r.request_id, mapReview(r)]));
 }
+
+// ── Alertes sur les avis ────────────────────────────────────────────
+
+/** Avis enregistrés dans une fenêtre, pour le récapitulatif quotidien. */
+export interface ReviewDigestRow {
+  requestId: string;
+  verdict: ReviewVerdict;
+  comment: string | null;
+  contactName: string | null;
+  artistName: string | null;
+  journalistName: string;
+  media: string | null;
+  requestType: string;
+  at: Date;
+}
+
+export async function reviewsSince(
+  eventId: string,
+  sinceIso: string,
+  db: Queryable = pool,
+): Promise<ReviewDigestRow[]> {
+  const { rows } = await db.query<{
+    request_id: string;
+    verdict: ReviewVerdict;
+    comment: string | null;
+    contact_name: string | null;
+    artist_name: string | null;
+    journalist_name: string;
+    request_type: string;
+    updated_at: Date;
+    media: string | null;
+  }>(
+    `SELECT rv.request_id, rv.verdict, rv.comment, rv.updated_at,
+            c.name AS contact_name,
+            a.name AS artist_name,
+            trim(concat(j.first_name, ' ', coalesce(j.last_name, ''))) AS journalist_name,
+            j.media,
+            r.type::text AS request_type
+     FROM request_reviews rv
+     JOIN requests r ON r.id = rv.request_id
+     JOIN journalists j ON j.id = r.journalist_id
+     LEFT JOIN artists a ON a.id = r.artist_id
+     LEFT JOIN production_contacts c ON c.id = rv.contact_id
+     WHERE rv.event_id = $1 AND rv.updated_at > $2
+     ORDER BY rv.updated_at ASC`,
+    [eventId, sinceIso],
+  );
+  return rows.map((r) => ({
+    requestId: r.request_id,
+    verdict: r.verdict,
+    comment: r.comment,
+    contactName: r.contact_name,
+    artistName: r.artist_name,
+    journalistName: r.journalist_name,
+    media: r.media,
+    requestType: r.request_type,
+    at: r.updated_at,
+  }));
+}
+
+/** Événements ayant reçu au moins un avis depuis leur dernier récapitulatif. */
+export async function eventsWithPendingReviews(db: Queryable = pool): Promise<string[]> {
+  const { rows } = await db.query<{ event_id: string }>(
+    `SELECT DISTINCT rv.event_id
+     FROM request_reviews rv
+     LEFT JOIN production_digest_state s ON s.event_id = rv.event_id
+     WHERE s.last_sent_at IS NULL OR rv.updated_at > s.last_sent_at`,
+  );
+  return rows.map((r) => r.event_id);
+}
+
+export async function getDigestSentAt(eventId: string, db: Queryable = pool): Promise<string | null> {
+  const { rows } = await db.query<{ last_sent_at: Date | null }>(
+    'SELECT last_sent_at FROM production_digest_state WHERE event_id = $1',
+    [eventId],
+  );
+  return rows[0]?.last_sent_at ? rows[0].last_sent_at.toISOString() : null;
+}
+
+export async function touchDigestSent(eventId: string, db: Queryable = pool): Promise<void> {
+  await db.query(
+    `INSERT INTO production_digest_state (event_id, last_sent_at) VALUES ($1, now())
+     ON CONFLICT (event_id) DO UPDATE SET last_sent_at = now()`,
+    [eventId],
+  );
+}
+
+/** Nombre d'avis qu'un membre n'a pas encore consultés sur un événement. */
+export async function countUnseenReviews(
+  userId: string,
+  eventId: string,
+  db: Queryable = pool,
+): Promise<number> {
+  const { rows } = await db.query<{ n: number }>(
+    `SELECT count(*)::int AS n
+     FROM request_reviews rv
+     LEFT JOIN review_seen_marks m ON m.user_id = $1 AND m.event_id = rv.event_id
+     WHERE rv.event_id = $2 AND (m.seen_at IS NULL OR rv.updated_at > m.seen_at)`,
+    [userId, eventId],
+  );
+  return rows[0]?.n ?? 0;
+}
+
+export async function markReviewsSeen(userId: string, eventId: string, db: Queryable = pool): Promise<void> {
+  await db.query(
+    `INSERT INTO review_seen_marks (user_id, event_id, seen_at) VALUES ($1, $2, now())
+     ON CONFLICT (user_id, event_id) DO UPDATE SET seen_at = now()`,
+    [userId, eventId],
+  );
+}

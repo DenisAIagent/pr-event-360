@@ -3,6 +3,7 @@ import { pool } from './db/pool';
 import { sendRecapsForFrequency } from './services/recapService';
 import { purgeExpiredJournalists } from './services/retentionService';
 import { sendCoverageRequests } from './services/coverageService';
+import { sendProductionDigests } from './services/productionDigestService';
 import { purgeAuditEntriesOlderThan } from './db/repositories/auditRepo';
 import { purgeNotificationsOlderThan } from './db/repositories/notificationRepo';
 import { captureError } from './lib/sentry';
@@ -53,6 +54,7 @@ const LOCK = {
   auditRetention: 720_004,
   coverage: 720_005,
   notifRetention: 720_006,
+  productionDigest: 720_007,
 } as const;
 
 /**
@@ -69,6 +71,18 @@ export function startScheduler(): void {
     '0 8 * * *',
     () => {
       void runExclusive(LOCK.recapDaily, 'daily', () => sendRecapsForFrequency('daily')).catch(jobFailed('daily'));
+    },
+    { timezone: tz },
+  );
+
+  // Décalé d'une heure du récap inscriptions : deux emails simultanés au même
+  // destinataire se lisent mal, et l'un masquerait l'autre.
+  cron.schedule(
+    '0 9 * * *',
+    () => {
+      void runExclusive(LOCK.productionDigest, 'avis-production', () => sendProductionDigests()).catch(
+        jobFailed('avis-production'),
+      );
     },
     { timezone: tz },
   );

@@ -13,6 +13,7 @@ import {
   removeProductionContact,
   sendProductionAccessLink,
 } from '../../services/productionContactService';
+import { countUnseenReviews, markReviewsSeen } from '../../db/repositories/productionRepo';
 
 /**
  * Contacts production d'un événement : le back-office déclare qui représente
@@ -92,5 +93,27 @@ eventProductionRouter.post(
   asyncHandler(async (req, res) => {
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     sendData(res, await sendProductionAccessLink(req.params.contactId!, req.params.eventId!));
+  }),
+);
+
+/**
+ * Compteur d'avis nouveaux pour l'utilisateur courant. Le marqueur est par
+ * couple utilisateur + événement : chaque membre a son propre compteur.
+ */
+eventProductionRouter.get(
+  '/:eventId/reviews/unseen',
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    sendData(res, { count: await countUnseenReviews(req.user!.sub, req.params.eventId!) });
+  }),
+);
+
+/** Marque les avis comme consultés (appelé à l'ouverture de l'onglet Demandes). */
+eventProductionRouter.post(
+  '/:eventId/reviews/seen',
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    await markReviewsSeen(req.user!.sub, req.params.eventId!);
+    sendData(res, { ok: true });
   }),
 );
