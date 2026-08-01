@@ -10,9 +10,6 @@ export const PRODUCTION_JOB_TITLES = [
   'Attaché de production',
   'Production',
   'Booker / agent',
-  'Assistant de tournée',
-  'Responsable interviews',
-  'Direction artistique',
   'Autre',
 ] as const;
 
