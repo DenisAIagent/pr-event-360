@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useMatch } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileBottomNav } from './MobileBottomNav';
@@ -23,6 +23,8 @@ export function useMobileNav(): MobileNavCtx {
 export function AdminShell() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const eventMatch = useMatch('/admin/events/:eventId/*');
+  const inEvent = Boolean(eventMatch?.params.eventId);
 
   const openMenu = useCallback(() => setOpen(true), []);
   const closeMenu = useCallback(() => setOpen(false), []);
@@ -57,7 +59,7 @@ export function AdminShell() {
 
   return (
     <MobileNavContext.Provider value={value}>
-      <div className={`app${open ? ' nav-open' : ''}`}>
+      <div className={`app${open ? ' nav-open' : ''}${inEvent ? ' is-event' : ''}`}>
         {/* Backdrop mobile */}
         <button
           type="button"

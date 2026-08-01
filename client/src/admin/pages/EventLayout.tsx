@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
-import { MapPin, CalendarDays, Languages, Music2, Link2, Check } from 'lucide-react';
+import { Link, Outlet, useParams } from 'react-router-dom';
+import { MapPin, CalendarDays, Languages, Music2, Link2, Check, ChevronLeft } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
@@ -90,21 +90,36 @@ export function EventLayout() {
         </div>
       </div>
 
-      {/* Bandeau compact mobile */}
+      {/* Bandeau sticky mobile : retour + nom + lien d'inscription */}
       <div className="ev-banner-mobile">
+        <Link to="/admin" className="ev-banner-mobile-back" aria-label="Retour aux événements">
+          <ChevronLeft size={20} />
+        </Link>
         <div className="ev-banner-mobile-main">
           <strong>{event?.name ?? '…'}</strong>
-          <span className="muted">
-            {event?.location ?? 'Lieu non précisé'}
-            {event?.startDate ? ` · ${formatRange(event.startDate, event.endDate)}` : ''}
+          <span>
+            {[event?.location, event?.startDate ? formatRange(event.startDate, event.endDate) : null]
+              .filter(Boolean)
+              .join(' · ') || 'Événement'}
+            {event?.accreditationDeadline
+              ? ` · J–${daysUntil(event.accreditationDeadline)}`
+              : ''}
           </span>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={copyRegistration} title="Copier le lien d'inscription">
-          {copied ? <Check size={16} /> : <Link2 size={16} />}
+        <button
+          type="button"
+          className="ev-banner-mobile-share"
+          onClick={copyRegistration}
+          title="Copier le lien d'inscription"
+          aria-label={copied ? 'Lien copié' : "Copier le lien d'inscription"}
+        >
+          {copied ? <Check size={18} /> : <Link2 size={18} />}
         </button>
       </div>
 
-      <Outlet />
+      <div className="event-outlet">
+        <Outlet />
+      </div>
     </div>
   );
 }

@@ -203,15 +203,17 @@ export function QueueView({
           </button>
         ))}
         <div className="tb-spacer" />
-        <button className="btn btn-ghost btn-sm" onClick={exportCsv} disabled={(queue.data?.length ?? 0) === 0}>
-          <Icon name="download" /> CSV
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvFull()}>
-          <Icon name="download" /> CSV complet
-        </button>
-        <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
-          <Icon name="download" /> PDF
-        </button>
+        <div className="filters-exports m-hide-mobile">
+          <button className="btn btn-ghost btn-sm" onClick={exportCsv} disabled={(queue.data?.length ?? 0) === 0}>
+            <Icon name="download" /> CSV
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => void exportCsvFull()}>
+            <Icon name="download" /> CSV complet
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={exportPdf} disabled={(queue.data?.length ?? 0) === 0}>
+            <Icon name="download" /> PDF
+          </button>
+        </div>
       </div>
 
       {queue.loading && <SkeletonRows count={4} />}
