@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useMatch, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import {
   Inbox,
   UserCheck,
@@ -37,13 +37,20 @@ interface NavDef {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Compteur d'éléments nouveaux (avis production non consultés). */
+  badge?: number;
 }
 
-function NavItem({ to, label, icon: Icon, end }: NavDef & { end?: boolean }) {
+function NavItem({ to, label, icon: Icon, end, badge }: NavDef & { end?: boolean }) {
   return (
     <NavLink to={to} end={end} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
       <Icon size={18} />
       {label}
+      {!!badge && (
+        <span className="nav-badge" aria-label={`${badge} avis production à consulter`}>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </NavLink>
   );
 }
@@ -53,6 +60,7 @@ export function Sidebar() {
   const { user, logout } = useAuth();
   const api = useAuthedApi();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = user?.role === 'admin';
   const isEditor = user?.role === 'admin' || user?.role === 'attache';
   const [tourOpen, setTourOpen] = useState(false);
@@ -100,8 +108,17 @@ export function Sidebar() {
     user?.role === 'admin' ? 'Administrateur' : user?.role === 'attache' ? 'Attaché de presse' : 'Assistant';
 
   const base = eventId ? `/admin/events/${eventId}` : '';
+  // Avis production non encore consultés par CE membre. Rechargé au changement
+  // d'événement et à chaque navigation, pour retomber à zéro dès la visite.
+  const unseen = useFetch<{ count: number }>(
+    () =>
+      eventId
+        ? api.get<{ count: number }>(`/admin/events/${eventId}/reviews/unseen`)
+        : Promise.resolve({ count: 0 }),
+    [eventId, location.pathname],
+  );
   const PRIMARY: NavDef[] = [
-    { to: `${base}/requests`, label: 'Demandes', icon: Inbox },
+    { to: `${base}/requests`, label: 'Demandes', icon: Inbox, badge: unseen.data?.count ?? 0 },
     { to: `${base}/accreditations`, label: 'Accréditations', icon: UserCheck },
     { to: `${base}/press-conferences`, label: 'Conférences presse', icon: Presentation },
     { to: `${base}/jour`, label: 'Jour J', icon: CalendarCheck },

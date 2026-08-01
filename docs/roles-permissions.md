@@ -6,6 +6,7 @@
 2. **Organisation** : propriétaire de comptes et d’événements.
 3. **Événement** : frontière de données métier.
 4. **Journaliste** : ne voit que son propre espace et ses propres inscriptions.
+5. **Contact production** : ne voit que les demandes visant les artistes qu'il représente, et n'y porte qu'un avis consultatif.
 
 Un JWT prouve l’identité mais ne suffit pas : rôle, activation, abonnement, organisation, statut plateforme et MFA sont relus en base.
 
@@ -80,3 +81,16 @@ Pour une conférence :
 - conférence du même événement ;
 - conférence sur invitation invisible sans invitation ;
 - le journaliste ne peut annuler que sa propre inscription.
+
+## Contact production
+
+Acteur externe, sans compte ni ligne `users`. Le jeton résout un seul
+`production_contacts.id`, d'où découlent l'événement et le périmètre d'artistes
+(`production_contact_artists`) — jamais fournis par le client.
+
+- ne voit que les demandes visant ses artistes rattachés ;
+- la liste d'attente lui est masquée (mécanique interne de quota) ;
+- ni coordonnées du journaliste, ni score de priorité ;
+- son avis est **consultatif** : il n'écrit que dans `request_reviews` et ne
+  modifie ni statut, ni quota, ni liste d'attente. La décision reste à
+  l'attaché de presse.

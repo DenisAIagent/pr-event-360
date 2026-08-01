@@ -82,3 +82,24 @@ export function verifyJournalistSession(token: string): JournalistSessionClaims 
   if (payload.typ !== 'jspace') throw new Error('Jeton de session journaliste invalide');
   return { jid: payload.jid, eid: payload.eid };
 }
+
+// ── Session espace production : même modèle, typ:'pspace'. Porte l'id du contact
+// production + son événement ; le périmètre (artistes rattachés) est relu en base.
+const PSPACE_EXPIRES_IN = '30d';
+
+export interface ProductionSessionClaims {
+  cid: string; // production contact id
+  eid: string; // event id
+}
+
+export function signProductionSession(claims: ProductionSessionClaims): string {
+  return jwt.sign({ ...claims, typ: 'pspace' }, env.JWT_SECRET, { expiresIn: PSPACE_EXPIRES_IN });
+}
+
+export function verifyProductionSession(token: string): ProductionSessionClaims {
+  const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as ProductionSessionClaims & {
+    typ?: string;
+  };
+  if (payload.typ !== 'pspace') throw new Error('Jeton de session production invalide');
+  return { cid: payload.cid, eid: payload.eid };
+}

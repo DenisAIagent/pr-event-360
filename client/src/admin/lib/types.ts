@@ -256,6 +256,13 @@ export interface QueueItem {
   quota: { used: number; limit: number } | null;
   assignedTo: { id: string; fullName: string } | null;
   notesCount: number;
+  /** Avis consultatif de la production (le plus récent) ; null si non sollicité. */
+  review: {
+    verdict: 'favorable' | 'defavorable';
+    comment: string | null;
+    contactName: string | null;
+    at: string;
+  } | null;
 }
 
 export interface RequestAssignee {

@@ -201,5 +201,21 @@
   "cp.unavailable": "Comunicado indisponível",
   "cp.backToNewsroom": "Voltar à newsroom",
   "cp.newsroom": "Newsroom",
-  "cp.downloadPdf": "Descarregar em PDF"
+  "cp.downloadPdf": "Descarregar em PDF",
+  "prod.title": "Pedidos a validar",
+  "prod.lede": "Dê a sua opinião sobre os pedidos dirigidos aos seus artistas. A decisão final é do assessor de imprensa.",
+  "prod.empty": "Ainda não há pedidos para analisar.",
+  "prod.invalid": "Esta ligação é inválida ou expirou. Peça uma nova à equipa de imprensa.",
+  "prod.favorable": "Favorável",
+  "prod.defavorable": "Desfavorável",
+  "prod.comment": "Comentário (facultativo)",
+  "prod.commentPlaceholder": "Uma restrição, um horário preferido…",
+  "prod.save": "Guardar a minha resposta",
+  "prod.saved": "Resposta guardada",
+  "prod.yourAnswer": "A sua resposta",
+  "prod.change": "Alterar",
+  "prod.requestedSlot": "Horário pretendido",
+  "prod.noSlot": "Nenhum horário pedido",
+  "prod.message": "Mensagem do jornalista",
+  "prod.count": "{n} pedido(s)"
 }

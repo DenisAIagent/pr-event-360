@@ -27,7 +27,7 @@ Chaque Client complète sa propre identité, ses bases légales, volumes, durée
 | finalité | prioriser et planifier interviews/reportages |
 | données | cible, message, statut, score, créneau |
 | décision automatique | non ; score de classement, décision humaine |
-| destinataires | équipe presse et exports autorisés |
+| destinataires | équipe presse, exports autorisés, et contacts production habilités (avis consultatif sur les demandes visant leurs seuls artistes : identité du journaliste, média, message, créneau — ni coordonnées ni score) |
 | durée | rattachée au journaliste |
 
 ## T3 — Conférences de presse

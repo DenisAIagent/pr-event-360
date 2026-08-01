@@ -174,6 +174,7 @@ Les tokens de reset, invitation et espace sont hashés.
 - droit à l’effacement par cascade ;
 - **export JSON art. 15/20** (espace journaliste + back-office) ;
 - exports opérationnels CSV / bilan (PII) : authentifiés, scopés multi-tenant, `Cache-Control: no-store` ;
+- **espace de validation production** (`/prod/:token`) : surface externe cloisonnée par artiste. Lien personnel haché en base et rotaté à chaque échange, session JWT `typ:'pspace'` en cookie httpOnly, CSRF sur les mutations, page en `noindex` et `Disallow`. Minimisation : ni coordonnées du journaliste, ni score, ni demandes des autres artistes. L'avis rendu est consultatif et ne modifie aucun statut ;
 - suppression d’un journaliste : demandes, conférences et retombées ;
 - suppression événement/organisation : données rattachées ;
 - purge automatique des journalistes 12 mois après la fin de l’événement ;

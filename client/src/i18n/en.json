@@ -201,5 +201,21 @@
   "cp.unavailable": "Press release unavailable",
   "cp.backToNewsroom": "Back to the newsroom",
   "cp.newsroom": "Newsroom",
-  "cp.downloadPdf": "Download as PDF"
+  "cp.downloadPdf": "Download as PDF",
+  "prod.title": "Requests to review",
+  "prod.lede": "Share your opinion on the requests addressed to your artists. The press officer makes the final call.",
+  "prod.empty": "No requests to review yet.",
+  "prod.invalid": "This link is invalid or has expired. Ask the press team for a new one.",
+  "prod.favorable": "In favour",
+  "prod.defavorable": "Against",
+  "prod.comment": "Comment (optional)",
+  "prod.commentPlaceholder": "A constraint, a preferred time…",
+  "prod.save": "Save my answer",
+  "prod.saved": "Answer saved",
+  "prod.yourAnswer": "Your answer",
+  "prod.change": "Change",
+  "prod.requestedSlot": "Requested slot",
+  "prod.noSlot": "No slot requested",
+  "prod.message": "Journalist’s message",
+  "prod.count": "{n} request(s)"
 }
