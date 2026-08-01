@@ -571,8 +571,12 @@ select.status-select {
   flex-direction: column;
   gap: 10px;
   max-width: min(380px, calc(100vw - 32px));
+  /* Le calque est monté en permanence (Toast.tsx) et, sur mobile, étiré entre
+     top et bottom : sans ceci il avale tous les taps de l'écran, même vide. */
+  pointer-events: none;
 }
 .toast {
+  pointer-events: auto;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -2606,6 +2610,9 @@ select.status-select {
   }
 
   .toast-viewport {
+    /* Ancrage bas (au-dessus de la nav mobile) : annuler le top de la règle de
+       base, sinon le calque s'étire du haut de l'écran jusqu'à la nav. */
+    top: auto !important;
     bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
     left: 12px !important;
     right: 12px !important;
