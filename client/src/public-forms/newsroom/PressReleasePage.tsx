@@ -4,6 +4,7 @@ import { useEventId, newsroomPath } from '../../lib/domainEvent';
 import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
 import { usePageTitle } from '../../lib/usePageTitle';
+import { useI18n, localeOf } from '../../i18n';
 import { printPressRelease } from './printPressRelease';
 import type { PressReleaseDetail } from '../../lib/types';
 
@@ -29,6 +30,7 @@ function readInitialData(slug: string): PressReleaseDetail | null {
 export function PressReleasePage() {
   const eventId = useEventId();
   const { slug = '' } = useParams();
+  const { t, lang } = useI18n();
   const [data, setData] = useState<PressReleaseDetail | null>(() => readInitialData(slug));
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,7 @@ export function PressReleasePage() {
     api
       .get<PressReleaseDetail>(`/public/newsroom/${eventId}/cp/${encodeURIComponent(slug)}`)
       .then(setData)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Communiqué indisponible'));
+      .catch((e) => setError(e instanceof ApiError ? e.message : t('cp.unavailable')));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch uniquement quand l'URL change
   }, [eventId, slug]);
 
@@ -48,24 +50,24 @@ export function PressReleasePage() {
       <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
         <div className="card stack" style={{ textAlign: 'center' }}>
           <p>{error}</p>
-          <a href={newsroomPath(eventId)} className="btn btn-primary btn-sm">Retour à la newsroom</a>
+          <a href={newsroomPath(eventId)} className="btn btn-primary btn-sm">{t('cp.backToNewsroom')}</a>
         </div>
       </main>
     );
   }
   if (!data) {
-    return <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>Chargement…</main>;
+    return <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>{t('common.loading')}</main>;
   }
 
   const { event, pressRelease: pr } = data;
   const branding = event.branding ?? undefined;
-  const dateLabel = pr.publishedAt ? new Date(pr.publishedAt).toLocaleDateString('fr-FR', { dateStyle: 'long' }) : null;
+  const dateLabel = pr.publishedAt ? new Date(pr.publishedAt).toLocaleDateString(localeOf(lang), { dateStyle: 'long' }) : null;
 
   return (
     <div style={brandingStyle(branding)}>
       <main style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
         <nav style={{ marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <a href={newsroomPath(eventId)} className="btn btn-ghost btn-sm">← {event.name} — Newsroom</a>
+          <a href={newsroomPath(eventId)} className="btn btn-ghost btn-sm">← {event.name} — {t('cp.newsroom')}</a>
           <button
             className="btn btn-primary btn-sm"
             onClick={() =>
@@ -79,12 +81,12 @@ export function PressReleasePage() {
               })
             }
           >
-            Télécharger en PDF
+            {t('cp.downloadPdf')}
           </button>
         </nav>
 
         <article>
-          <span className="eyebrow">Communiqué de presse</span>
+          <span className="eyebrow">{t('cp.eyebrow')}</span>
           <h1 style={{ fontSize: 'var(--text-hero, 2.2rem)', margin: '4px 0 6px', lineHeight: 1.2 }}>{pr.title}</h1>
           {dateLabel && <p className="muted" style={{ marginTop: 0 }}>{dateLabel}</p>}
           {pr.coverImageUrl && (
