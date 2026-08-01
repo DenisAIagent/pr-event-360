@@ -524,6 +524,14 @@ select.status-select {
   height: 52px;
   margin: 0 auto var(--space-3);
 }
+.tour-progress {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: var(--space-2);
+}
 .tour-card h2 {
   font-size: var(--text-xl);
   color: var(--color-ink);
@@ -532,8 +540,35 @@ select.status-select {
 .tour-card p {
   color: var(--color-ink-soft);
   line-height: 1.6;
-  max-width: 42ch;
+  max-width: 44ch;
   margin: 0 auto;
+}
+.tour-tips {
+  list-style: none;
+  margin: var(--space-3) auto 0;
+  padding: 0;
+  max-width: 44ch;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+}
+.tour-tips li {
+  position: relative;
+  padding: 8px 10px 8px 28px;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--color-ink-soft);
+  background: var(--color-bg, #f8fafc);
+  border-radius: 8px;
+}
+.tour-tips li::before {
+  content: '✓';
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
 }
 .tour-dots {
   display: flex;
@@ -541,24 +576,142 @@ select.status-select {
   justify-content: center;
   margin: var(--space-4) 0;
 }
-.tour-dots span {
+.tour-dots button {
   width: 7px;
   height: 7px;
   border-radius: 999px;
+  border: none;
+  padding: 0;
   background: var(--color-line);
+  cursor: pointer;
   transition:
     width var(--duration-normal) var(--ease-out-expo),
     background var(--duration-normal);
 }
-.tour-dots span.on {
+.tour-dots button.on {
   width: 22px;
   background: var(--color-accent);
+}
+.tour-dots button.done {
+  background: color-mix(in srgb, var(--color-accent) 45%, var(--color-line));
 }
 .tour-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.tour-foot-nav {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 520px) {
+  .tour-card {
+    padding: var(--space-5) var(--space-4) var(--space-4);
+    text-align: left;
+  }
+  .tour-icon {
+    margin-left: 0;
+  }
+  .tour-card p,
+  .tour-tips {
+    max-width: none;
+  }
+  .tour-foot {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .tour-foot-nav {
+    width: 100%;
+  }
+  .tour-foot-nav .btn,
+  .tour-foot > .btn {
+    flex: 1;
+  }
+}
+
+/* Checklist post-création / empty state */
+.onboard-checklist {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.onboard-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+.onboard-checklist .n {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-accent);
+}
+.onboard-checklist a {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.onboard-checklist a:hover {
+  text-decoration: underline;
+}
+.onboard-empty {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+  padding: var(--space-5) var(--space-4);
+  background: linear-gradient(180deg, var(--color-accent-tint), var(--color-surface));
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.onboard-empty h2 {
+  font-size: var(--text-lg);
+  margin: var(--space-2) 0;
+}
+.onboard-empty p {
+  color: var(--color-ink-soft);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  margin: 0 0 var(--space-3);
+}
+.onboard-empty .btn {
+  margin-top: var(--space-2);
+}
+.event-onboard {
+  margin-bottom: 12px;
+}
+.event-onboard .share-head strong {
+  display: inline-flex;
+  align-items: center;
+}
+.event-outlet .event-onboard + * {
+  margin-top: 0;
+}
+@media (max-width: 900px) {
+  .event-onboard {
+    margin: 0 0 12px;
+  }
+  .event-onboard .onboard-checklist li {
+    padding: 10px;
+  }
 }
 
 /* ── Toasts (feedback transitoire) ── */

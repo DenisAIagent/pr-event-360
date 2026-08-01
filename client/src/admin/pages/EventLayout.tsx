@@ -5,6 +5,7 @@ import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
 import { useToast } from '../components/Toast';
+import { EventOnboardingCard } from '../components/EventOnboardingCard';
 
 function formatRange(start: string | null, end: string | null): string {
   if (!start) return '';
@@ -118,6 +119,7 @@ export function EventLayout() {
       </div>
 
       <div className="event-outlet">
+        <EventOnboardingCard />
         <Outlet />
       </div>
     </div>

@@ -2,51 +2,95 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
+  CalendarPlus,
   BadgeCheck,
-  Mic,
-  Newspaper,
-  Users2,
+  Mic2,
+  Clapperboard,
+  CalendarCheck,
+  Megaphone,
   ArrowRight,
   ArrowLeft,
   X,
   type LucideIcon,
 } from 'lucide-react';
 
+export const INTRO_SEEN_KEY = 'pr360.introSeen.v2';
+
 interface Step {
   icon: LucideIcon;
   title: string;
   body: string;
+  /** Conseils concrets affichés sous le texte. */
+  tips?: string[];
 }
 
 const STEPS: Step[] = [
   {
     icon: Sparkles,
     title: 'Bienvenue dans PR Event 360',
-    body: "Votre plateforme pour piloter les relations presse de vos événements — accréditations, demandes, communications et médias, au même endroit.",
+    body: 'Pilotez les relations presse de bout en bout : accréditations, demandes, production, jour J et bilans — au même endroit.',
+    tips: [
+      'Un événement = un espace de travail dédié',
+      'Vous pourrez tout ajuster après la création',
+    ],
+  },
+  {
+    icon: CalendarPlus,
+    title: '1. Créez votre événement',
+    body: 'Le wizard vous guide : infos, apparence, participants, règles et date de clôture des accréditations.',
+    tips: [
+      'Choisissez le bon type (festival, salon, conférence…)',
+      'Les langues activées s’affichent aux journalistes',
+    ],
   },
   {
     icon: BadgeCheck,
-    title: 'Événements & accréditations',
-    body: "Créez un événement, partagez le lien d'inscription, et validez les demandes d'accréditation des journalistes en un clic.",
+    title: '2. Accueillez les journalistes',
+    body: 'Partagez le lien d’inscription, validez les accréditations, puis renvoyez un lien d’accès personnel si besoin.',
+    tips: [
+      'Copiez le lien depuis le bandeau de l’événement',
+      'Export CSV / PDF pour les listes terrain',
+    ],
   },
   {
-    icon: Mic,
-    title: 'Demandes d’interviews & reportages',
-    body: 'Gérez les demandes par participant ou par espace, appliquez vos quotas, et exportez des PDF prêts pour les équipes terrain.',
+    icon: Clapperboard,
+    title: '3. Configuration & production',
+    body: 'Ajoutez scènes et participants, puis déclarez des contacts production. Ils reçoivent un lien pour donner un avis sur les interviews — sans modifier vos quotas.',
+    tips: [
+      'Onglet Configuration → contacts production',
+      'L’avis est consultatif : vous restez décisionnaire',
+    ],
   },
   {
-    icon: Newspaper,
-    title: 'Communications & newsroom',
-    body: 'Envoyez des newsletters, publiez vos communiqués et dossiers de presse, et partagez photos, vidéos et logos téléchargeables.',
+    icon: Mic2,
+    title: '4. Traitez les demandes',
+    body: 'File globale, vues par participant ou planning : priorisez, assignez, notez, et suivez les avis production (badge sur Demandes).',
+    tips: [
+      'Raccourcis clavier A / R pour accepter ou refuser',
+      'PDF brandés pour envoyer un lot à la prod',
+    ],
   },
   {
-    icon: Users2,
-    title: 'Équipe & intégrations',
-    body: 'Invitez des collaborateurs avec différents niveaux d’accès et connectez vos outils (Brevo, Cloudinary) en toute sécurité.',
+    icon: CalendarCheck,
+    title: '5. Jour J',
+    body: 'Scannez les QR des badges à l’entrée presse, suivez les arrivées en temps réel depuis la vue terrain mobile.',
+    tips: [
+      'Badge QR dans l’espace journaliste',
+      'Idéal sur téléphone ou tablette à l’accueil',
+    ],
+  },
+  {
+    icon: Megaphone,
+    title: '6. Communiquez & clôturez',
+    body: 'Newsroom, communiqués, newsletters, médiathèque, revue de presse et bilan PDF aux couleurs de l’événement.',
+    tips: [
+      'Invitez l’équipe (admin / attaché / assistant)',
+      'Rouvrez cette visite via la boussole en bas du menu',
+    ],
   },
 ];
 
-/** Visite guidée d'accueil : présente brièvement l'app en quelques étapes. */
+/** Visite guidée d'accueil : parcours produit en étapes actionnables. */
 export function IntroTour({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [i, setI] = useState(0);
   const navigate = useNavigate();
@@ -78,38 +122,60 @@ export function IntroTour({ open, onClose }: { open: boolean; onClose: () => voi
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Présentation de l’application"
+      aria-labelledby="tour-title"
+      aria-describedby="tour-body"
     >
       <div className="tour-card" onClick={(e) => e.stopPropagation()}>
-        <button className="tour-close" onClick={onClose} aria-label="Fermer">
+        <button type="button" className="tour-close" onClick={onClose} aria-label="Fermer">
           <X size={18} />
         </button>
+
+        <div className="tour-progress" aria-hidden>
+          Étape {i + 1} / {STEPS.length}
+        </div>
 
         <span className="icon-tile tour-icon">
           <Icon size={26} strokeWidth={1.7} />
         </span>
 
-        <h2>{step.title}</h2>
-        <p>{step.body}</p>
+        <h2 id="tour-title">{step.title}</h2>
+        <p id="tour-body">{step.body}</p>
 
-        <div className="tour-dots" aria-hidden>
-          {STEPS.map((_, n) => (
-            <span key={n} className={n === i ? 'on' : ''} />
+        {step.tips && step.tips.length > 0 && (
+          <ul className="tour-tips">
+            {step.tips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        )}
+
+        <div className="tour-dots" role="tablist" aria-label="Étapes de la visite">
+          {STEPS.map((s, n) => (
+            <button
+              key={s.title}
+              type="button"
+              role="tab"
+              aria-selected={n === i}
+              aria-label={`Étape ${n + 1} : ${s.title}`}
+              className={n === i ? 'on' : n < i ? 'done' : ''}
+              onClick={() => setI(n)}
+            />
           ))}
         </div>
 
         <div className="tour-foot">
-          <button className="btn btn-ghost btn-sm" onClick={onClose}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
             Passer
           </button>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div className="tour-foot-nav">
             {i > 0 && (
-              <button className="btn btn-ghost btn-sm" onClick={() => setI(i - 1)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setI(i - 1)}>
                 <ArrowLeft size={16} /> Précédent
               </button>
             )}
             {last ? (
               <button
+                type="button"
                 className="btn btn-primary btn-sm"
                 onClick={() => {
                   onClose();
@@ -119,7 +185,7 @@ export function IntroTour({ open, onClose }: { open: boolean; onClose: () => voi
                 Créer un événement <ArrowRight size={16} />
               </button>
             ) : (
-              <button className="btn btn-primary btn-sm" onClick={() => setI(i + 1)}>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setI(i + 1)}>
                 Suivant <ArrowRight size={16} />
               </button>
             )}

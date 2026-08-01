@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthedApi } from '../auth/AuthContext';
 import { CopyLink } from '../components/CopyLink';
 import { PageHero } from '../components/PageHero';
@@ -61,7 +61,7 @@ export function EventWizard() {
         <PageHero
           eyebrow="Nouvel événement"
           title="Créons votre événement"
-          subtitle="Quelques étapes pour tout configurer — vous pourrez ajuster ensuite."
+          subtitle="Six étapes guidées : infos, apparence, participants, règles, clôture — tout reste modifiable ensuite."
         />
         <ol className="wizard-steps">
           {steps.map((label, i) => (
@@ -541,13 +541,44 @@ function DeadlineStep({
 }
 
 function DoneStep({ eventId, onOpen }: { eventId: string; onOpen: () => void }) {
+  const base = `/admin/events/${eventId}`;
   return (
     <StepCard title="Votre événement est prêt">
       <p className="muted" style={{ fontSize: 'var(--text-sm)' }}>
-        Partagez ce lien aux journalistes pour qu'ils demandent leur accréditation :
+        Partagez ce lien aux journalistes pour qu’ils demandent leur accréditation :
       </p>
       <CopyLink url={`${window.location.origin}/accreditation/${eventId}`} />
-      <button className="btn btn-primary" onClick={onOpen} style={{ marginTop: 'var(--space-3)' }}>
+
+      <p style={{ fontSize: 'var(--text-sm)', fontWeight: 600, marginTop: 'var(--space-4)', marginBottom: 0 }}>
+        Prochaines étapes recommandées
+      </p>
+      <ol className="onboard-checklist">
+        <li>
+          <span className="n">1</span>
+          <span>
+            Complétez la{' '}
+            <Link to={`${base}/lineup`}>configuration</Link> (participants) et ajoutez des{' '}
+            <strong>contacts production</strong> s’ils doivent valider les interviews.
+          </span>
+        </li>
+        <li>
+          <span className="n">2</span>
+          <span>
+            Suivez les demandes d’accréditation dans{' '}
+            <Link to={`${base}/accreditations`}>Accréditations</Link>, puis les interviews dans{' '}
+            <Link to={`${base}/requests`}>Demandes</Link>.
+          </span>
+        </li>
+        <li>
+          <span className="n">3</span>
+          <span>
+            Le jour J, ouvrez{' '}
+            <Link to={`${base}/jour`}>Jour J</Link> pour le check-in QR à l’entrée presse.
+          </span>
+        </li>
+      </ol>
+
+      <button type="button" className="btn btn-primary" onClick={onOpen} style={{ marginTop: 'var(--space-3)' }}>
         Ouvrir le tableau de bord →
       </button>
     </StepCard>

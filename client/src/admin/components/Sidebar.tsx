@@ -28,10 +28,8 @@ import {
 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
-import { IntroTour } from './IntroTour';
+import { IntroTour, INTRO_SEEN_KEY } from './IntroTour';
 import type { EventSummary } from '../lib/types';
-
-const TOUR_SEEN_KEY = 'pr360.introSeen';
 
 interface NavDef {
   to: string;
@@ -79,11 +77,11 @@ export function Sidebar() {
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  // Visite guidée à la première connexion (logique reprise de l'ancien AdminBar).
+  // Visite guidée à la première connexion (ou après maj majeure du parcours v2).
   useEffect(() => {
     try {
-      if (!localStorage.getItem(TOUR_SEEN_KEY)) {
-        localStorage.setItem(TOUR_SEEN_KEY, '1');
+      if (!localStorage.getItem(INTRO_SEEN_KEY)) {
+        localStorage.setItem(INTRO_SEEN_KEY, '1');
         setTourOpen(true);
       }
     } catch {

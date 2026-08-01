@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { CalendarPlus, Trash2 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import { PageHero } from '../components/PageHero';
@@ -46,17 +46,28 @@ export function EventsListPage() {
           {data?.map((ev) => (
             <EventCard key={ev.id} ev={ev} isAdmin={isAdmin} onDeleted={reload} />
           ))}
-          {data?.length === 0 && !loading && (
-            <p className="muted">
-              Aucun événement.{' '}
-              {canCreate && (
-                <Link to="/admin/events/new" className="auth-link">
-                  Créez-en un →
-                </Link>
-              )}
-            </p>
-          )}
         </div>
+
+        {data?.length === 0 && !loading && (
+          <div className="onboard-empty">
+            <CalendarPlus size={28} strokeWidth={1.6} aria-hidden />
+            <h2>Créez votre premier événement</h2>
+            <p>
+              En quelques minutes : inscription journalistes, demandes d’interview, avis production,
+              check-in jour&nbsp;J et bilans PDF. La visite guidée (icône boussole en bas du menu) rappelle
+              le parcours à tout moment.
+            </p>
+            {canCreate ? (
+              <Link to="/admin/events/new" className="btn btn-primary">
+                Lancer le wizard →
+              </Link>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                Demandez à un administrateur de vous ajouter à un événement.
+              </p>
+            )}
+          </div>
+        )}
     </div>
   );
 }
