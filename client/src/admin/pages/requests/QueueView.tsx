@@ -130,7 +130,7 @@ export function QueueView({
 
   function exportPdf() {
     const list = queue.data ?? [];
-    printTable({
+    const opened = printTable({
       eventName,
       branding,
       heading: 'Demandes (file)',
@@ -138,6 +138,7 @@ export function QueueView({
       columns: QUEUE_COLUMNS,
       groups: [{ title: 'Toutes les demandes', meta: `${list.length} demande(s)`, rows: list.map(toCells) }],
     });
+    if (!opened) toast.error('Autorisez les fenêtres surgissantes pour générer le PDF.');
   }
 
   function exportCsv() {
