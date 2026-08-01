@@ -13,6 +13,8 @@ import { PrivacyPage } from './public-forms/legal/PrivacyPage';
 import { LegalNoticePage } from './public-forms/legal/LegalNoticePage';
 import { TermsPage } from './public-forms/legal/TermsPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
+import { NotFoundPage } from './public-forms/NotFoundPage';
+import { LandingHeader } from './public-forms/landing/LandingHeader';
 import { lazy, Suspense, type ReactNode } from 'react';
 import { isDomainMode } from './lib/domainEvent';
 
@@ -34,6 +36,20 @@ function L({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Coquille des pages institutionnelles (ressources, mentions légales, 404) :
+ * elles n'avaient aucune navigation et leur seul retour était un lien en bas de
+ * page. La landing porte déjà son propre en-tête.
+ */
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <LandingHeader />
+      {children}
+    </>
+  );
+}
+
+/**
  * Routeur principal.
  * - /admin/*                : back-office (français, authentifié)
  * - /accreditation/:eventId : formulaire public d'accréditation (multilingue)
@@ -47,8 +63,8 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<L><AccreditationPage /></L>} />
-          <Route path="/newsroom" element={<NewsroomPage />} />
-          <Route path="/newsroom/:slug" element={<PressReleasePage />} />
+          <Route path="/newsroom" element={<L><NewsroomPage /></L>} />
+          <Route path="/newsroom/:slug" element={<L><PressReleasePage /></L>} />
           <Route path="/connexion" element={<L><JournalistLoginPage /></L>} />
           <Route path="/mot-de-passe-oublie" element={<L><JournalistForgotPasswordPage /></L>} />
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
@@ -68,10 +84,10 @@ export function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/confidentialite" element={<PrivacyPage />} />
-        <Route path="/mentions-legales" element={<LegalNoticePage />} />
-        <Route path="/cgv" element={<TermsPage />} />
-        <Route path="/ressources" element={<ResourcesPage />} />
+        <Route path="/confidentialite" element={<Shell><PrivacyPage /></Shell>} />
+        <Route path="/mentions-legales" element={<Shell><LegalNoticePage /></Shell>} />
+        <Route path="/cgv" element={<Shell><TermsPage /></Shell>} />
+        <Route path="/ressources" element={<Shell><ResourcesPage /></Shell>} />
         <Route path="/admin/*" element={<AdminRoute />} />
         <Route
           path="/accreditation/:eventId"
@@ -121,8 +137,10 @@ export function App() {
             </I18nProvider>
           }
         />
-        <Route path="/newsroom/:eventId" element={<NewsroomPage />} />
-        <Route path="/newsroom/:eventId/:slug" element={<PressReleasePage />} />
+        {/* Surfaces publiques lues par la presse étrangère : multilingues comme
+            le formulaire d'accréditation. */}
+        <Route path="/newsroom/:eventId" element={<L><NewsroomPage /></L>} />
+        <Route path="/newsroom/:eventId/:slug" element={<L><PressReleasePage /></L>} />
         <Route
           path="/espace-preview/:eventId"
           element={
@@ -131,7 +149,9 @@ export function App() {
             </I18nProvider>
           }
         />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        {/* 404 publique : une URL marketing mal saisie ne doit pas déposer un
+            visiteur sur l'écran de connexion du back-office. */}
+        <Route path="*" element={<Shell><NotFoundPage /></Shell>} />
       </Routes>
     </BrowserRouter>
   );

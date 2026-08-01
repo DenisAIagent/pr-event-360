@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
+import { ACCESS_SUBJECT, CONTACT_EMAIL, contactMailto } from '../../lib/contact';
 import { GoogleButton } from './GoogleAuth';
 
 /**
@@ -60,16 +61,26 @@ export function SubscribePage() {
       <div className="card login-card stack">
         <div>
           <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 40, display: 'block' }} />
+          {/* Le titre suit l'état réel : on ne promet pas une création immédiate
+              tant que la facturation en ligne n'est pas active. */}
           <span className="eyebrow" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
-            Créer votre espace
+            {config && !config.billingEnabled ? 'Demander un accès' : 'Créer votre espace'}
           </span>
         </div>
 
         {config && !config.billingEnabled ? (
           <>
             <div className="banner banner-info">
-              L'inscription en ligne sera bientôt disponible. Contactez-nous pour ouvrir votre espace.
+              L’inscription en ligne arrive bientôt. En attendant, nous ouvrons votre espace avec vous
+              et paramétrons votre premier événement — réponse sous 24 h ouvrées.
             </div>
+            <a className="btn btn-primary" href={contactMailto(ACCESS_SUBJECT)}>
+              Demander l’ouverture de votre espace
+            </a>
+            {/* Adresse en clair : un `mailto:` échoue silencieusement sans client mail configuré. */}
+            <p className="muted" style={{ margin: 0 }}>
+              ou écrivez-nous à <strong>{CONTACT_EMAIL}</strong>
+            </p>
             <Link to="/admin/login" className="auth-link">
               Déjà un compte ? Se connecter
             </Link>

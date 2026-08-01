@@ -19,8 +19,10 @@ import {
 import { api } from '../../lib/api';
 import './landing.css';
 import { usePageTitle } from '../../lib/usePageTitle';
+import { DEMO_SUBJECT, PRIMARY_CTA_LABEL, contactMailto } from '../../lib/contact';
+import { LandingHeader } from './LandingHeader';
 
-const DEMO_MAILTO = 'mailto:tech@band.stream?subject=Démo%20PR%20Event%20360';
+const DEMO_MAILTO = contactMailto(DEMO_SUBJECT);
 
 interface PublicReview {
   id: string;
@@ -30,6 +32,28 @@ interface PublicReview {
   rating: number;
   quote: string;
 }
+
+const TRUST_POINTS = ['Sans installation', 'Conforme RGPD', 'Support FR'] as const;
+
+const FEATURES: readonly (readonly [LucideIcon, string, string])[] = [
+  [Users, 'Gestion des contacts presse', 'Centralisez journalistes et médias avec tags, historique et engagement.'],
+  [Mail, 'Invitations & accréditations', 'Envoyez, suivez et validez les demandes en quelques clics.'],
+  [BellRing, 'Relances automatisées', 'Programmez des relances ciblées et ne manquez aucune réponse.'],
+  [UserCheck, 'Suivi des présences', 'Visualisez accréditations, confirmations et présences en temps réel.'],
+  [BarChart3, 'Reporting média', 'Mesurez les retombées et le ROI de chaque événement.'],
+  [Users2, 'Collaboration équipe', 'Travaillez à plusieurs sur un même événement, en toute clarté.'],
+] as const;
+
+const PLAN_FEATURES = [
+  'Événements illimités',
+  "Membres d'équipe illimités",
+  "Accréditations & demandes d'interview",
+  'Planning & génération de créneaux',
+  'Newsroom & communications',
+  'Espace journaliste (lien magique + compte)',
+  'Multilingue FR / EN / PT / ES',
+  'Support FR',
+] as const;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -98,7 +122,7 @@ function Reveal({
 }
 
 /** Compteur animé (les chiffres « portent le message » — signature du DS). */
-function CountUp({ value, className, style }: { value: string; className?: string; style?: React.CSSProperties }) {
+function CountUp({ value, className }: { value: string; className?: string }) {
   const match = value.match(/^(\d+)(.*)$/);
   const target = match ? parseInt(match[1] ?? '0', 10) : 0;
   const suffix = match ? (match[2] ?? '') : value;
@@ -122,7 +146,7 @@ function CountUp({ value, className, style }: { value: string; className?: strin
     return () => cancelAnimationFrame(raf);
   }, [revealed, instant, target]);
   return (
-    <span ref={ref} className={className} style={style}>
+    <span ref={ref} className={className}>
       {n}
       {suffix}
     </span>
@@ -132,18 +156,7 @@ function CountUp({ value, className, style }: { value: string; className?: strin
 /** Tuile d'icône bleu-tint (motif du design system). */
 function IconTile({ icon: Ic, size = 21 }: { icon: LucideIcon; size?: number }) {
   return (
-    <span
-      style={{
-        width: 44,
-        height: 44,
-        borderRadius: 'var(--radius-md)',
-        background: 'var(--color-accent-tint)',
-        color: 'var(--color-accent-strong)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <span className="lp-icon-tile">
       <Ic size={size} strokeWidth={1.75} />
     </span>
   );
@@ -157,151 +170,68 @@ export function LandingPage() {
     api.get<PublicReview[]>('/public/reviews').then(setReviews).catch(() => setReviews([]));
   }, []);
 
+  const single = reviews.length === 1;
+
   return (
     <div className="lp">
-      <header className="lp-header">
-        <div className="lp-wrap lp-header-inner">
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 58 }} />
-          <nav className="lp-nav">
-            <a href="#features">Fonctionnalités</a>
-            <a href="#pricing">Tarifs</a>
-            <Link to="/ressources">Ressources</Link>
-          </nav>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <Link
-              to="/admin/login"
-              style={{ fontSize: '0.95rem', fontWeight: 500, color: 'var(--color-ink-soft)', textDecoration: 'none' }}
-            >
-              Connexion
-            </Link>
-            <Link className="btn btn-primary btn-sm" to="/admin/abonnement">
-              Créer votre espace
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       <section className="lp-hero">
         <div className="lp-wrap lp-hero-grid">
-          <Reveal>
-            <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {/* Pas de `Reveal` ici : ce bloc contient le h1, donc l'élément LCP.
+              L'animer en fondu retarde le premier rendu utile. */}
+          <div>
+            <span className="eyebrow lp-eyebrow-icon">
               <Radar size={15} /> Votre orchestrateur de relations presse
             </span>
-            <h1
-              style={{
-                fontSize: 'clamp(2.4rem, 1.4rem + 3vw, 3.4rem)',
-                fontWeight: 300,
-                letterSpacing: '-0.02em',
-                lineHeight: 1.1,
-                margin: 'var(--space-3) 0 0',
-              }}
-            >
-              Pilotez vos relations presse événementielles à{' '}
-              <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>360°</span>
+            <h1 className="lp-h1">
+              Pilotez vos relations presse événementielles à <span className="lp-accent">360°</span>
             </h1>
-            <p
-              style={{
-                fontSize: '1.15rem',
-                color: 'var(--color-ink-soft)',
-                lineHeight: 1.55,
-                margin: 'var(--space-4) 0 0',
-                maxWidth: 520,
-              }}
-            >
+            <p className="lp-lede">
               Centralisez vos contacts médias, invitations, relances, accréditations et retombées dans une
               plateforme pensée pour les événements.
             </p>
-            <div className="lp-btn-row" style={{ marginTop: 'var(--space-5)' }}>
+            <div className="lp-btn-row lp-hero-actions">
               <Link className="btn btn-primary" to="/admin/abonnement">
-                Créer votre espace <ArrowRight size={18} />
+                {PRIMARY_CTA_LABEL} <ArrowRight size={18} />
               </Link>
               <a className="btn btn-ghost" href={DEMO_MAILTO}>
                 <PlayCircle size={18} /> Demander une démo
               </a>
             </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: 18,
-                marginTop: 'var(--space-4)',
-                fontSize: '0.85rem',
-                color: 'var(--color-ink-faint)',
-                flexWrap: 'wrap',
-              }}
-            >
-              {['Sans installation', 'Conforme RGPD', 'Support FR'].map((t) => (
-                <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Check size={15} color="var(--color-success)" /> {t}
+            <div className="lp-trust">
+              {TRUST_POINTS.map((point) => (
+                <span key={point}>
+                  <Check size={15} color="var(--color-success)" /> {point}
                 </span>
               ))}
             </div>
-          </Reveal>
+          </div>
           <Reveal delay={150}>
             <HeroPreview />
           </Reveal>
         </div>
       </section>
 
-      <section style={{ borderTop: '1px solid var(--color-line)', borderBottom: '1px solid var(--color-line)' }}>
-        <div className="lp-wrap lp-kpi-band">
-          {(
-            [
-              ['247', 'journalistes invités'],
-              ['68%', 'de taux de réponse'],
-              ['42', 'accréditations validées'],
-              ['18', 'retombées média suivies'],
-            ] as const
-          ).map(([n, l], i) => (
-            <Reveal key={l} delay={i * 100} style={{ textAlign: 'center' }}>
-              <CountUp
-                value={n}
-                style={{
-                  display: 'block',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 40,
-                  fontWeight: 700,
-                  color: 'var(--color-accent)',
-                  letterSpacing: '-0.02em',
-                }}
-              />
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', marginTop: 2 }}>{l}</div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      <section id="features" style={{ background: 'var(--color-bg)' }}>
-        <div className="lp-wrap" style={{ padding: '80px 0' }}>
-          <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto var(--space-6)' }}>
+      <section id="features" className="lp-section">
+        <div className="lp-wrap lp-section-inner">
+          <div className="lp-section-head">
             <span className="eyebrow">Une plateforme, tout le cycle RP</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 1.2rem + 2vw, 2.4rem)', fontWeight: 400, margin: 'var(--space-3) 0 0' }}>
-              De l'invitation à la retombée média
-            </h2>
-            <p style={{ fontSize: '1.05rem', color: 'var(--color-ink-soft)', marginTop: 'var(--space-3)', lineHeight: 1.55 }}>
+            <h2 className="lp-h2">De l'invitation à la retombée média</h2>
+            <p className="lp-section-lede">
               Coordonnez chaque étape de vos relations presse événementielles depuis un seul outil, clair et
               structuré.
             </p>
           </div>
           <div className="lp-features-grid">
-            {(
-              [
-                [Users, 'Gestion des contacts presse', 'Centralisez journalistes et médias avec tags, historique et engagement.'],
-                [Mail, 'Invitations & accréditations', 'Envoyez, suivez et validez les demandes en quelques clics.'],
-                [BellRing, 'Relances automatisées', 'Programmez des relances ciblées et ne manquez aucune réponse.'],
-                [UserCheck, 'Suivi des présences', 'Visualisez accréditations, confirmations et présences en temps réel.'],
-                [BarChart3, 'Reporting média', 'Mesurez les retombées et le ROI de chaque événement.'],
-                [Users2, 'Collaboration équipe', 'Travaillez à plusieurs sur un même événement, en toute clarté.'],
-              ] as const
-            ).map(([Ic, t, d], i) => (
-              <Reveal key={t} delay={i * 80}>
+            {FEATURES.map(([Ic, title, desc], i) => (
+              <Reveal key={title} delay={i * 80}>
                 <div className="lp-feature">
-                  <div style={{ marginBottom: 'var(--space-3)' }}>
+                  <div className="lp-feature-head">
                     <IconTile icon={Ic} />
                   </div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, margin: '0 0 6px' }}>{t}</h3>
-                  <p style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)', lineHeight: 1.55, margin: 0 }}>
-                    {d}
-                  </p>
+                  <h3 className="lp-feature-title">{title}</h3>
+                  <p className="lp-feature-text">{desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -310,47 +240,34 @@ export function LandingPage() {
       </section>
 
       {reviews.length > 0 && (
-        <section id="testimonial" style={{ background: 'var(--color-surface, var(--color-bg))', borderTop: '1px solid var(--color-line)' }}>
-          <div className="lp-wrap" style={{ padding: '72px 0' }}>
-            <div style={{ textAlign: 'center', marginBottom: 'var(--space-5)' }}>
-              <span className="eyebrow">Ils l'ont essayé</span>
+        <section id="testimonial" className="lp-section-line">
+          <div className="lp-wrap lp-section-inner">
+            <div className="lp-section-head">
+              {/* Le libellé ne doit pas surpromettre : les avis publiés incluent des
+                  retours d'attachés de presse du secteur, pas uniquement des clients. */}
+              <span className="eyebrow">Ce qu'en disent les attachés de presse</span>
             </div>
-            <div
-              style={{
-                display: 'grid',
-                gap: 'var(--space-4)',
-                gridTemplateColumns: reviews.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
-                maxWidth: reviews.length === 1 ? 760 : 1080,
-                margin: '0 auto',
-                padding: '0 var(--space-4)',
-              }}
-            >
+            <div className={`lp-quotes${single ? ' is-single' : ''}`}>
               {reviews.map((r, i) => (
                 <Reveal key={r.id} delay={i * 80}>
-                  <figure
-                    className="lp-feature"
-                    style={{ margin: 0, textAlign: reviews.length === 1 ? 'center' : 'left', height: '100%' }}
-                  >
-                    <div style={{ display: 'inline-flex', gap: 2, marginBottom: 'var(--space-3)' }} aria-label={`${r.rating}/5`}>
+                  <figure className="lp-feature lp-quote">
+                    <div className="lp-stars" aria-label={`${r.rating}/5`}>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} size={16} fill={n <= r.rating ? '#f5b50a' : 'none'} color={n <= r.rating ? '#f5b50a' : '#c3c7cd'} />
+                        <Star
+                          key={n}
+                          size={16}
+                          fill={n <= r.rating ? 'var(--lp-star)' : 'none'}
+                          color={n <= r.rating ? 'var(--lp-star)' : 'var(--lp-star-empty)'}
+                        />
                       ))}
                     </div>
-                    <blockquote
-                      style={{
-                        fontSize: reviews.length === 1 ? 'clamp(1.3rem, 1rem + 1.4vw, 1.9rem)' : '1.05rem',
-                        fontWeight: 400,
-                        lineHeight: 1.45,
-                        margin: '0 0 var(--space-3)',
-                        color: 'var(--color-ink)',
-                      }}
-                    >
-                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>«&nbsp;</span>
+                    <blockquote>
+                      <span className="lp-accent">«&nbsp;</span>
                       {r.quote}
-                      <span style={{ color: 'var(--color-accent, #1598d3)' }}>&nbsp;»</span>
+                      <span className="lp-accent">&nbsp;»</span>
                     </blockquote>
-                    <figcaption style={{ fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
-                      <strong style={{ color: 'var(--color-ink)' }}>{r.authorName}</strong>
+                    <figcaption>
+                      <strong>{r.authorName}</strong>
                       {(r.authorRole || r.authorOrg) && ` · ${[r.authorRole, r.authorOrg].filter(Boolean).join(', ')}`}
                     </figcaption>
                   </figure>
@@ -361,63 +278,34 @@ export function LandingPage() {
         </section>
       )}
 
-      <section id="pricing" style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-line)' }}>
-        <div className="lp-wrap" style={{ padding: '80px 0' }}>
-          <div style={{ textAlign: 'center', maxWidth: 640, margin: '0 auto var(--space-6)' }}>
+      <section id="pricing" className="lp-section lp-section-line">
+        <div className="lp-wrap lp-section-inner">
+          <div className="lp-section-head">
             <span className="eyebrow">Tarif simple</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem, 1.2rem + 2vw, 2.4rem)', fontWeight: 400, margin: 'var(--space-3) 0 0' }}>
-              Un abonnement, tout inclus
-            </h2>
-            <p style={{ fontSize: '1.05rem', color: 'var(--color-ink-soft)', marginTop: 'var(--space-3)', lineHeight: 1.55 }}>
+            <h2 className="lp-h2">Un abonnement, tout inclus</h2>
+            <p className="lp-section-lede">
               Un seul plan, sans surprise. Tous les modules, événements et membres illimités.
             </p>
           </div>
           <Reveal>
-            <div
-              style={{
-                maxWidth: 440,
-                margin: '0 auto',
-                background: '#fff',
-                border: '1px solid var(--color-line)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-lg)',
-                padding: '36px 32px',
-                textAlign: 'center',
-              }}
-            >
+            <div className="lp-price-card">
               <span className="eyebrow">Plan unique</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6, margin: 'var(--space-3) 0 2px' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 56, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-ink)', lineHeight: 1 }}>
-                  800 €
-                </span>
-                <span style={{ fontSize: '1.1rem', color: 'var(--color-ink-faint)' }}>/ an</span>
+              <div className="lp-price-row">
+                <span className="lp-price-amount">800 €</span>
+                <span className="lp-price-period">/ an</span>
               </div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-ink-faint)', margin: '0 0 var(--space-4)' }}>
-                par organisation · facturation annuelle
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 var(--space-5)', textAlign: 'left', display: 'grid', gap: 10 }}>
-                {[
-                  'Événements illimités',
-                  "Membres d'équipe illimités",
-                  "Accréditations & demandes d'interview",
-                  'Planning & génération de créneaux',
-                  'Newsroom & communications',
-                  'Espace journaliste (lien magique + compte)',
-                  'Multilingue FR / EN / PT / ES',
-                  'Support FR',
-                ].map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.95rem', color: 'var(--color-ink-soft)' }}>
-                    <Check size={17} color="var(--color-success)" strokeWidth={2.4} style={{ flex: 'none' }} /> {f}
+              <p className="lp-price-note">par organisation · facturation annuelle</p>
+              <ul className="lp-price-list">
+                {PLAN_FEATURES.map((f) => (
+                  <li key={f}>
+                    <Check size={17} color="var(--color-success)" strokeWidth={2.4} /> {f}
                   </li>
                 ))}
               </ul>
-              <Link className="btn btn-primary" to="/admin/abonnement" style={{ width: '100%', justifyContent: 'center' }}>
-                Créer votre espace <ArrowRight size={18} />
+              <Link className="btn btn-primary lp-price-cta" to="/admin/abonnement">
+                {PRIMARY_CTA_LABEL} <ArrowRight size={18} />
               </Link>
-              <a
-                href={DEMO_MAILTO}
-                style={{ display: 'inline-block', marginTop: 'var(--space-3)', fontSize: '0.9rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}
-              >
+              <a href={DEMO_MAILTO} className="lp-price-alt">
                 ou demander une démo
               </a>
             </div>
@@ -425,127 +313,94 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section style={{ background: 'var(--color-ink)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', right: -80, top: -80, width: 360, height: 360, borderRadius: '50%', border: '1px solid rgba(21,152,211,0.25)' }} />
-        <div style={{ position: 'absolute', right: 10, top: 10, width: 240, height: 240, borderRadius: '50%', border: '1px solid rgba(21,152,211,0.18)' }} />
-        <div className="lp-wrap" style={{ padding: '72px 0', position: 'relative', textAlign: 'center' }}>
+      <section className="lp-cta">
+        <div className="lp-cta-ring" aria-hidden="true" />
+        <div className="lp-cta-ring lp-cta-ring-sm" aria-hidden="true" />
+        <div className="lp-wrap lp-cta-inner">
           <Reveal>
-          <h2 style={{ fontSize: 'clamp(1.9rem, 1.2rem + 2.2vw, 2.5rem)', fontWeight: 300, color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>
-            Les RP événementielles, <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>parfaitement orchestrées.</span>
-          </h2>
-          <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.72)', maxWidth: 560, margin: 'var(--space-4) auto 0', lineHeight: 1.55 }}>
-            Rejoignez les équipes communication qui centralisent et mesurent leurs relations presse avec PR Event 360.
-          </p>
-          <div className="lp-btn-row" style={{ justifyContent: 'center', marginTop: 'var(--space-5)' }}>
-            <Link className="btn btn-primary" to="/admin/abonnement">
-              Créer votre espace <ArrowRight size={18} />
-            </Link>
-            <a
-              className="btn"
-              href={DEMO_MAILTO}
-              style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.3)' }}
-            >
-              Demander une démo
-            </a>
-          </div>
+            <h2 className="lp-cta-title">
+              Les RP événementielles, <span className="lp-accent">parfaitement orchestrées.</span>
+            </h2>
+            <p className="lp-cta-text">
+              Rejoignez les équipes communication qui centralisent et mesurent leurs relations presse avec PR
+              Event 360.
+            </p>
+            <div className="lp-btn-row lp-cta-actions">
+              <Link className="btn btn-primary" to="/admin/abonnement">
+                {PRIMARY_CTA_LABEL} <ArrowRight size={18} />
+              </Link>
+              <a className="btn lp-btn-on-navy" href={DEMO_MAILTO}>
+                Demander une démo
+              </a>
+            </div>
           </Reveal>
         </div>
       </section>
 
-      <footer style={{ background: '#fff', borderTop: '1px solid var(--color-line)' }}>
-        <div className="lp-wrap lp-footer-inner" style={{ padding: '36px 0' }}>
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" style={{ height: 26 }} />
-          <span style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Link to="/ressources" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
-              Ressources
-            </Link>
-            <Link to="/confidentialite" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
-              Confidentialité
-            </Link>
-            <Link to="/mentions-legales" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
-              Mentions légales
-            </Link>
-            <Link to="/cgv" style={{ fontSize: '0.85rem', color: 'var(--color-ink-faint)', textDecoration: 'none' }}>
-              CGV
-            </Link>
+      <footer className="lp-footer">
+        <div className="lp-wrap lp-footer-inner lp-footer-pad">
+          <img className="lp-footer-logo" src="/brand/logo-pr-event-360.png" alt="PR Event 360" />
+          <span className="lp-footer-links">
+            <Link to="/ressources">Ressources</Link>
+            <Link to="/confidentialite">Confidentialité</Link>
+            <Link to="/mentions-legales">Mentions légales</Link>
+            <Link to="/cgv">CGV</Link>
           </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-ink-faint)' }}>© 2026 PR Event 360</span>
+          <span className="lp-footer-copy">© 2026 PR Event 360</span>
         </div>
       </footer>
     </div>
   );
 }
 
-/** Aperçu « dashboard » du hero (preuve produit). */
+/**
+ * Aperçu « dashboard » du hero. Les chiffres sont fictifs : la légende doit
+ * rester visible pour qu'ils ne se lisent pas comme des métriques réelles.
+ */
 function HeroPreview() {
   return (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-line)',
-        boxShadow: 'var(--shadow-lg)',
-        padding: 20,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <span
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 8,
-              background: 'var(--color-accent-tint)',
-              color: 'var(--color-accent)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Calendar size={16} />
-          </span>
-          <strong style={{ fontSize: '0.95rem', color: 'var(--color-ink)' }}>Salon Tech &amp; Médias</strong>
+    <figure className="lp-preview">
+      <div className="lp-preview-card">
+        <div className="lp-preview-head">
+          <div className="lp-preview-event">
+            <span className="lp-preview-icon">
+              <Calendar size={16} />
+            </span>
+            <strong className="lp-preview-name">Salon Tech &amp; Médias</strong>
+          </div>
+          <span className="lp-preview-badge">En cours</span>
         </div>
-        <span
-          style={{
-            fontSize: '0.7rem',
-            fontWeight: 600,
-            color: 'var(--color-accent-strong)',
-            background: 'var(--color-accent-tint)',
-            borderRadius: 999,
-            padding: '3px 10px',
-          }}
-        >
-          En cours
-        </span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <MiniKpi icon={Users} label="Invités" value="247" />
-        <MiniKpi icon={TrendingUp} label="Réponse" value="68%" />
-      </div>
-      <div style={{ marginTop: 12, padding: 16, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 8 }}>
-          <span style={{ color: 'var(--color-ink-soft)' }}>Accréditations validées</span>
-          <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>42/68</span>
+        <div className="lp-preview-kpis">
+          <MiniKpi icon={Users} label="Invités" value="247" />
+          <MiniKpi icon={TrendingUp} label="Réponse" value="68%" />
         </div>
-        <div style={{ height: 7, borderRadius: 99, background: 'var(--color-line)', overflow: 'hidden' }}>
-          <div className="lp-progress-fill" style={{ height: '100%', background: 'var(--color-accent)', borderRadius: 99 }} />
+        <div className="lp-preview-progress">
+          <div className="lp-preview-progress-head">
+            <span className="muted">Accréditations validées</span>
+            <strong>42/68</strong>
+          </div>
+          <div className="lp-preview-track">
+            <div className="lp-progress-fill" />
+          </div>
         </div>
       </div>
-    </div>
+      <figcaption className="lp-preview-caption">
+        Aperçu du tableau de bord — événement et chiffres de démonstration.
+      </figcaption>
+    </figure>
   );
 }
 
 function MiniKpi({ icon: Ic, label, value }: { icon: LucideIcon; label: string; value: string }) {
   return (
-    <div style={{ border: '1px solid var(--color-line)', borderRadius: 'var(--radius-md)', padding: 14 }}>
-      <span style={{ color: 'var(--color-accent)', display: 'inline-flex' }}>
+    <div className="lp-kpi">
+      <span className="lp-kpi-icon">
         <Ic size={16} />
       </span>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1.1, marginTop: 4 }}>
+      <div className="lp-kpi-value">
         <CountUp value={value} />
       </div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--color-ink-faint)' }}>{label}</div>
+      <div className="lp-kpi-label">{label}</div>
     </div>
   );
 }
