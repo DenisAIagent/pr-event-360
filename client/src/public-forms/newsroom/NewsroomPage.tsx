@@ -23,7 +23,7 @@ const GROUP_KINDS: NewsroomAssetKind[] = ['press_kit', 'photo', 'video', 'logo',
 
 export function NewsroomPage() {
   const eventId = useEventId();
-  const { t, lang, setLang } = useI18n();
+  const { t, lang, applyLang } = useI18n();
   const [data, setData] = useState<NewsroomData | null>(null);
   usePageTitle(data ? `${t('news.eyebrow')} — ${data.event.name}` : null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function NewsroomPage() {
         // Même règle que le formulaire d'accréditation : on ne présente pas la
         // page dans une langue que l'organisateur n'a pas activée.
         const first = d.event.languages[0];
-        if (!d.event.languages.includes(lang) && first && isLang(first)) setLang(first);
+        if (!d.event.languages.includes(lang) && first && isLang(first)) applyLang(first);
       })
       .catch((e) => setError(e instanceof ApiError ? e.message : t('news.unavailable')));
     // eslint-disable-next-line react-hooks/exhaustive-deps

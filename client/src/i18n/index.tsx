@@ -13,7 +13,16 @@ export type Translate = (key: string, vars?: Record<string, string>) => string;
 
 interface I18nValue {
   lang: Lang;
+  /** Choix explicite de l'utilisateur : change la langue ET la mémorise. */
   setLang: (l: Lang) => void;
+  /**
+   * Alignement système (langue de l'événement, langue du compte journaliste) :
+   * change la langue SANS la mémoriser. Un alignement n'est pas un choix — le
+   * persister écraserait la préférence de l'utilisateur pour tous les autres
+   * événements (ex. : il choisit l'anglais, ouvre la newsroom d'un événement
+   * FR-seulement, et perdrait l'anglais partout, définitivement).
+   */
+  applyLang: (l: Lang) => void;
   t: Translate;
 }
 
@@ -88,12 +97,13 @@ export function I18nProvider({
         /* stockage indisponible : la langue reste valable pour la page courante */
       }
     };
+    const applyLang = (l: Lang) => setLangState(l);
     const t: Translate = (key, vars) => {
       // Repli sur le français si une clé manque dans la langue active.
       const text = DICTS[lang][key] ?? DICTS.fr[key] ?? key;
       return interpolate(text, vars);
     };
-    return { lang, setLang, t };
+    return { lang, setLang, applyLang, t };
   }, [lang]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
