@@ -133,6 +133,10 @@ export async function processAccreditation(
     // Email + SMS urgent à l'acceptation (le SMS ne part que si un téléphone existe).
     await sendNotification(base);
     await sendNotification({ ...base, channel: 'sms' });
+    // Billetterie : provision invité (non bloquant — la billetterie peut être absente).
+    void import('./ticketing/ticketingService')
+      .then((m) => m.provisionJournalistGuest(eventId, journalistId))
+      .catch((err) => console.error('[ticketing] provision after accept', err));
     return { journalist: updated, accessToken: token.rawToken };
   }
 
@@ -146,6 +150,9 @@ export async function processAccreditation(
     journalist: updated,
     triggerKey: TRIGGERS.ACCREDITATION_REJECTED,
   });
+  void import('./ticketing/ticketingService')
+    .then((m) => m.revokeJournalistGuest(eventId, journalistId))
+    .catch((err) => console.error('[ticketing] revoke after reject', err));
   return { journalist: updated, accessToken: null };
 }
 

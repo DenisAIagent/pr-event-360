@@ -17,6 +17,7 @@ import { RequestsTab } from './pages/RequestsTab';
 import { AccreditationsTab } from './pages/AccreditationsTab';
 import { LineupTab } from './pages/LineupTab';
 import { ProductionContactsTab } from './pages/ProductionContactsTab';
+import { TicketingTab } from './pages/TicketingTab';
 import { SettingsTab } from './pages/SettingsTab';
 import { BrandingTab } from './pages/BrandingTab';
 import { MessagesTab } from './pages/MessagesTab';
@@ -87,6 +88,7 @@ export function AdminApp() {
               <Route path="press-conferences" element={<PressConferencesTab />} />
               <Route path="lineup" element={<LineupTab />} />
               <Route path="production" element={<ProductionContactsTab />} />
+              <Route path="ticketing" element={<TicketingTab />} />
               <Route path="media" element={<MediaTab />} />
               <Route path="newsroom" element={<NewsroomTab />} />
               <Route path="communications" element={<CommunicationsTab />} />

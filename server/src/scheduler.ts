@@ -4,6 +4,7 @@ import { sendRecapsForFrequency } from './services/recapService';
 import { purgeExpiredJournalists } from './services/retentionService';
 import { sendCoverageRequests } from './services/coverageService';
 import { sendProductionDigests } from './services/productionDigestService';
+import { syncAllTicketingCheckIns } from './services/ticketing/ticketingService';
 import { purgeAuditEntriesOlderThan } from './db/repositories/auditRepo';
 import { purgeNotificationsOlderThan } from './db/repositories/notificationRepo';
 import { captureError } from './lib/sentry';
@@ -55,6 +56,7 @@ const LOCK = {
   coverage: 720_005,
   notifRetention: 720_006,
   productionDigest: 720_007,
+  ticketingSync: 720_008,
 } as const;
 
 /**
@@ -141,7 +143,19 @@ export function startScheduler(): void {
     { timezone: tz },
   );
 
+  // Billetterie : remonte les scans (Weezevent / Billetweb / …) vers checked_in_at.
+  // Toutes les 2 minutes — assez frais pour le jour J, respectueux des fair-use API.
+  cron.schedule(
+    '*/2 * * * *',
+    () => {
+      void runExclusive(LOCK.ticketingSync, 'ticketing-sync', () => syncAllTicketingCheckIns()).catch(
+        jobFailed('ticketing-sync'),
+      );
+    },
+    { timezone: tz },
+  );
+
   console.log(
-    'Planificateur démarré (récaps 08:00 / lundi 08:00 ; purges 03:30-04:15 ; retombées 09:00, Europe/Paris ; verrous inter-instances actifs)',
+    'Planificateur démarré (récaps 08:00 / lundi 08:00 ; purges 03:30-04:15 ; retombées 09:00 ; billetterie */2 min, Europe/Paris ; verrous inter-instances actifs)',
   );
 }

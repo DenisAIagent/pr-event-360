@@ -72,11 +72,11 @@ const STEPS: Step[] = [
   },
   {
     icon: CalendarCheck,
-    title: '5. Jour J',
-    body: 'Scannez les QR des badges à l’entrée presse, suivez les arrivées en temps réel depuis la vue terrain mobile.',
+    title: '5. Jour J & billetterie',
+    body: 'Connectez Weezevent (ou autre) dans Billetterie : un scan d’entrée pour la jauge prod, et le RP voit les journalistes arrivés dans Jour J.',
     tips: [
-      'Badge QR dans l’espace journaliste',
-      'Idéal sur téléphone ou tablette à l’accueil',
+      'Menu Billetterie → bac à sable pour tester sans clé',
+      'La prod scanne avec son app habituelle (WeezAccess…)',
     ],
   },
   {

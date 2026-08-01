@@ -698,6 +698,101 @@ select.status-select {
 .event-onboard {
   margin-bottom: 12px;
 }
+
+/* ── Intégration billetterie ── */
+.ticketing-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.ticketing-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  font-family: inherit;
+}
+.ticketing-step .n {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  background: var(--color-bg);
+  color: var(--color-ink-faint);
+}
+.ticketing-step.on {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, #fff);
+}
+.ticketing-step.on .n,
+.ticketing-step.done .n {
+  background: var(--color-accent);
+  color: #fff;
+}
+.ticketing-step.done {
+  color: var(--color-ink);
+}
+.ticketing-providers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.ticketing-provider {
+  text-align: left;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--color-surface);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ticketing-provider strong {
+  font-size: 15px;
+}
+.ticketing-provider .muted {
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.ticketing-caps {
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  margin-top: 4px;
+}
+.ticketing-provider.on {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+.ticketing-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.ticketing-check input {
+  margin-top: 3px;
+}
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-ink-faint);
+}
 .event-onboard .share-head strong {
   display: inline-flex;
   align-items: center;

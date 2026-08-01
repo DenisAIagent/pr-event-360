@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Presentation,
   Users2,
+  Ticket,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
@@ -192,6 +193,7 @@ export function Sidebar() {
               <>
                 <NavItem to={`${base}/lineup`} label="Configuration" icon={SlidersHorizontal} />
                 <NavItem to={`${base}/production`} label="Contacts prod" icon={Users2} />
+                <NavItem to={`${base}/ticketing`} label="Billetterie" icon={Ticket} />
               </>
             )}
 

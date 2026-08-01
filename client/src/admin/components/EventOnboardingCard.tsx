@@ -73,7 +73,8 @@ export function EventOnboardingCard() {
         <li>
           <span className="n">4</span>
           <span>
-            Le jour J : <Link to={`${base}/jour`}>check-in QR</Link> · Ensuite bilan &amp; revue de presse
+            <Link to={`${base}/ticketing`}>Billetterie</Link> (jauge prod + arrivées RP) ·{' '}
+            <Link to={`${base}/jour`}>Jour J</Link>
           </span>
         </li>
       </ol>

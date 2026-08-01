@@ -79,6 +79,10 @@ La commande `npm start` attend PostgreSQL, applique les migrations, initialise l
 
 Consulter le [guide de déploiement](docs/deployment.md) avant toute mise en production ou restauration.
 
+## Billetterie
+
+Intégration par événement (Weezevent, Billetweb, Eventbrite, Shotgun) : menu **Billetterie**, bac à sable sans clé, provision à l’acceptation d’accréditation, sync des scans vers Jour J. Voir [docs/ticketing-integrations.md](docs/ticketing-integrations.md).
+
 ## Sécurité et données personnelles
 
 - le JWT back-office n’est pas stocké dans `localStorage` : il est placé dans `pr360_session`, cookie `HttpOnly`, `Secure` en production et `SameSite=Lax` ;

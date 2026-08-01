@@ -12,6 +12,7 @@ const PAGE_LABEL: Record<string, string> = {
   'press-conferences': 'Conférences de presse',
   lineup: 'Configuration',
   production: 'Contacts production',
+  ticketing: 'Billetterie',
   media: 'Médiathèque',
   newsroom: 'Newsroom',
   communications: 'Communications',
