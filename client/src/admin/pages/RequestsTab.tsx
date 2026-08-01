@@ -28,17 +28,25 @@ export function RequestsTab() {
   const branding = ev.data?.branding ?? null;
   const profile = getEventProfile(ev.data?.eventType);
 
-  const VIEWS: { value: View; label: string }[] = [
-    { value: 'queue', label: 'File globale' },
-    { value: 'byArtist', label: `Interviews par ${profile.participantSingular.toLocaleLowerCase('fr')}` },
-    { value: 'byStage', label: `Reportages par ${profile.participantSingular.toLocaleLowerCase('fr')}` },
-    { value: 'planning', label: 'Planning par créneau' },
+  const VIEWS: { value: View; label: string; short: string }[] = [
+    { value: 'queue', label: 'File globale', short: 'File' },
+    {
+      value: 'byArtist',
+      label: `Interviews par ${profile.participantSingular.toLocaleLowerCase('fr')}`,
+      short: 'Interviews',
+    },
+    {
+      value: 'byStage',
+      label: `Reportages par ${profile.participantSingular.toLocaleLowerCase('fr')}`,
+      short: 'Reportages',
+    },
+    { value: 'planning', label: 'Planning par créneau', short: 'Planning' },
   ];
 
   return (
-    <div>
+    <div className="event-page requests-page">
       {dash.data && (
-        <div className="kpis" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+        <div className="kpis kpis-event" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
           <Kpi num={dash.data.total} label="Demandes" icon={Inbox} variant="k-navy" />
           <Kpi num={dash.data.byType.interview} label="Interviews" icon={Mic} variant="k-blue" />
           <Kpi num={dash.data.byType.photo_report} label="Reportages photo" icon={Camera} variant="k-navy" />
@@ -60,11 +68,19 @@ export function RequestsTab() {
         </div>
       )}
 
-      <div className="toolbar">
-        <div className="segmented">
+      <div className="toolbar toolbar-views">
+        <div className="segmented segmented-views" role="tablist" aria-label="Vues des demandes">
           {VIEWS.map((v) => (
-            <button key={v.value} className={view === v.value ? 'on' : ''} onClick={() => setView(v.value)}>
-              {v.label}
+            <button
+              key={v.value}
+              type="button"
+              role="tab"
+              aria-selected={view === v.value}
+              className={view === v.value ? 'on' : ''}
+              onClick={() => setView(v.value)}
+            >
+              <span className="seg-full">{v.label}</span>
+              <span className="seg-short">{v.short}</span>
             </button>
           ))}
         </div>

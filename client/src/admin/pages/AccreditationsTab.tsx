@@ -237,20 +237,20 @@ export function AccreditationsTab() {
   }
 
   return (
-    <div className="stack">
-      <div className="filters">
+    <div className="stack event-page acc-page">
+      <div className="filters filters-sticky">
         {TYPE_FILTERS.map((o) => (
           <button key={o.v} className="chip" aria-pressed={typeF === o.v} onClick={() => setTypeF(o.v)}>
             {o.l}
           </button>
         ))}
-        <span style={{ width: 1, alignSelf: 'stretch', background: 'var(--color-line)', margin: '0 var(--space-1)' }} />
+        <span className="filters-sep" aria-hidden />
         {STATUS_FILTERS.map((o) => (
           <button key={o.v} className="chip" aria-pressed={statusF === o.v} onClick={() => setStatusF(o.v)}>
             {o.l}
           </button>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+        <div className="filters-exports m-hide-mobile">
           <button
             className="btn btn-ghost btn-sm"
             onClick={exportCsvFiltered}
@@ -268,7 +268,8 @@ export function AccreditationsTab() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
+      {/* Desktop : tableau */}
+      <div className="card table-card m-hide-mobile" style={{ padding: 'var(--space-3)', overflowX: 'auto' }}>
         <table className="table">
           <thead>
             <tr>
@@ -282,96 +283,80 @@ export function AccreditationsTab() {
           </thead>
           <tbody>
             {filtered.map((a) => (
-            <tr key={a.id}>
-              <td>
-                <strong>
-                  {a.firstName} {a.lastName ?? ''}
-                </strong>
-                <br />
-                <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>
-                  {a.email}
-                </span>
-              </td>
-              <td>{a.media ?? <span className="muted" aria-label="Non précisé">—</span>}</td>
-              <td>{a.lang.toUpperCase()}</td>
-              <td>
-                {a.accreditationType ? (
-                  ACC_TYPE_LABEL[a.accreditationType]
-                ) : (
-                  <span className="muted" aria-label="Non précisé">—</span>
-                )}
-              </td>
-              <td>
-                <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
-              </td>
-              <td>
-                {a.accStatus === 'pas_encore_traite' ? (
-                  <div className="inline-actions">
-                    <button className="btn btn-primary btn-sm" onClick={() => process(a.id, 'accept')}>
-                      Accepter
-                    </button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => process(a.id, 'reject')}>
-                      Refuser
-                    </button>
-                  </div>
-                ) : a.accStatus === 'acceptee' ? (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => resendAccess(a.id)}>
-                      Renvoyer un lien
+              <tr key={a.id}>
+                <td>
+                  <strong>
+                    {a.firstName} {a.lastName ?? ''}
+                  </strong>
+                  <br />
+                  <span className="muted" style={{ fontSize: 'var(--text-xs)' }}>
+                    {a.email}
+                  </span>
+                </td>
+                <td>{a.media ?? <span className="muted" aria-label="Non précisé">—</span>}</td>
+                <td>{a.lang.toUpperCase()}</td>
+                <td>
+                  {a.accreditationType ? (
+                    ACC_TYPE_LABEL[a.accreditationType]
+                  ) : (
+                    <span className="muted" aria-label="Non précisé">—</span>
+                  )}
+                </td>
+                <td>
+                  <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
+                </td>
+                <td>
+                  {a.accStatus === 'pas_encore_traite' ? (
+                    <div className="inline-actions">
+                      <button className="btn btn-primary btn-sm" onClick={() => process(a.id, 'accept')}>
+                        Accepter
+                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => process(a.id, 'reject')}>
+                        Refuser
+                      </button>
+                    </div>
+                  ) : a.accStatus === 'acceptee' ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => resendAccess(a.id)}>
+                        Renvoyer un lien
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        title="Badge QR check-in"
+                        onClick={() => void showBadge(a.id)}
+                      >
+                        <QrCode size={14} /> Badge
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                  <div className="rgpd-links">
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => void exportGdpr(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
+                      title="Droit d'accès / portabilité (RGPD, art. 15 et 20)"
+                    >
+                      Export (RGPD)
                     </button>
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
-                      title="Badge QR check-in"
-                      onClick={() => void showBadge(a.id)}
+                      className="link-btn link-danger"
+                      onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
+                      title="Droit à l'effacement (RGPD, art. 17)"
                     >
-                      <QrCode size={14} /> Badge
+                      Supprimer (RGPD)
                     </button>
+                    <InfoBubble title="Droits RGPD">
+                      <strong>Export</strong> : JSON structuré (accès art.&nbsp;15 / portabilité art.&nbsp;20).
+                      <br />
+                      <strong>Supprimer</strong> : effacement définitif art.&nbsp;17 (irréversible).
+                    </InfoBubble>
                   </div>
-                ) : (
-                  <span className="muted">—</span>
-                )}
-                <div style={{ marginTop: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => void exportGdpr(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
-                    title="Droit d'accès / portabilité (RGPD, art. 15 et 20)"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      color: 'var(--color-accent, #1598d3)',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Export (RGPD)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
-                    title="Droit à l'effacement (RGPD, art. 17)"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      color: 'var(--color-danger)',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    Supprimer (RGPD)
-                  </button>
-                  <InfoBubble title="Droits RGPD">
-                    <strong>Export</strong> : JSON structuré (accès art.&nbsp;15 / portabilité art.&nbsp;20).
-                    <br />
-                    <strong>Supprimer</strong> : effacement définitif art.&nbsp;17 (irréversible).
-                  </InfoBubble>
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -380,6 +365,72 @@ export function AccreditationsTab() {
             Aucune accréditation ne correspond à ce filtre.
           </p>
         )}
+      </div>
+
+      {/* Mobile : cartes tactiles */}
+      <div className="m-card-list m-only" aria-label="Liste des accréditations">
+        {filtered.length === 0 && (
+          <p className="muted" style={{ margin: 'var(--space-2) 0' }}>
+            Aucune accréditation ne correspond à ce filtre.
+          </p>
+        )}
+        {filtered.map((a) => {
+          const name = `${a.firstName} ${a.lastName ?? ''}`.trim();
+          return (
+            <article key={a.id} className="m-card">
+              <header className="m-card-head">
+                <div className="m-card-title">
+                  <strong>{name}</strong>
+                  <span className="muted">{a.email}</span>
+                </div>
+                <span className={`badge ${ACC_BADGE[a.accStatus]}`}>{ACC_STATUS_LABEL[a.accStatus]}</span>
+              </header>
+              <dl className="m-card-meta">
+                <div>
+                  <dt>Média</dt>
+                  <dd>{a.media ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Type</dt>
+                  <dd>{a.accreditationType ? ACC_TYPE_LABEL[a.accreditationType] : '—'}</dd>
+                </div>
+                <div>
+                  <dt>Langue</dt>
+                  <dd>{a.lang.toUpperCase()}</dd>
+                </div>
+              </dl>
+              <footer className="m-card-actions">
+                {a.accStatus === 'pas_encore_traite' ? (
+                  <>
+                    <button type="button" className="btn btn-primary" onClick={() => process(a.id, 'accept')}>
+                      Accepter
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => process(a.id, 'reject')}>
+                      Refuser
+                    </button>
+                  </>
+                ) : a.accStatus === 'acceptee' ? (
+                  <>
+                    <button type="button" className="btn btn-ghost" onClick={() => resendAccess(a.id)}>
+                      Renvoyer le lien
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => void showBadge(a.id)}>
+                      <QrCode size={16} /> Badge
+                    </button>
+                  </>
+                ) : null}
+                <div className="m-card-more">
+                  <button type="button" className="link-btn" onClick={() => void exportGdpr(a.id, name)}>
+                    Export RGPD
+                  </button>
+                  <button type="button" className="link-btn link-danger" onClick={() => erase(a.id, name)}>
+                    Supprimer
+                  </button>
+                </div>
+              </footer>
+            </article>
+          );
+        })}
       </div>
     </div>
   );
