@@ -115,8 +115,10 @@ export function Topbar() {
   const q = query.trim();
   const hasResults = results.journalists.length > 0 || results.events.length > 0;
 
+  const [searchExpanded, setSearchExpanded] = useState(false);
+
   return (
-    <header className="topbar">
+    <header className={`topbar${searchExpanded ? ' search-expanded' : ''}`}>
       <button
         type="button"
         className="icon-btn m-menu-btn"
@@ -126,27 +128,40 @@ export function Topbar() {
       >
         {menuOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
-      <div className="crumbs">
-        {ev ? (
-          <>
-            <span className="crumbs-ev">{ev.name}</span>
-            <ChevronRight size={13} className="crumbs-sep" />
+
+      {!searchExpanded && (
+        <div className="crumbs">
+          {ev ? (
+            <>
+              <span className="crumbs-ev">{ev.name}</span>
+              <ChevronRight size={13} className="crumbs-sep" />
+              <b>{pageLabel}</b>
+            </>
+          ) : (
             <b>{pageLabel}</b>
-          </>
-        ) : (
-          <b>{pageLabel}</b>
-        )}
-      </div>
+          )}
+        </div>
+      )}
       <div className="spacer" />
 
-      <div className="search-wrap" ref={wrapRef}>
+      {/* Mobile : icône qui déplie la recherche pleine largeur */}
+      <button
+        type="button"
+        className="icon-btn m-search-toggle"
+        aria-label="Rechercher"
+        onClick={() => setSearchExpanded((v) => !v)}
+      >
+        {searchExpanded ? <X size={18} /> : <Search size={18} />}
+      </button>
+
+      <div className={`search-wrap${searchExpanded ? ' is-open' : ''}`} ref={wrapRef}>
         <div className="search">
           <Search size={16} />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => q.length >= 2 && setOpen(true)}
-            placeholder="Rechercher…"
+            placeholder="Rechercher un journaliste, un média…"
             aria-label="Rechercher"
           />
         </div>
@@ -162,7 +177,10 @@ export function Topbar() {
                   <button
                     key={j.id}
                     className="sr-item"
-                    onClick={() => go(`/admin/events/${j.eventId}/accreditations`)}
+                    onClick={() => {
+                      setSearchExpanded(false);
+                      go(`/admin/events/${j.eventId}/accreditations`);
+                    }}
                   >
                     <UserRound size={15} />
                     <span className="sr-main">
@@ -183,7 +201,14 @@ export function Topbar() {
               <>
                 <div className="sr-group">Événements</div>
                 {results.events.map((e) => (
-                  <button key={e.id} className="sr-item" onClick={() => go(`/admin/events/${e.id}/requests`)}>
+                  <button
+                    key={e.id}
+                    className="sr-item"
+                    onClick={() => {
+                      setSearchExpanded(false);
+                      go(`/admin/events/${e.id}/requests`);
+                    }}
+                  >
                     <CalendarDays size={15} />
                     <span className="sr-main">
                       <strong>{e.name}</strong>
@@ -196,10 +221,10 @@ export function Topbar() {
         )}
       </div>
 
-      {eventId && (
+      {eventId && !searchExpanded && (
         <Link
           to={`/admin/events/${eventId}/messages`}
-          className="icon-btn"
+          className="icon-btn m-hide-xs"
           title="Messages de l’événement"
           aria-label="Messages"
         >

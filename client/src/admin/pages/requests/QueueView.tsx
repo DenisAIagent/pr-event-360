@@ -226,7 +226,7 @@ export function QueueView({
 
       {items.length > 0 && (
         <>
-          <p className="kbd-hint">
+          <p className="kbd-hint m-hide-mobile">
             Raccourcis : <kbd>↑</kbd> <kbd>↓</kbd> (ou <kbd>J</kbd> <kbd>K</kbd>) naviguer · <kbd>A</kbd> accepter ·{' '}
             <kbd>R</kbd> refuser
           </p>

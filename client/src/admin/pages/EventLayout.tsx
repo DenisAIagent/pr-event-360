@@ -50,8 +50,9 @@ export function EventLayout() {
   }
 
   return (
-    <div className="stack">
-      <div className="ev-banner">
+    <div className="stack event-shell">
+      {/* Bandeau desktop complet */}
+      <div className="ev-banner ev-banner-desktop">
         <div className="ev-ico">
           <Music2 size={24} />
         </div>
@@ -87,6 +88,20 @@ export function EventLayout() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bandeau compact mobile */}
+      <div className="ev-banner-mobile">
+        <div className="ev-banner-mobile-main">
+          <strong>{event?.name ?? '…'}</strong>
+          <span className="muted">
+            {event?.location ?? 'Lieu non précisé'}
+            {event?.startDate ? ` · ${formatRange(event.startDate, event.endDate)}` : ''}
+          </span>
+        </div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={copyRegistration} title="Copier le lien d'inscription">
+          {copied ? <Check size={16} /> : <Link2 size={16} />}
+        </button>
       </div>
 
       <Outlet />
