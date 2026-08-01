@@ -24,7 +24,7 @@ Les limites de débit utilisent un store Redis partagé lorsque `REDIS_URL` est 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
 | GET | `/api/health` | public | `SELECT 1` PostgreSQL, 503 si inaccessible |
-| GET | `/api/metrics` | public | compteurs Prometheus par route, durées, pool PG ; aucune donnée sensible |
+| GET | `/api/metrics` | `Authorization: Bearer METRICS_TOKEN` (404 en prod sans secret) | compteurs Prometheus ; aucune PII |
 
 ## Authentification — `/api/admin/auth`
 
@@ -151,6 +151,7 @@ Corps de création/mise à jour :
 | POST | `/:eventId/accreditations/:journalistId/process` | accès événement | `accept | reject` |
 | POST | `/:eventId/accreditations/:journalistId/access-link/resend` | éditeur | rotation et renvoi |
 | DELETE | `/:eventId/accreditations/:journalistId` | éditeur | effacement RGPD |
+| GET | `/:eventId/accreditations/:journalistId/export` | éditeur | export JSON art. 15/20 |
 | GET | `/:eventId/requests?type=&status=&limit=` | accès événement | file triée, filtres en SQL, `limit` 1000 par défaut (max 5000) |
 | POST | `/:eventId/requests/:requestId/status` | accès événement | `{status,note?}` ; liste d’attente non assignable |
 | POST | `/:eventId/planning/generate` | éditeur | `{assigned,unscheduled}` |
@@ -242,13 +243,18 @@ La réponse GET inclut `eventType`. La soumission exige le consentement et refus
 
 ### Espace journaliste — `/api/public/space`
 
+Le segment `:token` accepte soit le bearer du lien magique, soit `me` (session cookie `pr360_journalist`).
+
 | Méthode | Route | Description |
 |---|---|---|
+| POST | `/session` | échange le lien magique → cookie HttpOnly + rotation du jeton |
+| POST | `/logout` | efface le cookie de session journaliste |
 | GET | `/:token` | événement, profil, lineup, demandes, conférences, règles et retombées |
+| GET | `/:token/export` | export JSON art. 15/20 |
 | POST | `/:token/requests` | cible participant obligatoire |
 | POST | `/:token/press-conferences/:conferenceId/register` | inscrit/demande une place |
 | DELETE | `/:token/press-conferences/:conferenceId/registration` | annule ou décline |
-| POST | `/:token/password` | **première définition uniquement**, min. 8 |
+| POST | `/:token/password` | **première définition uniquement**, min. 12 |
 | POST | `/:token/coverage` | dépose une retombée |
 | DELETE | `/:token/coverage/:id` | retire sa retombée |
 | POST | `/:token/assets/sign` | upload scindé par événement |
@@ -257,7 +263,7 @@ La réponse GET inclut `eventType`. La soumission exige le consentement et refus
 
 | Méthode | Route | Description |
 |---|---|---|
-| POST | `/login` | `{eventId,email,password}` → nouveau token d’espace |
+| POST | `/login` | `{eventId,email,password}` → session cookie (pas de token dans le corps) |
 | POST | `/forgot-password` | réponse générique |
 | POST | `/reset-password` | token 1 h, révoque le token d’espace |
 

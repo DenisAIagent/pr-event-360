@@ -27,14 +27,14 @@ Pour les journalistes, le Client est en principe responsable de traitement ; MDM
 | Droit | Réponse opérationnelle |
 |---|---|
 | information | notices aux points de collecte |
-| accès | export identité, accréditation, demandes, planning, conférences, retombées et consentements |
+| accès | **Export JSON** back-office (`GET …/accreditations/:id/export`) ou espace journaliste (`GET …/space/me/export`) |
 | rectification | correction dans le back-office ou l’espace |
-| effacement | suppression journaliste en cascade |
+| effacement | suppression journaliste en cascade (bouton « Supprimer (RGPD) ») |
 | limitation | gel organisationnel documenté, en attendant une fonction dédiée |
-| portabilité | format structuré pour les données fournies |
+| portabilité | même export JSON structuré (`format: PR-Event-360-GDPR-export-v1`) |
 | opposition | retrait des communications non essentielles |
 
-L’effacement d’un journaliste supprime notamment ses demandes, historiques dépendants, inscriptions de conférence, resets et retombées. Les journaux ou sauvegardes soumis à une obligation légale suivent leur propre calendrier.
+L’effacement d’un journaliste supprime notamment ses demandes, historiques dépendants, inscriptions de conférence, resets et retombées. Les journaux ou sauvegardes suivent [sauvegardes-retention.md](sauvegardes-retention.md).
 
 ## Sécurité de la réponse
 
@@ -49,4 +49,4 @@ L’effacement d’un journaliste supprime notamment ses demandes, historiques d
 |---|---|---|---|---|---|---|---|
 | | | | | | | | |
 
-L’export self-service complet reste une amélioration ; le traitement manuel assisté demeure nécessaire.
+L’export self-service JSON est disponible ; le traitement manuel assisté reste possible pour les cas complexes (multi-événements, co-responsables).

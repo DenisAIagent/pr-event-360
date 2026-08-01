@@ -18,6 +18,7 @@ import { changeRequestStatus } from '../../services/requestService';
 import { getDashboard, getQueue } from '../../services/queueService';
 import { generatePlanning } from '../../services/planningService';
 import { listNotificationsByEvent } from '../../db/repositories/notificationRepo';
+import { exportJournalistPersonalData } from '../../services/gdprExportService';
 
 /**
  * Routeur « pipeline presse » : accréditations (traitement, renvoi de lien,
@@ -111,6 +112,26 @@ eventPipelineRouter.delete(
     await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
     await deleteJournalist(req.params.eventId!, req.params.journalistId!);
     sendData(res, { deleted: true });
+  }),
+);
+
+// Export RGPD art. 15/20 — JSON structuré pour répondre aux demandes d'accès/portabilité.
+eventPipelineRouter.get(
+  '/:eventId/accreditations/:journalistId/export',
+  requireEventEditor,
+  asyncHandler(async (req, res) => {
+    await getAccessibleEventOrThrow(req.params.eventId!, req.user!);
+    const payload = await exportJournalistPersonalData(
+      req.params.eventId!,
+      req.params.journalistId!,
+    );
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="pr360-export-${req.params.journalistId!.slice(0, 8)}.json"`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(200).json({ success: true, data: payload });
   }),
 );
 

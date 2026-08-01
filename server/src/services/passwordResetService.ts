@@ -10,6 +10,7 @@ import {
 import { findUserByEmail, updatePasswordHash } from '../db/repositories/userRepo';
 import { fireAndForget, withMinimumDuration } from '../lib/constantTime';
 import { ctaButton, sendBrandedEmail } from './notifications/email';
+import { assertPasswordPolicy } from '../lib/passwordPolicy';
 
 // Durée de validité du lien de réinitialisation.
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 heure
@@ -52,6 +53,8 @@ export async function requestPasswordReset(email: string): Promise<void> {
  * si le jeton est inconnu, déjà utilisé ou expiré (pas de fuite d'information).
  */
 export async function resetPassword(rawToken: string, newPassword: string): Promise<void> {
+  // Valide la politique AVANT de consommer le jeton (un refus ne doit pas brûler le lien).
+  assertPasswordPolicy(newPassword);
   // Consommation atomique : marque le jeton utilisé ET renvoie le compte en une seule requête.
   // Une seconde requête concurrente avec le même jeton ne consomme rien → échec générique.
   const consumed = await consumeResetToken(hashResetToken(rawToken));

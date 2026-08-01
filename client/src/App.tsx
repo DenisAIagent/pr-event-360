@@ -52,6 +52,7 @@ export function App() {
           <Route path="/connexion" element={<L><JournalistLoginPage /></L>} />
           <Route path="/mot-de-passe-oublie" element={<L><JournalistForgotPasswordPage /></L>} />
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
+          <Route path="/espace" element={<L><SpacePage /></L>} />
           <Route path="/espace/:token" element={<L><SpacePage /></L>} />
           <Route path="/confidentialite" element={<PrivacyPage />} />
           <Route path="/mentions-legales" element={<LegalNoticePage />} />
@@ -101,6 +102,14 @@ export function App() {
           element={
             <I18nProvider>
               <JournalistResetPasswordPage />
+            </I18nProvider>
+          }
+        />
+        <Route
+          path="/espace"
+          element={
+            <I18nProvider>
+              <SpacePage />
             </I18nProvider>
           }
         />

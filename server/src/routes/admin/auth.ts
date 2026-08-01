@@ -27,6 +27,7 @@ import { requestPasswordReset, resetPassword } from '../../services/passwordRese
 import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
 import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
 import { getOrgInvite, acceptOrgInvite } from '../../services/orgInviteService';
+import { passwordSchema } from '../../lib/passwordPolicy';
 
 export const authRouter = Router();
 
@@ -139,7 +140,7 @@ authRouter.post(
 
 const RegisterSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
+  password: passwordSchema(),
   fullName: z.string().min(1),
   role: z.enum(['attache', 'assistant']).optional(),
 });
@@ -226,7 +227,7 @@ authRouter.post(
 
 const ResetPasswordSchema = z.object({
   token: z.string().min(1),
-  password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
+  password: passwordSchema(),
 });
 
 // Consomme le jeton et définit le nouveau mot de passe (usage unique).
@@ -256,7 +257,7 @@ authRouter.get(
 const AcceptInviteSchema = z.object({
   token: z.string().min(1),
   fullName: z.string().min(1, 'Nom requis'),
-  password: z.string().min(8, 'Mot de passe : 8 caractères minimum'),
+  password: passwordSchema(),
 });
 authRouter.post(
   '/accept-invite',

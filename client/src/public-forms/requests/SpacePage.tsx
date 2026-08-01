@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Inbox, CalendarDays, Newspaper, KeyRound, ExternalLink, MapPin, Presentation, Users } from 'lucide-react';
 import { useI18n, isLang, type Translate } from '../../i18n';
 import { domainEvent } from '../../lib/domainEvent';
@@ -15,10 +15,11 @@ import { getPublicEventTerms } from '../../lib/eventProfiles';
 type SpaceTab = 'requests' | 'planning' | 'conferences' | 'coverage' | 'account';
 
 /**
- * Espace journaliste. En mode normal, charge les données via le token de l'URL.
- * En mode aperçu (back-office), reçoit `previewData` et désactive l'envoi.
- * Mise en page « app-shell » : rail sombre à gauche (navigation journaliste) + contenu,
- * même allure que le back-office des attachés de presse.
+ * Espace journaliste.
+ * - Lien magique `/espace/:token` : échangé une fois contre un cookie HttpOnly, puis
+ *   l'URL est nettoyée (`/espace`) pour ne plus exposer le bearer (historique, logs).
+ * - Session cookie : appels API via le segment `/me`.
+ * - Mode aperçu back-office : `previewData` injecté, aucune mutation.
  */
 export function SpacePage({
   previewData,
@@ -27,7 +28,10 @@ export function SpacePage({
   previewData?: SpaceResponse;
   readOnly?: boolean;
 } = {}) {
-  const { token = '' } = useParams();
+  const { token: urlToken = '' } = useParams();
+  const navigate = useNavigate();
+  // Clé d'API : `me` (session cookie) après échange, ou token URL en rétrocompat / e2e.
+  const [spaceKey, setSpaceKey] = useState(urlToken && urlToken !== 'me' ? urlToken : 'me');
   const { t, lang, setLang } = useI18n();
   const [data, setData] = useState<SpaceResponse | null>(previewData ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -46,14 +50,10 @@ export function SpacePage({
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [pwdSaved, setPwdSaved] = useState(false);
 
-  async function load() {
-    try {
-      const res = await api.get<SpaceResponse>(`/public/space/${token}`);
-      setData(res);
-      if (isLang(res.journalist.lang)) setLang(res.journalist.lang);
-    } catch (err) {
-      setLoadError(err instanceof ApiError ? err.message : t('common.error'));
-    }
+  async function load(key: string = spaceKey) {
+    const res = await api.get<SpaceResponse>(`/public/space/${key}`);
+    setData(res);
+    if (isLang(res.journalist.lang)) setLang(res.journalist.lang);
   }
 
   useEffect(() => {
@@ -63,9 +63,31 @@ export function SpacePage({
       if (isLang(previewData.journalist.lang)) setLang(previewData.journalist.lang);
       return;
     }
-    void load();
+    let cancelled = false;
+    (async () => {
+      try {
+        if (urlToken && urlToken !== 'me') {
+          // Échange du lien magique → cookie session + rotation du jeton (l'URL meurt).
+          await api.post('/public/space/session', { token: urlToken });
+          if (cancelled) return;
+          setSpaceKey('me');
+          navigate('/espace', { replace: true });
+          await load('me');
+        } else {
+          setSpaceKey('me');
+          await load('me');
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof ApiError ? err.message : t('common.error'));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, previewData]);
+  }, [urlToken, previewData]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,7 +96,7 @@ export function SpacePage({
     setSent(false);
     setSubmitting(true);
     try {
-      await api.post(`/public/space/${token}/requests`, {
+      await api.post(`/public/space/${spaceKey}/requests`, {
         type,
         artistId: artistId || null,
         slotId: null,
@@ -97,7 +119,7 @@ export function SpacePage({
     if (readOnly) return;
     setPwdError(null);
     setPwdSaved(false);
-    if (pwd.length < 8) {
+    if (pwd.length < 12) {
       setPwdError(t('space.password.tooShort'));
       return;
     }
@@ -107,7 +129,7 @@ export function SpacePage({
     }
     setPwdBusy(true);
     try {
-      await api.post(`/public/space/${token}/password`, { password: pwd });
+      await api.post(`/public/space/${spaceKey}/password`, { password: pwd });
       setPwdSaved(true);
       setPwd('');
       setPwdConfirm('');
@@ -116,6 +138,22 @@ export function SpacePage({
       setPwdError(err instanceof ApiError ? err.message : t('common.error'));
     } finally {
       setPwdBusy(false);
+    }
+  }
+
+  async function downloadGdprExport() {
+    try {
+      const res = await fetch(`/api/public/space/${spaceKey}/export`, { credentials: 'include' });
+      if (!res.ok) throw new Error(t('common.error'));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pr360-mes-donnees.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPwdError(err instanceof Error ? err.message : t('common.error'));
     }
   }
 
@@ -394,7 +432,7 @@ export function SpacePage({
           {tab === 'conferences' && (
             <ConferenceSection
               conferences={data.pressConferences ?? []}
-              token={token}
+              token={spaceKey}
               lang={lang}
               t={t}
               readOnly={readOnly}
@@ -404,7 +442,7 @@ export function SpacePage({
 
           {tab === 'coverage' && (
             <CoverageSection
-              token={token}
+              token={spaceKey}
               coverage={data.coverage ?? []}
               ended={data.event.ended ?? false}
               readOnly={readOnly}
@@ -414,6 +452,19 @@ export function SpacePage({
 
           {tab === 'account' && (
             <div className="stack" style={{ gap: 'var(--space-5)' }}>
+              {!readOnly && (
+                <section className="card stack" aria-labelledby="sec-gdpr">
+                  <h2 id="sec-gdpr" style={{ fontSize: 'var(--text-xl)', margin: 0 }}>
+                    {t('space.gdpr.title')}
+                  </h2>
+                  <p className="muted" style={{ margin: 0, fontSize: 'var(--text-sm)' }}>
+                    {t('space.gdpr.hint')}
+                  </p>
+                  <button type="button" className="btn btn-ghost" style={{ alignSelf: 'flex-start' }} onClick={() => void downloadGdprExport()}>
+                    {t('space.gdpr.download')}
+                  </button>
+                </section>
+              )}
               <a
                 href={newsroomUrl}
                 target="_blank"

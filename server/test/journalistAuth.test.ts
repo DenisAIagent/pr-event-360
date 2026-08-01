@@ -42,24 +42,30 @@ afterEach(() => vi.clearAllMocks());
 describe('setSpacePassword — anti-détournement du lien magique', () => {
   it('autorise le PREMIER réglage (aucun mot de passe encore défini)', async () => {
     vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted() as never);
-    await setSpacePassword('tok', 'motdepassefort');
+    await setSpacePassword('tok', 'motdepassefort12');
     expect(repo.setJournalistPassword).toHaveBeenCalledOnce();
   });
 
   it('REFUSE de remplacer un mot de passe existant via le seul lien magique', async () => {
     vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ passwordHash: 'argon2$hash' }) as never);
-    await expect(setSpacePassword('tok', 'nouveaumotdepasse')).rejects.toBeInstanceOf(AppError);
+    await expect(setSpacePassword('tok', 'nouveaumotdepasse12')).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 
   it('refuse si le token est inconnu', async () => {
     vi.mocked(repo.findJournalistByToken).mockResolvedValue(null as never);
-    await expect(setSpacePassword('inconnu', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
+    await expect(setSpacePassword('inconnu', 'motdepassefort12')).rejects.toBeInstanceOf(AppError);
   });
 
   it('refuse si l’accréditation n’est pas acceptée', async () => {
     vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted({ accStatus: 'pas_encore_traite' }) as never);
-    await expect(setSpacePassword('tok', 'motdepassefort')).rejects.toBeInstanceOf(AppError);
+    await expect(setSpacePassword('tok', 'motdepassefort12')).rejects.toBeInstanceOf(AppError);
+    expect(repo.setJournalistPassword).not.toHaveBeenCalled();
+  });
+
+  it('refuse un mot de passe trop court (< 12)', async () => {
+    vi.mocked(repo.findJournalistByToken).mockResolvedValue(accepted() as never);
+    await expect(setSpacePassword('tok', 'court')).rejects.toBeInstanceOf(AppError);
     expect(repo.setJournalistPassword).not.toHaveBeenCalled();
   });
 });

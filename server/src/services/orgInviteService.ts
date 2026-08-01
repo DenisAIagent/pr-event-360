@@ -65,8 +65,8 @@ export async function acceptOrgInvite(
     googleId = g.googleId;
     provider = 'google';
   } else {
-    if (!body.fullName || !body.password || body.password.length < 8) {
-      throw AppError.badRequest('Nom complet et mot de passe (8 caractères min.) requis.');
+    if (!body.fullName || !body.password || body.password.length < 12) {
+      throw AppError.badRequest('Nom complet et mot de passe (12 caractères min.) requis.');
     }
     email = inv.email;
     fullName = body.fullName;

@@ -24,7 +24,7 @@
   "acc.accType.photo": "Foto",
   "acc.accType.video": "Vídeo",
   "acc.commitPublish": "Comprometo-me a creditar o evento e a enviar a minha publicação.",
-  "acc.consent": "Li a política de privacidade e concordo que os meus dados sejam tratados para a gestão da minha acreditação.",
+  "acc.consent": "Li a política de privacidade. Compreendo que o meu processo de acreditação é tratado pelo organizador com base em medidas pré-contratuais / contrato (art. 6.1.b RGPD).",
   "acc.privacy": "Ver a política de privacidade",
   "acc.submit": "Enviar pedido",
   "acc.required": "Campos obrigatórios: nome próprio, email e consentimento.",
@@ -112,12 +112,12 @@
   "space.password.title": "Proteger o meu acesso",
   "space.password.hint": "Crie uma palavra-passe para voltar a entrar no seu espaço sem depender do link por email.",
   "space.password.setHint": "Palavra-passe definida ✓ Pode voltar a entrar com o seu email e palavra-passe.",
-  "space.password.field": "Palavra-passe (mín. 8 caracteres)",
+  "space.password.field": "Palavra-passe (mín. 12 caracteres)",
   "space.password.confirm": "Confirmar palavra-passe",
   "space.password.save": "Criar palavra-passe",
   "space.password.replace": "Substituir palavra-passe",
   "space.password.saved": "Palavra-passe guardada.",
-  "space.password.tooShort": "A palavra-passe deve ter pelo menos 8 caracteres.",
+  "space.password.tooShort": "A palavra-passe deve ter pelo menos 12 caracteres.",
   "space.password.mismatch": "As palavras-passe não coincidem.",
   "acc.haveAccount": "Já acreditado? Entre no seu espaço",
   "login.forgot": "Esqueceu a palavra-passe?",
@@ -171,5 +171,8 @@
   "space.coverage.cat.video": "Vídeo",
   "space.coverage.cat.autre": "Outro",
   "space.password.changeHint": "Uma senha já está definida. Para alterá-la, use «esqueci a senha» — enviaremos um link seguro por email.",
-  "space.password.forgotLink": "Esqueci a senha"
+  "space.password.forgotLink": "Esqueci a senha",
+  "space.gdpr.title": "Os meus dados (RGPD)",
+  "space.gdpr.hint": "Descarregue uma cópia estruturada dos seus dados (direito de acesso e portabilidade, art. 15 e 20).",
+  "space.gdpr.download": "Descarregar os meus dados (JSON)"
 }

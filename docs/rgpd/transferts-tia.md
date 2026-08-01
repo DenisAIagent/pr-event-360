@@ -54,11 +54,24 @@ Objectif : savoir où passent les données et encadrer tout transfert hors EEE. 
 9. conserver l’ancienne base protégée pendant la fenêtre de rollback ;
 10. supprimer selon procédure et mettre à jour DPA/registre/TIA.
 
+## Suivi opérationnel (à compléter avec les dashboards réels)
+
+| Fournisseur | Action immédiate |
+|---|---|
+| Railway PostgreSQL | Choisir région **EU** (ex. `europe-west`) et archiver le DPA |
+| Brevo | Confirmer région UE + DPA |
+| Stripe | DPA Stripe + DPF/CCT selon flux |
+| Cloudinary | Région EU si disponible + DPA |
+| Twilio | Uniquement si SMS live ; sinon laisser dormant |
+| Google Identity | Conditions Google + DPF |
+| Sentry | Projet EU + `sendDefaultPii=false` |
+| GitHub Actions backup | Artefacts ≤ 30 j ; secret limité |
+
 ## Suivi
 
 - [ ] localisation réelle renseignée ;
 - [ ] DPA archivés ;
 - [ ] DPF/CCT vérifiés ;
 - [ ] TIA achevées pour transferts résiduels ;
-- [ ] sauvegardes incluses ;
+- [x] sauvegardes documentées (`sauvegardes-retention.md`) ;
 - [ ] révision annuelle et à chaque changement.

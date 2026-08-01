@@ -15,17 +15,19 @@ Ne pas déduire une région depuis le nom commercial du service. Vérifier le co
 | Sentry | erreurs | DSN | traces techniques | à confirmer | DPA, minimisation |
 | GitHub Actions | sauvegarde | workflow + secret | dump PostgreSQL chiffré selon config | région/stockage à confirmer | rétention, accès, DPA |
 
-## Checklist article 28
+## Checklist article 28 (modèle DPA produit)
 
-- [ ] instructions documentées ;
-- [ ] confidentialité ;
-- [ ] sécurité article 32 ;
-- [ ] autorisation des sous-traitants ultérieurs ;
-- [ ] assistance aux droits ;
-- [ ] assistance violations/AIPD ;
-- [ ] suppression ou restitution ;
-- [ ] informations et audits ;
-- [ ] alerte sur instruction illicite.
+- [x] instructions documentées (`dpa-modele.md`) ;
+- [x] confidentialité (clauses modèle) ;
+- [x] sécurité article 32 (mesures techniques produit) ;
+- [ ] autorisation des sous-traitants ultérieurs **signée** avec chaque ST ;
+- [x] assistance aux droits (export + effacement) ;
+- [x] assistance violations/AIPD (procédures) ;
+- [ ] suppression ou restitution **contractualisée** avec chaque ST ;
+- [ ] informations et audits (droit d’audit signé) ;
+- [x] alerte sur instruction illicite (clause modèle).
+
+> Les cases « signées » restent à cocher opérationnellement après archivage des DPA réels (Railway, Brevo, Stripe, Cloudinary, etc.).
 
 ## Processus d’ajout
 

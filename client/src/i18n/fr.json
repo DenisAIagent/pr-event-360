@@ -24,7 +24,7 @@
   "acc.accType.photo": "Photo",
   "acc.accType.video": "Vidéo",
   "acc.commitPublish": "Je m’engage à créditer l’événement et à transmettre ma publication.",
-  "acc.consent": "J’ai lu la politique de confidentialité et j’accepte que mes données soient traitées pour la gestion de mon accréditation.",
+  "acc.consent": "J’ai pris connaissance de la politique de confidentialité. Je comprends que mon dossier d’accréditation est traité par l’organisateur sur la base des mesures précontractuelles / du contrat (art. 6.1.b RGPD).",
   "acc.privacy": "Voir la politique de confidentialité",
   "acc.submit": "Envoyer la demande",
   "acc.required": "Champs obligatoires : prénom, email et consentement.",
@@ -112,12 +112,12 @@
   "space.password.title": "Sécuriser mon accès",
   "space.password.hint": "Créez un mot de passe pour vous reconnecter à votre espace, sans dépendre du lien reçu par email.",
   "space.password.setHint": "Mot de passe défini ✓ Vous pouvez vous reconnecter avec votre email et votre mot de passe.",
-  "space.password.field": "Mot de passe (8 caractères min.)",
+  "space.password.field": "Mot de passe (12 caractères min.)",
   "space.password.confirm": "Confirmer le mot de passe",
   "space.password.save": "Créer le mot de passe",
   "space.password.replace": "Remplacer le mot de passe",
   "space.password.saved": "Mot de passe enregistré.",
-  "space.password.tooShort": "Le mot de passe doit faire au moins 8 caractères.",
+  "space.password.tooShort": "Le mot de passe doit faire au moins 12 caractères.",
   "space.password.mismatch": "Les mots de passe ne correspondent pas.",
   "acc.haveAccount": "Déjà accrédité ? Connectez-vous à votre espace",
   "login.forgot": "Mot de passe oublié ?",
@@ -171,5 +171,8 @@
   "space.coverage.cat.video": "Vidéo",
   "space.coverage.cat.autre": "Autre",
   "space.password.changeHint": "Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié » — un lien sécurisé vous sera envoyé par email.",
-  "space.password.forgotLink": "Mot de passe oublié"
+  "space.password.forgotLink": "Mot de passe oublié",
+  "space.gdpr.title": "Mes données (RGPD)",
+  "space.gdpr.hint": "Téléchargez une copie structurée de vos données (droit d’accès et de portabilité, art. 15 et 20).",
+  "space.gdpr.download": "Télécharger mes données (JSON)"
 }

@@ -56,3 +56,15 @@ Les admins et super-admins sont déjà soumis à la MFA obligatoire ; vérifier 
 | | | | | | | | | |
 
 Le dossier doit conserver les faits, effets, décisions, motifs de non-notification et actions correctives.
+
+## Exercice de simulation (tabletop) — recommandé 1× / an
+
+1. Scénario : lien journaliste fuité + accès croisé suspecté.
+2. Déclencher la chaîne d’alerte (email `rgpd@…`, horodatage).
+3. Contenir : rotation token, désactivation compte, `NOTIFICATIONS_MODE=simulation` si besoin.
+4. Qualifier volume / tenants / risque.
+5. Rédiger la fiche registre (ligne ci-dessus).
+6. Décider notification Client / CNIL / personnes.
+7. Retour d’expérience et correctifs.
+
+Noter la date du dernier exercice : _______________

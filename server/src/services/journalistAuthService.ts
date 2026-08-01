@@ -17,8 +17,8 @@ import {
 import { getBranding, findEventById } from '../db/repositories/eventRepo';
 import { ctaButton, eventSenderName, sendBrandedEmail } from './notifications/email';
 import { issueJournalistAccessToken } from './journalistAccessService';
+import { assertPasswordPolicy } from '../lib/passwordPolicy';
 
-const MIN_PASSWORD_LENGTH = 8;
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 /**
@@ -39,9 +39,7 @@ export async function setSpacePassword(token: string, password: string): Promise
       'Un mot de passe est déjà défini. Pour le changer, utilisez « mot de passe oublié ».',
     );
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw AppError.badRequest(`Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères`);
-  }
+  assertPasswordPolicy(password);
   const passwordHash = await argon2.hash(password);
   await setJournalistPassword(journalist.id, passwordHash);
 }
@@ -89,10 +87,8 @@ export async function requestJournalistPasswordReset(eventId: string, email: str
 
 /** Consomme un jeton de réinitialisation et pose le nouveau mot de passe. */
 export async function resetJournalistPassword(rawToken: string, newPassword: string): Promise<void> {
-  // Valide la longueur AVANT de consommer le jeton (un refus ne doit pas brûler le lien).
-  if (newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw AppError.badRequest(`Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères`);
-  }
+  // Valide la politique AVANT de consommer le jeton (un refus ne doit pas brûler le lien).
+  assertPasswordPolicy(newPassword);
   // Consommation atomique : anti double-consommation concurrente du même jeton.
   const consumed = await consumeJournalistReset(hashResetToken(rawToken));
   if (!consumed) throw AppError.badRequest('Lien invalide ou expiré. Veuillez en redemander un.');

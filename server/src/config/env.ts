@@ -34,9 +34,19 @@ const EnvSchema = z.object({
   // Sentry (suivi des erreurs serveur). Optionnel : sans DSN, aucune télémétrie (dormant).
   SENTRY_DSN: z.string().optional(),
 
-  // Redis (compteurs de rate-limit partagés entre instances). Optionnel :
+  // Jeton d'accès à GET /api/metrics (Authorization: Bearer …).
+  // En production, l'endpoint est masqué (404) si ce secret est absent.
+  METRICS_TOKEN: z.string().min(16).optional(),
+
+  // Redis (compteurs de rate-limit partagés entre instances). Optionnel en dev :
   // sans lui, les limiteurs restent en mémoire locale (compteurs par instance).
+  // En production multi-instance, définir REQUIRE_REDIS=true pour refuser le démarrage
+  // sans REDIS_URL (sinon les limites anti-bruteforce sont multipliées par N).
   REDIS_URL: z.string().optional(),
+  REQUIRE_REDIS: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => v === 'true'),
 
   // Mode global : « simulation » (journalisation, aucun envoi) ou « live » (fournisseurs réels).
   NOTIFICATIONS_MODE: z.enum(['simulation', 'live']).default('simulation'),

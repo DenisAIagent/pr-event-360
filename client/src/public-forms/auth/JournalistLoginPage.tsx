@@ -40,12 +40,13 @@ export function JournalistLoginPage() {
     setError(null);
     setBusy(true);
     try {
-      const { token } = await api.post<{ token: string; firstName: string }>('/public/journalist/login', {
+      await api.post<{ firstName: string; session: true }>('/public/journalist/login', {
         eventId,
         email,
         password,
       });
-      navigate(`/espace/${token}`, { replace: true });
+      // Session cookie HttpOnly posée par l'API — plus de token dans l'URL.
+      navigate('/espace', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('login.error'));
     } finally {

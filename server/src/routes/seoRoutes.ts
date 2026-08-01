@@ -45,7 +45,7 @@ function renderSitemap(urls: SitemapUrl[]): string {
  */
 export const PRIVATE_PATH_PREFIXES = [
   '/admin',
-  '/espace/',
+  '/espace',
   '/espace-preview/',
   '/connexion',
   '/mot-de-passe-oublie',

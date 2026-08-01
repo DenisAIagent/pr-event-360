@@ -84,8 +84,8 @@ Consulter le [guide de déploiement](docs/deployment.md) avant toute mise en pro
 - le JWT back-office n’est pas stocké dans `localStorage` : il est placé dans `pr360_session`, cookie `HttpOnly`, `Secure` en production et `SameSite=Lax` ;
 - les mutations par cookie exigent `X-CSRF-Token` ;
 - la MFA TOTP est obligatoire pour les comptes `admin` et les super-admins plateforme ;
-- les liens d’espace journaliste sont aléatoires, valables 7 jours, rotatifs ; seul leur hash SHA-256 est conservé ;
-- les mots de passe sont hachés par Argon2 ;
-- le consentement RGPD est requis à l’accréditation et les suppressions sont en cascade.
+- les liens d’espace journaliste sont aléatoires, valables 7 jours, rotatifs ; échangés contre un cookie `pr360_journalist` (l’URL est nettoyée) ; seul le hash SHA-256 est conservé en base ;
+- les mots de passe sont hachés par Argon2 (12 caractères minimum) ;
+- export JSON art. 15/20 et suppressions en cascade (art. 17) ; purge automatique 12 mois.
 
 Voir [Sécurité & RGPD](docs/security-rgpd.md) et le [dossier de conformité](docs/rgpd/).

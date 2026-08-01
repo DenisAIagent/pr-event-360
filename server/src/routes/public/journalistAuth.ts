@@ -8,6 +8,8 @@ import {
   requestJournalistPasswordReset,
   resetJournalistPassword,
 } from '../../services/journalistAuthService';
+import { issueJournalistSession } from '../../lib/journalistSession';
+import { passwordSchema } from '../../lib/passwordPolicy';
 
 export const publicJournalistAuthRouter = Router();
 
@@ -27,7 +29,9 @@ publicJournalistAuthRouter.post(
   asyncHandler(async (req, res) => {
     const { eventId, email, password } = req.body as z.infer<typeof LoginSchema>;
     const result = await journalistLogin(eventId, email, password);
-    sendData(res, result);
+    // Session cookie HttpOnly : le front redirige vers /espace (sans token dans l'URL).
+    issueJournalistSession(res, result.token);
+    sendData(res, { firstName: result.firstName, session: true as const });
   }),
 );
 
@@ -44,7 +48,7 @@ publicJournalistAuthRouter.post(
   }),
 );
 
-const ResetSchema = z.object({ token: z.string().min(1), password: z.string().min(8) });
+const ResetSchema = z.object({ token: z.string().min(1), password: passwordSchema() });
 
 /** Consomme le jeton reçu par email et pose le nouveau mot de passe. */
 publicJournalistAuthRouter.post(

@@ -35,7 +35,10 @@ async function getClient(): Promise<RedisLike | null> {
       retryStrategy: (times: number) => (times > 3 ? null : Math.min(times * 200, 1000)),
     }) as unknown as RedisLike;
     redis.on('error', (err: unknown) => {
-      console.error('[rate-limit] erreur Redis — les limiteurs passent en mode dégradé (fail-open)', err);
+      console.error(
+        '[security][rate-limit] erreur Redis — les limiteurs passent en mode dégradé (fail-open). Anti-bruteforce affaibli.',
+        err,
+      );
     });
     client = redis;
     return client;
@@ -96,8 +99,10 @@ class FailOpenStore implements Store {
   async increment(key: string): Promise<ClientRateLimitInfo> {
     try {
       return await this.inner.increment(key);
-    } catch {
+    } catch (err) {
       // Redis en panne : on laisse passer (fail-open) — voir l'en-tête du fichier.
+      // Journalisé à chaque échec pour alerter l'ops (bruteforce temporairement affaibli).
+      console.error('[security][rate-limit] incrément Redis échoué — fail-open', err);
       return { totalHits: 1, resetTime: undefined };
     }
   }

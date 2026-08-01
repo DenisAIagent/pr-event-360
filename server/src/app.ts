@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { timingSafeEqual } from 'node:crypto';
 import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -236,8 +237,30 @@ export function createApp(): Express {
   }));
 
   // Métriques applicatives au format Prometheus (compteurs par route, durées,
-  // pool PG). Aucune donnée sensible : méthodes, chemins de routes, statuts.
-  app.get('/api/metrics', (_req, res) => {
+  // pool PG). Aucune PII, mais surface de reconnaissance → protégée :
+  // - production sans METRICS_TOKEN : 404 (fail-closed) ;
+  // - METRICS_TOKEN défini : exige Authorization: Bearer <token> ;
+  // - développement : ouvert pour le scrape local.
+  app.get('/api/metrics', (req, res) => {
+    const metricsToken = env.METRICS_TOKEN;
+    if (metricsToken) {
+      const auth = req.headers.authorization ?? '';
+      const expected = `Bearer ${metricsToken}`;
+      if (auth.length !== expected.length) {
+        res.status(401).type('text').send('Unauthorized');
+        return;
+      }
+      // Comparaison à temps constant (évite de fuiter la longueur du secret).
+      const a = Buffer.from(auth);
+      const b = Buffer.from(expected);
+      if (!timingSafeEqual(a, b)) {
+        res.status(401).type('text').send('Unauthorized');
+        return;
+      }
+    } else if (env.NODE_ENV === 'production') {
+      res.status(404).type('text').send('Not Found');
+      return;
+    }
     res.setHeader('content-type', 'text/plain; version=0.0.4; charset=utf-8');
     res.send(renderMetrics());
   });

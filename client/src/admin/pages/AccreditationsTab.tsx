@@ -96,6 +96,26 @@ export function AccreditationsTab() {
     }
   }
 
+  // Export RGPD art. 15/20 : JSON structuré pour répondre aux demandes d'accès/portabilité.
+  async function exportGdpr(journalistId: string, name: string) {
+    try {
+      const res = await fetch(`/api/admin/events/${eventId}/accreditations/${journalistId}/export`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Export impossible');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pr360-export-${name.replace(/\s+/g, '-').toLowerCase() || journalistId.slice(0, 8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Export RGPD téléchargé.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Export impossible, réessayez.');
+    }
+  }
+
   // Effacement RGPD (art. 17) : suppression définitive du journaliste et de ses demandes.
   async function erase(journalistId: string, name: string) {
     if (
@@ -239,7 +259,23 @@ export function AccreditationsTab() {
                 ) : (
                   <span className="muted">—</span>
                 )}
-                <div style={{ marginTop: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ marginTop: 'var(--space-2)', display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => void exportGdpr(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
+                    title="Droit d'accès / portabilité (RGPD, art. 15 et 20)"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      color: 'var(--color-accent, #1598d3)',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Export (RGPD)
+                  </button>
                   <button
                     type="button"
                     onClick={() => erase(a.id, `${a.firstName} ${a.lastName ?? ''}`.trim())}
@@ -256,10 +292,10 @@ export function AccreditationsTab() {
                   >
                     Supprimer (RGPD)
                   </button>
-                  <InfoBubble title="Supprimer (droit à l'effacement)">
-                    Efface <strong>définitivement</strong> ce journaliste et toutes ses demandes. Action
-                    <strong> irréversible</strong> (pas de corbeille). C'est le « droit à l'effacement »
-                    prévu par le RGPD (art. 17), à utiliser si la personne le demande.
+                  <InfoBubble title="Droits RGPD">
+                    <strong>Export</strong> : JSON structuré (accès art.&nbsp;15 / portabilité art.&nbsp;20).
+                    <br />
+                    <strong>Supprimer</strong> : effacement définitif art.&nbsp;17 (irréversible).
                   </InfoBubble>
                 </div>
               </td>

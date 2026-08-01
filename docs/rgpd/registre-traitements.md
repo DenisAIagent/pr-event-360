@@ -15,7 +15,7 @@ Chaque Client complète sa propre identité, ses bases légales, volumes, durée
 | finalité | recevoir et traiter les accréditations |
 | personnes | journalistes, photographes, vidéastes |
 | données | identité, contact, média, audience, références, type, consentement |
-| base envisagée | contrat/mesures précontractuelles ou intérêt légitime, à valider |
+| base | art. 6.1.b (mesures précontractuelles / contrat) pour le dossier ; art. 6.1.f pour communications transactionnelles (voir balancing-test) |
 | destinataires | équipe presse autorisée |
 | durée produit | événement + 12 mois, purge automatique |
 | sécurité | tenant, rôles, MFA privilégiée, Argon2, liens hashés, rate limits |
@@ -99,9 +99,10 @@ Chaque Client complète sa propre identité, ses bases légales, volumes, durée
 ## Suivi
 
 - [ ] identité et DPO du Client ;
-- [ ] bases légales validées ;
+- [x] bases légales produit documentées (6.1.b + balancing test IL) — à valider par le Client ;
 - [ ] région Railway/PostgreSQL confirmée ;
 - [ ] régions, DPA et mécanismes de transfert des fournisseurs activés ;
-- [ ] durées Client alignées sur la purge ;
-- [ ] notices FR/EN/PT/ES cohérentes ;
+- [x] durées produit alignées sur la purge 12 mois ;
+- [x] notices FR/EN/PT/ES (consentement reformulé + privacy août 2026) ;
+- [x] export art. 15/20 (self-service journaliste + admin) ;
 - [ ] revue annuelle et à chaque nouvelle fonctionnalité.

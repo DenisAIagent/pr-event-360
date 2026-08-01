@@ -9,6 +9,24 @@ async function main(): Promise<void> {
   const env = loadEnv(); // fail-fast si une variable requise manque
   initSentry(); // dormant sans SENTRY_DSN
 
+  // Production multi-instance : sans Redis partagé, le rate-limit anti-bruteforce
+  // est multiplié par le nombre de replicas. REQUIRE_REDIS=true force l'échec au boot.
+  if (env.REQUIRE_REDIS && !env.REDIS_URL) {
+    throw new Error(
+      'REQUIRE_REDIS=true mais REDIS_URL est absent — configurez Redis pour des compteurs de débit partagés.',
+    );
+  }
+  if (env.NODE_ENV === 'production' && !env.REDIS_URL) {
+    console.error(
+      '[security] REDIS_URL absent en production : les rate-limits sont locaux à chaque instance (bruteforce ×N). Définissez REDIS_URL ou REQUIRE_REDIS=true.',
+    );
+  }
+  if (env.NODE_ENV === 'production' && !env.METRICS_TOKEN) {
+    console.warn(
+      '[security] METRICS_TOKEN absent : /api/metrics renvoie 404. Définissez un secret pour autoriser le scrape Prometheus.',
+    );
+  }
+
   // Vérifie la connexion DB au démarrage.
   await pool.query('SELECT 1');
 

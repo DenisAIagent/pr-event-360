@@ -38,7 +38,7 @@ export function JournalistResetPasswordPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) {
+    if (password.length < 12) {
       setError(t('space.password.tooShort'));
       return;
     }

@@ -24,7 +24,7 @@
   "acc.accType.photo": "Photo",
   "acc.accType.video": "Video",
   "acc.commitPublish": "I commit to crediting the event and sharing my publication.",
-  "acc.consent": "I have read the privacy policy and agree that my data is processed to manage my accreditation.",
+  "acc.consent": "I have read the privacy policy. I understand that my accreditation file is processed by the organiser on the basis of pre-contractual measures / contract (GDPR art. 6.1.b).",
   "acc.privacy": "See the privacy policy",
   "acc.submit": "Send request",
   "acc.required": "Required fields: first name, email and consent.",
@@ -112,12 +112,12 @@
   "space.password.title": "Secure my access",
   "space.password.hint": "Create a password to sign back in to your space without relying on the email link.",
   "space.password.setHint": "Password set ✓ You can sign back in with your email and password.",
-  "space.password.field": "Password (8 characters min.)",
+  "space.password.field": "Password (12 characters min.)",
   "space.password.confirm": "Confirm password",
   "space.password.save": "Create password",
   "space.password.replace": "Replace password",
   "space.password.saved": "Password saved.",
-  "space.password.tooShort": "Password must be at least 8 characters.",
+  "space.password.tooShort": "Password must be at least 12 characters.",
   "space.password.mismatch": "Passwords do not match.",
   "acc.haveAccount": "Already accredited? Sign in to your space",
   "login.forgot": "Forgot password?",
@@ -171,5 +171,8 @@
   "space.coverage.cat.video": "Video",
   "space.coverage.cat.autre": "Other",
   "space.password.changeHint": "A password is already set. To change it, use “forgot password” — a secure link will be emailed to you.",
-  "space.password.forgotLink": "Forgot password"
+  "space.password.forgotLink": "Forgot password",
+  "space.gdpr.title": "My data (GDPR)",
+  "space.gdpr.hint": "Download a structured copy of your data (right of access and portability, art. 15 and 20).",
+  "space.gdpr.download": "Download my data (JSON)"
 }

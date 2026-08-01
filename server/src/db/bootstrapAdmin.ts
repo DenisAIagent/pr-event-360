@@ -27,6 +27,9 @@ async function main(): Promise<void> {
     console.log('Bootstrap admin ignoré : ADMIN_EMAIL/ADMIN_PASSWORD non définis.');
     return;
   }
+  if (password.length < 12) {
+    throw new Error('ADMIN_PASSWORD doit faire au moins 12 caractères (politique de mot de passe).');
+  }
 
   const existing = await findUserByEmail(email);
   if (existing) {
@@ -49,6 +52,9 @@ async function main(): Promise<void> {
     isPlatformAdmin: true,
   });
   console.log(`Admin créé : ${user.email} (${user.id}) dans l'organisation ${org.slug}.`);
+  console.warn(
+    '[security] Videz ADMIN_EMAIL/ADMIN_PASSWORD des variables d’environnement après le premier bootstrap réussi.',
+  );
 }
 
 main()
