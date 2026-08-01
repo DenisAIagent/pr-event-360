@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/Confirm';
 import { SkeletonRows } from '../components/Skeleton';
 
 interface DayOfSnapshot {
@@ -91,15 +92,19 @@ function formatWhen(iso: string): string {
  * Vue opérationnelle Jour J — optimisée tactile / mobile :
  * check-in QR ou recherche, arrivées, interviews et conférences du jour.
  */
+type ArrivalFilter = 'waiting' | 'present' | 'all';
+
 export function DayOfPage() {
   const { eventId = '' } = useParams();
   const api = useAuthedApi();
   const toast = useToast();
+  const confirm = useConfirm();
   const [date, setDate] = useState(todayIso);
   const [data, setData] = useState<DayOfSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [arrivalFilter, setArrivalFilter] = useState<ArrivalFilter>('waiting');
   const [code, setCode] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lastCheckIn, setLastCheckIn] = useState<CheckInResult | null>(null);
@@ -142,7 +147,7 @@ export function DayOfPage() {
       toast.success(
         res.alreadyCheckedIn
           ? `${res.journalist.firstName} déjà présent`
-          : `${res.journalist.firstName} check-in ✓`,
+          : `${res.journalist.firstName} — accueil enregistré ✓`,
       );
       setCode('');
       await load();
@@ -153,11 +158,38 @@ export function DayOfPage() {
     }
   }
 
+  /** Accueil manuel : confirmation d’identité avant d’enregistrer la présence. */
+  async function manualPhysicalCheckIn(a: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    media: string | null;
+    email: string;
+  }) {
+    const name = `${a.firstName} ${a.lastName ?? ''}`.trim();
+    const ok = await confirm({
+      title: 'Accueil physique',
+      message: `Confirmez-vous l’identité de « ${name} »${a.media ? ` (${a.media})` : ''} ?\n\n${a.email}\n\nLa présence sera enregistrée comme un check-in (compteur Présents + Jour J RP).`,
+      confirmLabel: 'Accueil physique OK',
+      cancelLabel: 'Annuler',
+    });
+    if (!ok) return;
+    await doCheckIn({ journalistId: a.id });
+  }
+
   async function undo(journalistId: string) {
+    const ok = await confirm({
+      title: 'Annuler la présence',
+      message: 'Retirer ce journaliste du compteur des présents ?',
+      confirmLabel: 'Annuler la présence',
+      cancelLabel: 'Garder présent',
+      danger: true,
+    });
+    if (!ok) return;
     setBusyId(journalistId);
     try {
       await api.post(`/admin/events/${eventId}/check-in/undo`, { journalistId });
-      toast.success('Check-in annulé');
+      toast.success('Présence annulée');
       setLastCheckIn(null);
       await load();
     } catch (err) {
@@ -219,12 +251,14 @@ export function DayOfPage() {
   const filteredArrivals = useMemo(() => {
     if (!data) return [];
     const needle = q.trim().toLowerCase();
-    if (!needle) return data.arrivals;
     return data.arrivals.filter((a) => {
+      if (arrivalFilter === 'waiting' && a.checkedInAt) return false;
+      if (arrivalFilter === 'present' && !a.checkedInAt) return false;
+      if (!needle) return true;
       const hay = `${a.firstName} ${a.lastName ?? ''} ${a.email} ${a.media ?? ''}`.toLowerCase();
       return hay.includes(needle);
     });
-  }, [data, q]);
+  }, [data, q, arrivalFilter]);
 
   if (loading && !data) return <SkeletonRows count={6} />;
   if (error && !data) return <div className="banner banner-error">{error}</div>;
@@ -289,7 +323,7 @@ export function DayOfPage() {
             {lastCheckIn.journalist.media ?? '—'} · {lastCheckIn.journalist.email}
           </div>
           <div style={{ marginTop: 6, fontSize: 13 }}>
-            {lastCheckIn.alreadyCheckedIn ? 'Déjà check-in' : 'Check-in enregistré'}
+            {lastCheckIn.alreadyCheckedIn ? 'Déjà présent' : 'Accueil physique enregistré'}
             {lastCheckIn.journalist.checkedInAt
               ? ` à ${formatWhen(lastCheckIn.journalist.checkedInAt)}`
               : ''}
@@ -297,10 +331,131 @@ export function DayOfPage() {
         </div>
       )}
 
-      <section className="card dayof-checkin" style={{ padding: 14 }}>
-        <h3 style={{ margin: '0 0 10px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <QrCode size={18} /> Check-in par QR
+      {/* Accueil manuel en premier : le flux terrain de secours (et souvent le principal). */}
+      <section className="card dayof-manual" style={{ padding: 14 }}>
+        <h3 style={{ margin: '0 0 6px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserCheck size={18} /> Accueil physique
         </h3>
+        <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45 }}>
+          <strong>Contrôle manuel</strong> : vérifiez l’identité (badge, pièce d’identité, liste), puis
+          appuyez sur <strong>Accueil physique OK</strong>. Même effet qu’un scan pour le compteur
+          Présents et le RP.
+        </p>
+        <div className="segmented dayof-filter" role="tablist" aria-label="Filtrer la liste">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={arrivalFilter === 'waiting'}
+            className={arrivalFilter === 'waiting' ? 'on' : ''}
+            onClick={() => setArrivalFilter('waiting')}
+          >
+            À accueillir ({remaining})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={arrivalFilter === 'present'}
+            className={arrivalFilter === 'present' ? 'on' : ''}
+            onClick={() => setArrivalFilter('present')}
+          >
+            Présents ({s.checkedIn})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={arrivalFilter === 'all'}
+            className={arrivalFilter === 'all' ? 'on' : ''}
+            onClick={() => setArrivalFilter('all')}
+          >
+            Tous ({s.accredited})
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: 8, margin: '12px 0', alignItems: 'center' }}>
+          <Search size={16} className="muted" />
+          <input
+            type="search"
+            placeholder="Chercher pour valider manuellement…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ flex: 1, minHeight: 48, fontSize: 16 }}
+            autoComplete="off"
+            autoFocus
+          />
+        </div>
+        <div className="stack" style={{ gap: 8 }}>
+          {filteredArrivals.map((a) => {
+            const name = `${a.firstName} ${a.lastName ?? ''}`.trim();
+            const present = !!a.checkedInAt;
+            return (
+              <div
+                key={a.id}
+                className={`card dayof-arrival${present ? ' is-present' : ''}`}
+              >
+                <div className="dayof-arrival-main">
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{name}</div>
+                  <div className="muted" style={{ fontSize: 12.5 }}>
+                    {a.media ?? '—'} · {a.email}
+                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    {a.accreditationType ?? 'presse'}
+                    {present && a.checkedInAt ? ` · arrivé ${formatWhen(a.checkedInAt)}` : ''}
+                  </div>
+                </div>
+                {present ? (
+                  <div className="dayof-arrival-actions">
+                    <span className="badge badge-success">Présent</span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      disabled={busyId === a.id}
+                      onClick={() => void undo(a.id)}
+                    >
+                      <Undo2 size={16} /> Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-primary dayof-manual-btn"
+                    disabled={busyId === a.id}
+                    onClick={() => void manualPhysicalCheckIn(a)}
+                  >
+                    <UserCheck size={18} />
+                    Accueil physique OK
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          {filteredArrivals.length === 0 && (
+            <p className="muted" style={{ textAlign: 'center', padding: 16 }}>
+              {q.trim()
+                ? 'Aucun accrédité ne correspond à la recherche.'
+                : arrivalFilter === 'waiting'
+                  ? 'Tout le monde est déjà accueilli.'
+                  : 'Aucun accrédité à afficher.'}
+            </p>
+          )}
+        </div>
+      </section>
+
+      <details className="card dayof-checkin" style={{ padding: 14 }}>
+        <summary
+          style={{
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: 15,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            listStyle: 'none',
+          }}
+        >
+          <QrCode size={18} /> Check-in par QR (optionnel)
+        </summary>
+        <p className="muted" style={{ margin: '10px 0 12px', fontSize: 12.5 }}>
+          Si le QR fonctionne : scannez ou collez le code. Sinon restez sur l’accueil physique ci-dessus.
+        </p>
         <div className="dayof-checkin-row">
           <input
             type="text"
@@ -329,104 +484,13 @@ export function DayOfPage() {
           </button>
         ) : (
           <div className="stack" style={{ gap: 8, marginTop: 10 }}>
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              className="dayof-video"
-            />
+            <video ref={videoRef} muted playsInline className="dayof-video" />
             <button type="button" className="btn btn-ghost" onClick={stopScan}>
               Arrêter le scan
             </button>
           </div>
         )}
-        <p className="muted" style={{ margin: '12px 0 0', fontSize: 12.5, lineHeight: 1.4 }}>
-          En cas de panne caméra / QR illisible : utilisez la liste ci-dessous et le bouton{' '}
-          <strong>Accueil physique OK</strong>.
-        </p>
-      </section>
-
-      <section className="card dayof-manual" style={{ padding: 14 }}>
-        <h3 style={{ margin: '0 0 6px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <UserCheck size={18} /> Accueil physique (secours)
-        </h3>
-        <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45 }}>
-          Identifiez le journaliste (pièce d’identité / badge / liste) puis validez manuellement —
-          même effet qu’un scan QR pour la présence RP et le compteur « Présents ».
-        </p>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-          <Search size={16} className="muted" />
-          <input
-            type="search"
-            placeholder="Nom, média ou email…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ flex: 1, minHeight: 48, fontSize: 16 }}
-            autoComplete="off"
-          />
-        </div>
-        <div className="stack" style={{ gap: 8 }}>
-          {filteredArrivals.map((a) => {
-            const name = `${a.firstName} ${a.lastName ?? ''}`.trim();
-            const present = !!a.checkedInAt;
-            return (
-              <div
-                key={a.id}
-                className={`card dayof-arrival${present ? ' is-present' : ''}`}
-                style={{
-                  padding: '12px 14px',
-                  display: 'flex',
-                  gap: 12,
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <div style={{ fontWeight: 600 }}>{name}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {a.media ?? '—'} · {a.accreditationType ?? 'presse'}
-                    {present && a.checkedInAt ? ` · ${formatWhen(a.checkedInAt)}` : ''}
-                  </div>
-                </div>
-                {present ? (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span className="badge badge-success" style={{ whiteSpace: 'nowrap' }}>
-                      Présent
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn-ghost btn-sm"
-                      style={{ minHeight: 44 }}
-                      disabled={busyId === a.id}
-                      onClick={() => void undo(a.id)}
-                      title="Annuler la présence"
-                    >
-                      <Undo2 size={16} /> Annuler
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-primary dayof-manual-btn"
-                    disabled={busyId === a.id}
-                    onClick={() => void doCheckIn({ journalistId: a.id })}
-                  >
-                    <UserCheck size={16} />
-                    Accueil physique OK
-                  </button>
-                )}
-              </div>
-            );
-          })}
-          {filteredArrivals.length === 0 && (
-            <p className="muted" style={{ textAlign: 'center', padding: 16 }}>
-              {q.trim()
-                ? 'Aucun accrédité ne correspond à la recherche.'
-                : 'Aucun accrédité à afficher.'}
-            </p>
-          )}
-        </div>
-      </section>
+      </details>
 
       {data.interviews.length > 0 && (
         <section className="card" style={{ padding: 16 }}>
