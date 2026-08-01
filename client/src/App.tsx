@@ -14,6 +14,7 @@ import { LegalNoticePage } from './public-forms/legal/LegalNoticePage';
 import { TermsPage } from './public-forms/legal/TermsPage';
 import { ResourcesPage } from './public-forms/ressources/ResourcesPage';
 import { NotFoundPage } from './public-forms/NotFoundPage';
+import { ProductionSpacePage } from './public-forms/production/ProductionSpacePage';
 import { LandingHeader } from './public-forms/landing/LandingHeader';
 import { lazy, Suspense, type ReactNode } from 'react';
 import { isDomainMode } from './lib/domainEvent';
@@ -70,6 +71,8 @@ export function App() {
           <Route path="/reinitialiser" element={<L><JournalistResetPasswordPage /></L>} />
           <Route path="/espace" element={<L><SpacePage /></L>} />
           <Route path="/espace/:token" element={<L><SpacePage /></L>} />
+          <Route path="/prod" element={<L><ProductionSpacePage /></L>} />
+          <Route path="/prod/:token" element={<L><ProductionSpacePage /></L>} />
           <Route path="/confidentialite" element={<PrivacyPage />} />
           <Route path="/mentions-legales" element={<LegalNoticePage />} />
           <Route path="/cgv" element={<TermsPage />} />
@@ -137,6 +140,11 @@ export function App() {
             </I18nProvider>
           }
         />
+        {/* Espace de validation production : le jeton identifie le contact et
+            son événement, d'où des chemins identiques dans les deux modes. */}
+        <Route path="/prod" element={<L><ProductionSpacePage /></L>} />
+        <Route path="/prod/:token" element={<L><ProductionSpacePage /></L>} />
+
         {/* Surfaces publiques lues par la presse étrangère : multilingues comme
             le formulaire d'accréditation. */}
         <Route path="/newsroom/:eventId" element={<L><NewsroomPage /></L>} />

@@ -16,6 +16,11 @@ vi.mock('../src/db/repositories/userRepo', () => ({
   findUserById: vi.fn(),
   listUsersByOrg: vi.fn(),
 }));
+// Le fil fusionne désormais les avis production : sans ce mock, le test
+// interrogerait la vraie base.
+vi.mock('../src/db/repositories/productionRepo', () => ({
+  listRequestReviews: vi.fn(),
+}));
 
 import { findEventById, listEventMemberIds } from '../src/db/repositories/eventRepo';
 import {
@@ -26,6 +31,7 @@ import {
   updateRequestAssignment,
 } from '../src/db/repositories/requestRepo';
 import { findUserById, listUsersByOrg } from '../src/db/repositories/userRepo';
+import { listRequestReviews } from '../src/db/repositories/productionRepo';
 import {
   addRequestNote,
   assignRequest,
@@ -36,6 +42,7 @@ import { AppError } from '../src/http/AppError';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(listRequestReviews).mockResolvedValue([]);
   vi.mocked(findEventById).mockResolvedValue({
     id: 'e1',
     organizationId: 'org1',

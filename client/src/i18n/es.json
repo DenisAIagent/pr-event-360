@@ -201,5 +201,21 @@
   "cp.unavailable": "Nota de prensa no disponible",
   "cp.backToNewsroom": "Volver a la newsroom",
   "cp.newsroom": "Newsroom",
-  "cp.downloadPdf": "Descargar en PDF"
+  "cp.downloadPdf": "Descargar en PDF",
+  "prod.title": "Solicitudes por validar",
+  "prod.lede": "Da tu opinión sobre las solicitudes dirigidas a tus artistas. La decisión final es del responsable de prensa.",
+  "prod.empty": "Todavía no hay solicitudes que revisar.",
+  "prod.invalid": "Este enlace no es válido o ha caducado. Pide uno nuevo al equipo de prensa.",
+  "prod.favorable": "Favorable",
+  "prod.defavorable": "Desfavorable",
+  "prod.comment": "Comentario (opcional)",
+  "prod.commentPlaceholder": "Una restricción, un horario preferido…",
+  "prod.save": "Guardar mi respuesta",
+  "prod.saved": "Respuesta guardada",
+  "prod.yourAnswer": "Tu respuesta",
+  "prod.change": "Modificar",
+  "prod.requestedSlot": "Franja solicitada",
+  "prod.noSlot": "Sin franja solicitada",
+  "prod.message": "Mensaje del periodista",
+  "prod.count": "{n} solicitud(es)"
 }

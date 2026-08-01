@@ -11,6 +11,7 @@ import {
   listEnrichedByEvent,
 } from '../db/repositories/requestRepo';
 import { countJournalistsByEvent } from '../db/repositories/journalistRepo';
+import { reviewsByEvent, type ReviewVerdict } from '../db/repositories/productionRepo';
 import { scoreRequest } from './scoring';
 
 export interface QueueItem {
@@ -34,6 +35,8 @@ export interface QueueItem {
   quota: { used: number; limit: number } | null; // null si pas de quota applicable (ex. vidéo)
   assignedTo: { id: string; fullName: string } | null;
   notesCount: number;
+  /** Avis consultatif de la production sur cette demande (le plus récent). */
+  review: { verdict: ReviewVerdict; comment: string | null; contactName: string | null; at: string } | null;
 }
 
 export interface QueueFilters {
@@ -63,7 +66,7 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
   const config = await getConfig(eventId);
   if (!config) throw AppError.notFound('Configuration introuvable');
 
-  const [enriched, artists, grantedByArtist, acceptedPhotoByArtist, acceptedVideoByArtist] =
+  const [enriched, artists, grantedByArtist, acceptedPhotoByArtist, acceptedVideoByArtist, reviews] =
     await Promise.all([
       // Filtres poussés en SQL + résultat borné (1000 par défaut côté repo) :
       // la file ne charge jamais la totalité des demandes d'un événement.
@@ -76,6 +79,7 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
       grantedInterviewCountsByEvent(eventId),
       acceptedPhotoCountsByEvent(eventId),
       acceptedVideoCountsByEvent(eventId),
+      reviewsByEvent(eventId),
     ]);
 
   const artistById = new Map(artists.map((a) => [a.id, a]));
@@ -129,6 +133,12 @@ export async function getQueue(eventId: string, filters: QueueFilters = {}): Pro
             ? { id: r.assignedToId, fullName: r.assignedToName }
             : null,
         notesCount: r.notesCount,
+        review: (() => {
+          const rev = reviews.get(r.id);
+          return rev
+            ? { verdict: rev.verdict, comment: rev.comment, contactName: rev.contactName, at: rev.at.toISOString() }
+            : null;
+        })(),
       };
     });
 

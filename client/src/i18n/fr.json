@@ -201,5 +201,21 @@
   "cp.unavailable": "Communiqué indisponible",
   "cp.backToNewsroom": "Retour à la newsroom",
   "cp.newsroom": "Newsroom",
-  "cp.downloadPdf": "Télécharger en PDF"
+  "cp.downloadPdf": "Télécharger en PDF",
+  "prod.title": "Demandes à valider",
+  "prod.lede": "Donnez votre avis sur les demandes adressées à vos artistes. L’attaché de presse garde la décision finale.",
+  "prod.empty": "Aucune demande à examiner pour l’instant.",
+  "prod.invalid": "Ce lien est invalide ou a expiré. Demandez-en un nouveau à l’équipe presse.",
+  "prod.favorable": "Favorable",
+  "prod.defavorable": "Défavorable",
+  "prod.comment": "Commentaire (facultatif)",
+  "prod.commentPlaceholder": "Une contrainte, une préférence d’horaire…",
+  "prod.save": "Enregistrer mon avis",
+  "prod.saved": "Avis enregistré",
+  "prod.yourAnswer": "Votre avis",
+  "prod.change": "Modifier",
+  "prod.requestedSlot": "Créneau souhaité",
+  "prod.noSlot": "Aucun créneau demandé",
+  "prod.message": "Message du journaliste",
+  "prod.count": "{n} demande(s)"
 }

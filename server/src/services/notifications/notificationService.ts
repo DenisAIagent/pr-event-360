@@ -6,10 +6,11 @@ import { DEFAULT_TEMPLATE_TEXT, renderTemplate, type TriggerKey } from './templa
 import { getEmailProvider, getSmsProvider } from './providers';
 import { eventSenderName, renderBrandedEmail, textToHtml } from './email';
 
-/** Masque les liens d'accès tokenisés (espace journaliste, réinitialisation) avant journalisation. */
+/** Masque les liens d'accès tokenisés (espaces journaliste et production, réinitialisation) avant journalisation. */
 function redactAccessLinks(body: string): string {
   return body
     .replace(/https?:\/\/\S+\/espace\/[^\s"'<)]+/gi, '[lien espace — non journalisé]')
+    .replace(/https?:\/\/\S+\/prod\/[^\s"'<)]+/gi, '[lien production — non journalisé]')
     .replace(/https?:\/\/\S*[?&]token=[^\s"'<)]+/gi, '[lien — non journalisé]');
 }
 

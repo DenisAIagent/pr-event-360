@@ -9,6 +9,7 @@ import {
   updateRequestAssignment,
 } from '../db/repositories/requestRepo';
 import { findUserById, listUsersByOrg } from '../db/repositories/userRepo';
+import { listRequestReviews, type ReviewVerdict } from '../db/repositories/productionRepo';
 
 export interface Assignee {
   id: string;
@@ -30,6 +31,14 @@ export type TimelineItem =
       at: string;
       author: { id: string; fullName: string } | null;
       body: string;
+    }
+  | {
+      kind: 'avis';
+      at: string;
+      /** Contact production auteur de l'avis ; null si le contact a été supprimé. */
+      contactName: string | null;
+      verdict: ReviewVerdict;
+      comment: string | null;
     }
   | {
       kind: 'assignment';
@@ -147,9 +156,10 @@ export async function getRequestTimeline(
     throw AppError.notFound('Demande introuvable pour cet événement');
   }
 
-  const [history, notes] = await Promise.all([
+  const [history, notes, reviews] = await Promise.all([
     listHistory(requestId),
     listRequestNotes(requestId, eventId),
+    listRequestReviews(requestId),
   ]);
 
   const items: TimelineItem[] = [];
@@ -163,6 +173,15 @@ export async function getRequestTimeline(
         ? { id: h.changedBy, fullName: h.changedByName ?? 'Utilisateur' }
         : null,
       note: h.note,
+    });
+  }
+  for (const rev of reviews) {
+    items.push({
+      kind: 'avis',
+      at: rev.at.toISOString(),
+      contactName: rev.contactName,
+      verdict: rev.verdict,
+      comment: rev.comment,
     });
   }
   for (const n of notes) {

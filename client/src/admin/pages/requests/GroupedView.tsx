@@ -388,6 +388,15 @@ function RequestCard({
           <strong>{requesterName(item)}</strong> — {item.requester.media ?? 'média n.c.'} · {item.requester.email}
         </div>
         {item.message && <p className="req-msg">{item.message}</p>}
+        {item.review && (
+          <div className="req-meta">
+            <span className={`badge ${item.review.verdict === 'favorable' ? 'badge-success' : 'badge-danger'}`}>
+              Prod : {item.review.verdict === 'favorable' ? 'favorable' : 'défavorable'}
+            </span>
+            {item.review.contactName && <span className="muted"> · {item.review.contactName}</span>}
+            {item.review.comment && <span className="muted"> · « {item.review.comment} »</span>}
+          </div>
+        )}
       </div>
 
       <div className="req-aside">

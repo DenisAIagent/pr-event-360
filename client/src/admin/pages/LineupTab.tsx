@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
+import { ProductionContacts } from '../components/lineup/ProductionContacts';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/Confirm';
 import type { ArtistWithSlots, EventSettings, EventSummary, Lineup, Stage } from '../lib/types';
@@ -319,6 +320,13 @@ export function LineupTab() {
               </div>
             )}
           </section>
+
+          {artists.length > 0 && (
+            <ProductionContacts
+              eventId={eventId}
+              artists={artists.map((a) => ({ id: a.id, name: a.name }))}
+            />
+          )}
         </>
       )}
 

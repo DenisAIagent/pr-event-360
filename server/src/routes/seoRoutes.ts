@@ -44,6 +44,7 @@ function renderSitemap(urls: SitemapUrl[]): string {
  * (renderSpa) — le Disallow seul n'empêche pas l'indexation d'une URL liée ailleurs.
  */
 export const PRIVATE_PATH_PREFIXES = [
+  '/prod',
   '/admin',
   '/espace',
   '/espace-preview/',

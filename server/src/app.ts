@@ -19,6 +19,7 @@ import { eventLineupRouter } from './routes/admin/eventLineup';
 import { eventPipelineRouter } from './routes/admin/eventPipeline';
 import { eventExportsRouter } from './routes/admin/eventExports';
 import { eventCollabRouter } from './routes/admin/eventCollab';
+import { eventProductionRouter } from './routes/admin/eventProduction';
 import { eventDayOfRouter } from './routes/admin/eventDayOf';
 import { teamRouter } from './routes/admin/team';
 import { settingsRouter } from './routes/admin/settings';
@@ -48,6 +49,7 @@ import { commsRouter } from './routes/admin/comms';
 import { publicNewsroomRouter } from './routes/public/newsroom';
 import { publicAccreditationRouter } from './routes/public/accreditation';
 import { publicSpaceRouter } from './routes/public/space';
+import { publicProductionRouter } from './routes/public/productionSpace';
 import { publicJournalistAuthRouter } from './routes/public/journalistAuth';
 import { publicReviewsRouter } from './routes/public/reviews';
 import { reviewRouter, reviewAdminRouter } from './routes/admin/reviews';
@@ -286,6 +288,7 @@ export function createApp(): Express {
   app.use('/api/admin/events', eventExportsRouter);
   // Collaboration : assignation, notes, timeline des demandes.
   app.use('/api/admin/events', eventCollabRouter);
+  app.use('/api/admin/events', eventProductionRouter);
   // Jour J : agenda du jour, check-in QR, badge.
   app.use('/api/admin/events', eventDayOfRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
@@ -311,6 +314,7 @@ export function createApp(): Express {
   // Surfaces publiques (journalistes).
   app.use('/api/public', publicLimiter, publicAccreditationRouter);
   app.use('/api/public/space', publicLimiter, publicSpaceRouter);
+  app.use('/api/public/production', publicLimiter, publicProductionRouter);
   app.use('/api/public/newsroom', publicLimiter, publicNewsroomRouter);
   app.use('/api/public/journalist', journalistAuthLimiter, publicJournalistAuthRouter);
   app.use('/api/public/reviews', publicLimiter, publicReviewsRouter);
