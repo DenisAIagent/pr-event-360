@@ -4,7 +4,9 @@ test.describe('Smoke — pages publiques', () => {
   test('la landing se charge avec son titre et le CTA', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Créer votre espace/i }).first()).toBeVisible();
+    // Libellé aligné sur la vente assistée (cf. PRIMARY_CTA_LABEL) : le CTA
+    // promet une demande d'accès tant que la facturation en ligne est inactive.
+    await expect(page.getByRole('link', { name: /Demander un accès/i }).first()).toBeVisible();
   });
 
   test('la page de connexion back-office affiche le formulaire', async ({ page }) => {

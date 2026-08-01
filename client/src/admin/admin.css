@@ -671,37 +671,10 @@ select.status-select {
   margin-top: var(--space-2);
 }
 
-/* ── Skeletons de chargement ── */
-.skeleton {
-  display: block;
-  background: linear-gradient(
-    90deg,
-    var(--color-line) 25%,
-    var(--color-bg-elevated) 37%,
-    var(--color-line) 63%
-  );
-  background-size: 400% 100%;
-  animation: skeleton-shimmer 1.4s ease infinite;
-}
-.skeleton-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-}
-@keyframes skeleton-shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: 0 0;
-  }
-}
+/* Les skeletons (.skeleton, .skeleton-card) vivent dans styles/global.css :
+   les surfaces publiques les utilisent aussi et ne chargent pas ce fichier. */
 @media (prefers-reduced-motion: reduce) {
   .toast {
-    animation: none;
-  }
-  .skeleton {
     animation: none;
   }
 }

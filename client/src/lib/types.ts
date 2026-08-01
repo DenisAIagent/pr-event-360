@@ -49,6 +49,7 @@ export interface NewsroomData {
     branding: EventBranding | null;
     deadline: string | null;
     registrationClosed: boolean;
+    languages: string[];
   };
   assets: NewsroomAsset[];
   pressReleases: NewsroomPressRelease[];

@@ -24,6 +24,22 @@ function interpolate(template: string, vars?: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_m, k: string) => vars[k] ?? `{${k}}`);
 }
 
+/**
+ * Locale BCP 47 correspondant à une langue de l'app, pour `toLocaleDateString`
+ * et consorts : sans elle, les dates des surfaces publiques restent en français
+ * même quand le reste de la page est traduit.
+ */
+const LOCALES: Record<Lang, string> = {
+  fr: 'fr-FR',
+  en: 'en-GB',
+  pt: 'pt-PT',
+  es: 'es-ES',
+};
+
+export function localeOf(lang: Lang): string {
+  return LOCALES[lang];
+}
+
 /** Langue préférée du navigateur, ramenée à une langue supportée (fr par défaut). */
 export function detectBrowserLang(): Lang {
   if (typeof navigator === 'undefined') return 'fr';
@@ -35,6 +51,23 @@ export function detectBrowserLang(): Lang {
   return 'fr';
 }
 
+/**
+ * Chaque route publique monte son propre `I18nProvider` : sans persistance, la
+ * langue choisie serait perdue en passant de la newsroom à un communiqué, ou du
+ * formulaire d'accréditation à l'espace. Préférence fonctionnelle (pas de
+ * traçage) : stockage local, exempté de consentement.
+ */
+const LANG_KEY = 'pr360_lang';
+
+function readStoredLang(): Lang | null {
+  try {
+    const v = localStorage.getItem(LANG_KEY);
+    return v && isLang(v) ? v : null;
+  } catch {
+    return null; // Safari en navigation privée, stockage désactivé…
+  }
+}
+
 export function I18nProvider({
   initialLang,
   children,
@@ -42,10 +75,19 @@ export function I18nProvider({
   initialLang?: Lang;
   children: ReactNode;
 }) {
-  // Par défaut : la langue du navigateur (le formulaire l'aligne ensuite sur les langues de l'événement).
-  const [lang, setLang] = useState<Lang>(() => initialLang ?? detectBrowserLang());
+  // Priorité : langue imposée → dernier choix de l'utilisateur → langue du
+  // navigateur. Les surfaces d'événement la ramènent ensuite aux langues actives.
+  const [lang, setLangState] = useState<Lang>(() => initialLang ?? readStoredLang() ?? detectBrowserLang());
 
   const value = useMemo<I18nValue>(() => {
+    const setLang = (l: Lang) => {
+      setLangState(l);
+      try {
+        localStorage.setItem(LANG_KEY, l);
+      } catch {
+        /* stockage indisponible : la langue reste valable pour la page courante */
+      }
+    };
     const t: Translate = (key, vars) => {
       // Repli sur le français si une clé manque dans la langue active.
       const text = DICTS[lang][key] ?? DICTS.fr[key] ?? key;

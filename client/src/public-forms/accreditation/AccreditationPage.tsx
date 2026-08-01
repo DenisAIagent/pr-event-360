@@ -52,8 +52,11 @@ export function AccreditationPage() {
   const [done, setDone] = useState(false);
   // Passe à true si le délai s'écoule pendant que la page est ouverte.
   const [expired, setExpired] = useState(false);
+  // Incrémenté par « Réessayer » : relance le chargement de l'événement.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoadError(false);
     api
       .get<PublicEvent>(`/public/events/${eventId}`)
       .then((ev) => {
@@ -63,7 +66,7 @@ export function AccreditationPage() {
       })
       .catch(() => setLoadError(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId]);
+  }, [eventId, reloadKey]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -102,14 +105,30 @@ export function AccreditationPage() {
   if (loadError) {
     return (
       <main className="page">
-        <div className="card">{t('common.notFound')}</div>
+        <div className="card stack">
+          <p style={{ margin: 0 }}>{t('common.notFound')}</p>
+          <button type="button" className="btn btn-primary" onClick={() => setReloadKey((k) => k + 1)}>
+            {t('common.retry')}
+          </button>
+        </div>
       </main>
     );
   }
   if (!event) {
     return (
       <main className="page">
-        <p className="muted">{t('common.loading')}</p>
+        {/* Squelette plutôt qu'un « Chargement… » nu : la page garde sa forme
+            pendant l'attente, sans saut de mise en page à l'arrivée des données. */}
+        <p className="sr-only">{t('common.loading')}</p>
+        <div className="stack" aria-hidden="true">
+          <span className="skeleton" style={{ height: 34, width: '55%', borderRadius: 8 }} />
+          <span className="skeleton" style={{ height: 18, width: '80%', borderRadius: 6 }} />
+          <div className="skeleton-card stack" style={{ marginTop: 'var(--space-4)' }}>
+            {[...Array(5)].map((_, i) => (
+              <span key={i} className="skeleton" style={{ height: 44, borderRadius: 8 }} />
+            ))}
+          </div>
+        </div>
       </main>
     );
   }
@@ -172,6 +191,10 @@ export function AccreditationPage() {
       <form className="card" onSubmit={handleSubmit} noValidate>
         {error && <div className="banner banner-error">{error}</div>}
 
+        {/* L'attente est posée avant les champs, pas au-dessus du bouton d'envoi :
+            sur 12 champs dont 3 requis, le journaliste doit le savoir en arrivant. */}
+        <p className="hint" style={{ margin: '0 0 var(--space-3)' }}>{t('acc.required')}</p>
+
         <div className="row">
           <Field label={t('acc.firstName')} required>
             <input value={form.firstName} onChange={(e) => update('firstName', e.target.value)} required />
@@ -188,6 +211,11 @@ export function AccreditationPage() {
           <Field label={t('acc.phone')}>
             <input value={form.phone} onChange={(e) => update('phone', e.target.value)} />
           </Field>
+        </div>
+
+        <div className="form-section">
+          <h2 className="form-section-title">{t('acc.optional.section')}</h2>
+          <p className="hint" style={{ margin: 0 }}>{t('acc.optional.hint')}</p>
         </div>
 
         <div className="row">
@@ -256,9 +284,6 @@ export function AccreditationPage() {
           {t('acc.coverageRule')}
         </p>
 
-        <p className="hint" style={{ margin: 'var(--space-2) 0 var(--space-3)' }}>
-          {t('acc.required')}
-        </p>
         <button type="submit" className="btn btn-primary" disabled={!canSubmit}>
           {submitting ? t('common.loading') : t('acc.submit')}
         </button>

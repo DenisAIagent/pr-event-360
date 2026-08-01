@@ -4,6 +4,8 @@ import { api, ApiError } from '../../lib/api';
 import { brandingStyle } from '../../lib/branding';
 import { Countdown } from '../../components/Countdown';
 import { Icon } from '../../components/Icon';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { useI18n, isLang, localeOf, type Translate } from '../../i18n';
 import type { NewsroomAsset, NewsroomAssetKind, NewsroomData } from '../../lib/types';
 import { usePageTitle } from '../../lib/usePageTitle';
 import { youtubeEmbedUrl, youtubeVideoId } from '../../lib/youtube';
@@ -16,25 +18,28 @@ function htmlExcerpt(html: string): string {
   return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 }
 
-const GROUPS: { kind: NewsroomAssetKind; label: string }[] = [
-  { kind: 'press_kit', label: 'Dossier de presse' },
-  { kind: 'photo', label: 'Photos' },
-  { kind: 'video', label: 'Vidéos' },
-  { kind: 'logo', label: 'Logos' },
-  { kind: 'other', label: 'Autres ressources' },
-];
+/** Ordre d'affichage des familles de ressources ; le libellé vient de l'i18n. */
+const GROUP_KINDS: NewsroomAssetKind[] = ['press_kit', 'photo', 'video', 'logo', 'other'];
 
 export function NewsroomPage() {
   const eventId = useEventId();
+  const { t, lang, setLang } = useI18n();
   const [data, setData] = useState<NewsroomData | null>(null);
-  usePageTitle(data ? `Espace presse — ${data.event.name}` : null);
+  usePageTitle(data ? `${t('news.eyebrow')} — ${data.event.name}` : null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
       .get<NewsroomData>(`/public/newsroom/${eventId}`)
-      .then(setData)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Newsroom indisponible'));
+      .then((d) => {
+        setData(d);
+        // Même règle que le formulaire d'accréditation : on ne présente pas la
+        // page dans une langue que l'organisateur n'a pas activée.
+        const first = d.event.languages[0];
+        if (!d.event.languages.includes(lang) && first && isLang(first)) setLang(first);
+      })
+      .catch((e) => setError(e instanceof ApiError ? e.message : t('news.unavailable')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
   if (error) {
@@ -45,7 +50,9 @@ export function NewsroomPage() {
     );
   }
   if (!data) {
-    return <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>Chargement…</main>;
+    return (
+      <main style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>{t('common.loading')}</main>
+    );
   }
 
   const branding = data.event.branding ?? undefined;
@@ -54,10 +61,13 @@ export function NewsroomPage() {
     <div style={brandingStyle(branding)}>
       <main style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px' }}>
         <header style={{ marginBottom: 'var(--space-5)' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-2)' }}>
+            <LanguageSwitcher available={data.event.languages.filter(isLang)} />
+          </div>
           {branding?.logoUrl && (
             <img src={branding.logoUrl} alt={data.event.name} style={{ maxHeight: 64, marginBottom: 16 }} />
           )}
-          <span className="eyebrow">Espace presse</span>
+          <span className="eyebrow">{t('news.eyebrow')}</span>
           <h1 style={{ fontSize: 'var(--text-hero, 2.5rem)', margin: '4px 0' }}>{data.event.name}</h1>
           {data.event.location && <p className="muted">{data.event.location}</p>}
         </header>
@@ -67,9 +77,9 @@ export function NewsroomPage() {
             <div className="deadline-head">
               <span className="deadline-icon" aria-hidden="true"><Icon name="clock" /></span>
               <div>
-                <span className="deadline-label">Clôture des accréditations presse</span>
+                <span className="deadline-label">{t('news.deadline.label')}</span>
                 <strong className="deadline-date">
-                  {new Date(data.event.deadline).toLocaleString('fr-FR', {
+                  {new Date(data.event.deadline).toLocaleString(localeOf(lang), {
                     dateStyle: 'long',
                     timeStyle: 'short',
                   })}
@@ -79,7 +89,7 @@ export function NewsroomPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <Countdown deadline={data.event.deadline} />
               <a href={`/accreditation/${data.event.id}`} className="btn btn-primary btn-sm">
-                S’accréditer
+                {t('news.accredit')}
               </a>
             </div>
           </div>
@@ -87,7 +97,7 @@ export function NewsroomPage() {
 
         {data.pressReleases.length > 0 && (
           <section style={{ marginBottom: 'var(--space-6)' }}>
-            <h2 style={{ fontSize: 'var(--text-xl)' }}>Communiqués de presse</h2>
+            <h2 style={{ fontSize: 'var(--text-xl)' }}>{t('news.pressReleases')}</h2>
             <div className="stack">
               {data.pressReleases.map((pr) => {
                 const href = pressReleasePath(eventId, pr.slug);
@@ -109,11 +119,11 @@ export function NewsroomPage() {
                       </h3>
                       {pr.publishedAt && (
                         <p className="muted" style={{ fontSize: 'var(--text-sm)', margin: '2px 0' }}>
-                          {new Date(pr.publishedAt).toLocaleDateString('fr-FR')}
+                          {new Date(pr.publishedAt).toLocaleDateString(localeOf(lang))}
                         </p>
                       )}
                       {excerpt && <p style={{ margin: '6px 0' }}>{excerpt}</p>}
-                      <a href={href} className="btn btn-ghost btn-sm">Lire le communiqué →</a>
+                      <a href={href} className="btn btn-ghost btn-sm">{t('news.read')} →</a>
                     </div>
                   </article>
                 );
@@ -123,21 +133,21 @@ export function NewsroomPage() {
         )}
 
         <section>
-          <h2 style={{ fontSize: 'var(--text-xl)' }}>Ressources & médias</h2>
-          {data.assets.length === 0 && <p className="muted">Aucune ressource disponible pour l’instant.</p>}
-          {GROUPS.map(({ kind, label }) => {
+          <h2 style={{ fontSize: 'var(--text-xl)' }}>{t('news.resources')}</h2>
+          {data.assets.length === 0 && <p className="muted">{t('news.resources.empty')}</p>}
+          {GROUP_KINDS.map((kind) => {
             const items = data.assets.filter((a) => a.kind === kind);
             if (items.length === 0) return null;
             return (
               <div key={kind} style={{ marginTop: 'var(--space-4)' }}>
-                <h3 style={{ fontSize: 'var(--text-lg)' }}>{label}</h3>
+                <h3 style={{ fontSize: 'var(--text-lg)' }}>{t(`news.group.${kind}`)}</h3>
                 <div
                   className="kpis"
                   // Vidéos : tuiles plus larges pour un lecteur intégré confortable.
                   style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${kind === 'video' ? 320 : 200}px, 1fr))` }}
                 >
                   {items.map((a) => (
-                    <AssetTile key={a.id} asset={a} />
+                    <AssetTile key={a.id} asset={a} t={t} />
                   ))}
                 </div>
               </div>
@@ -149,7 +159,7 @@ export function NewsroomPage() {
   );
 }
 
-function AssetTile({ asset }: { asset: NewsroomAsset }) {
+function AssetTile({ asset, t }: { asset: NewsroomAsset; t: Translate }) {
   // Vidéo YouTube ajoutée par lien : lecteur intégré (variante sans cookies)
   // plutôt qu'un bouton de téléchargement qui n'aurait pas de sens.
   const ytId = youtubeVideoId(asset.url);
@@ -168,7 +178,7 @@ function AssetTile({ asset }: { asset: NewsroomAsset }) {
         />
         <strong style={{ fontSize: 'var(--text-sm)' }}>{asset.title}</strong>
         <a href={asset.url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
-          Voir sur YouTube
+          {t('news.watchYoutube')}
         </a>
       </div>
     );
@@ -184,7 +194,7 @@ function AssetTile({ asset }: { asset: NewsroomAsset }) {
       )}
       <strong style={{ fontSize: 'var(--text-sm)' }}>{asset.title}</strong>
       <a href={asset.url} target="_blank" rel="noreferrer" download className="btn btn-primary btn-sm">
-        Télécharger
+        {t('news.download')}
       </a>
     </div>
   );

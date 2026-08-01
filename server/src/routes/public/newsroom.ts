@@ -49,6 +49,9 @@ publicNewsroomRouter.get(
         branding,
         deadline: event.accreditationDeadline,
         registrationClosed: isRegistrationClosed(event, Date.now()),
+        // Alimente le sélecteur de langue de la newsroom, comme sur le
+        // formulaire d'accréditation : la surface est lue par la presse étrangère.
+        languages: event.languages,
       },
       assets,
       pressReleases: pressReleases.map((pr) => ({ ...pr, bodyHtml: sanitizeRichHtml(pr.bodyHtml) })),
