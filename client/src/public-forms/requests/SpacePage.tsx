@@ -16,9 +16,9 @@ type SpaceTab = 'requests' | 'planning' | 'conferences' | 'coverage' | 'account'
 
 /**
  * Espace journaliste.
- * - Lien magique `/espace/:token` : échangé une fois contre un cookie HttpOnly, puis
- *   l'URL est nettoyée (`/espace`) pour ne plus exposer le bearer (historique, logs).
- * - Session cookie : appels API via le segment `/me`.
+ * - Lien magique `/espace/:token` : échangé une fois contre un cookie JWT httpOnly
+ *   (`pr360_jspace`), puis l'URL est nettoyée (`/espace`) pour ne plus exposer le bearer.
+ * - Session cookie : appels API via le segment `/me` (+ CSRF double-submit).
  * - Mode aperçu back-office : `previewData` injecté, aucune mutation.
  */
 export function SpacePage({

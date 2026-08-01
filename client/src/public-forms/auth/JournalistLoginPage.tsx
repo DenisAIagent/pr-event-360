@@ -9,8 +9,8 @@ import { brandingStyle } from '../../lib/branding';
 
 /**
  * Connexion du journaliste à son espace par email + mot de passe (compte par
- * événement). En cas de succès, le serveur renvoie le token d'espace et l'on
- * redirige vers /espace/:token. Le lien magique reste une alternative valable.
+ * événement). En cas de succès, le serveur pose un cookie JWT de session et l'on
+ * redirige vers /espace. Le lien magique reste une alternative valable.
  */
 export function JournalistLoginPage() {
   const eventId = useEventId();

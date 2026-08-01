@@ -5,7 +5,6 @@ import { generateResetToken, hashResetToken } from '../lib/token';
 import {
   findAcceptedJournalistByEmail,
   findAcceptedJournalistByEmailForReset,
-  findJournalistByToken,
   revokeJournalistAccessToken,
   setJournalistPassword,
 } from '../db/repositories/journalistRepo';
@@ -16,21 +15,20 @@ import {
 } from '../db/repositories/journalistResetRepo';
 import { getBranding, findEventById } from '../db/repositories/eventRepo';
 import { ctaButton, eventSenderName, sendBrandedEmail } from './notifications/email';
-import { issueJournalistAccessToken } from './journalistAccessService';
 import { assertPasswordPolicy } from '../lib/passwordPolicy';
+import type { Journalist } from '../domain';
+import type { JournalistSessionClaims } from '../lib/jwt';
 
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 /**
- * Le journaliste (accès par lien magique) définit son mot de passe d'espace la
- * PREMIÈRE fois. Une fois un mot de passe posé, il n'est plus remplaçable via le
- * seul lien magique : sinon tout porteur d'un lien fuité pourrait détourner le
- * compte. Le changement passe alors par le flux « mot de passe oublié » (email +
- * token de reset haché à usage unique — resetJournalistPassword).
+ * Le journaliste (session ou lien magique déjà résolu) définit son mot de passe
+ * d'espace la PREMIÈRE fois. Une fois un mot de passe posé, il n'est plus
+ * remplaçable via le seul lien magique : sinon tout porteur d'un lien fuité
+ * pourrait détourner le compte. Le changement passe alors par le flux
+ * « mot de passe oublié » (email + token de reset haché à usage unique).
  */
-export async function setSpacePassword(token: string, password: string): Promise<void> {
-  const journalist = await findJournalistByToken(token);
-  if (!journalist) throw AppError.notFound('Espace introuvable');
+export async function setSpacePassword(journalist: Journalist, password: string): Promise<void> {
   if (journalist.accStatus !== 'acceptee') {
     throw AppError.forbidden('Accréditation non encore acceptée');
   }
@@ -45,14 +43,14 @@ export async function setSpacePassword(token: string, password: string): Promise
 }
 
 /**
- * Login journaliste par email + mot de passe (compte par événement). En cas de succès,
- * renvoie le token d'espace existant : le client redirige alors vers /espace/:token.
+ * Login journaliste par email + mot de passe (compte par événement). En cas de
+ * succès, renvoie les claims de session JWT (cookie posé par la route).
  */
 export async function journalistLogin(
   eventId: string,
   email: string,
   password: string,
-): Promise<{ token: string; firstName: string }> {
+): Promise<{ claims: JournalistSessionClaims; firstName: string }> {
   const journalist = await findAcceptedJournalistByEmail(eventId, email);
   // Message générique : on ne révèle pas si un compte existe.
   const invalid = AppError.unauthorized('Email ou mot de passe incorrect');
@@ -63,7 +61,10 @@ export async function journalistLogin(
   }
   const ok = await argon2.verify(journalist.passwordHash, password);
   if (!ok) throw invalid;
-  return { token: await issueJournalistAccessToken(journalist.id), firstName: journalist.firstName };
+  return {
+    claims: { jid: journalist.id, eid: journalist.eventId },
+    firstName: journalist.firstName,
+  };
 }
 
 /**

@@ -4,7 +4,10 @@ import { asyncHandler } from '../../http/asyncHandler';
 import { AppError } from '../../http/AppError';
 import { sendData } from '../../http/respond';
 import { validateBody } from '../../middleware/validate';
-import { findJournalistByToken } from '../../db/repositories/journalistRepo';
+import {
+  findJournalistById,
+  findJournalistByToken,
+} from '../../db/repositories/journalistRepo';
 import { getBranding, getConfig } from '../../db/repositories/eventRepo';
 import { getEventOrThrow } from '../../services/eventService';
 import { getPublicLineup } from '../../services/lineupService';
@@ -28,15 +31,18 @@ import {
 import { passwordSchema } from '../../lib/passwordPolicy';
 import {
   clearJournalistSession,
+  csrfValid,
   issueJournalistSession,
-  journalistTokenFromCookie,
+  journalistSessionFromReq,
 } from '../../lib/journalistSession';
 import { buildJournalistBadge } from '../../services/dayOfService';
 
 export const publicSpaceRouter = Router();
 
-/** Résout le journaliste depuis son token d'espace (accès accepté requis). */
-async function requireJournalist(token: string): Promise<Journalist> {
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/** Journaliste accepté depuis un bearer d'accès (lien magique). */
+async function requireJournalistByAccessToken(token: string): Promise<Journalist> {
   const journalist = await findJournalistByToken(token);
   if (!journalist) throw AppError.notFound('Espace introuvable');
   if (journalist.accStatus !== 'acceptee') throw AppError.forbidden('Accréditation non encore acceptée');
@@ -44,27 +50,42 @@ async function requireJournalist(token: string): Promise<Journalist> {
 }
 
 /**
- * Token d'espace : paramètre d'URL (lien magique / rétrocompat) ou cookie de session
- * lorsque le segment est `me` (session post-échange).
+ * Résout le journaliste authentifié :
+ * - segment `me` (ou absent) → cookie JWT session `pr360_jspace` (+ CSRF sur mutations) ;
+ * - sinon bearer d'accès encore présent dans l'URL (rétrocompat / e2e).
+ * Les droits (accréditation acceptée) sont toujours relus en base.
  */
-function resolveSpaceToken(req: Request): string {
+async function resolveSpaceJournalist(req: Request): Promise<Journalist> {
   const param = req.params.token;
-  if (param && param !== 'me') return param;
-  const cookie = journalistTokenFromCookie(req);
-  if (cookie) return cookie;
-  if (param === 'me') throw AppError.unauthorized('Session journaliste expirée ou absente');
-  throw AppError.notFound('Espace introuvable');
+  if (param && param !== 'me') {
+    return requireJournalistByAccessToken(param);
+  }
+
+  const claims = journalistSessionFromReq(req);
+  if (!claims) {
+    throw AppError.unauthorized('Session journaliste expirée ou absente');
+  }
+  const journalist = await findJournalistById(claims.jid);
+  if (!journalist || journalist.eventId !== claims.eid) {
+    throw AppError.unauthorized('Session journaliste expirée ou absente');
+  }
+  if (journalist.accStatus !== 'acceptee') {
+    throw AppError.forbidden('Accréditation non encore acceptée');
+  }
+  if (MUTATING.has(req.method) && !csrfValid(req)) {
+    throw AppError.forbidden('Jeton CSRF manquant ou invalide');
+  }
+  return journalist;
 }
 
 const isEventEnded = (endDate: string | null): boolean =>
   endDate != null && new Date(endDate).getTime() < Date.now();
 
-async function buildSpacePayload(token: string) {
-  const journalist = await requireJournalist(token);
+async function buildSpacePayload(journalist: Journalist) {
   const event = await getEventOrThrow(journalist.eventId);
   const [lineup, requests, branding, config, coverage, pressConferences] = await Promise.all([
     getPublicLineup(journalist.eventId, journalist.lang),
-    listJournalistRequests(token),
+    listJournalistRequests(journalist),
     getBranding(journalist.eventId),
     getConfig(journalist.eventId),
     listCoverageByJournalist(journalist.id),
@@ -98,23 +119,24 @@ async function buildSpacePayload(token: string) {
 }
 
 /**
- * Échange le lien magique (ou un bearer encore valide) contre une session cookie HttpOnly.
- * Le jeton est ROTATÉ : l'ancien lien URL meurt immédiatement (anti-fuite historique/logs).
- * Déclaré AVANT `/:token` pour ne pas être capturé comme token.
+ * Échange le lien magique (ou un bearer encore valide) contre une session JWT
+ * httpOnly. Le jeton d'accès est ROTATÉ : l'ancien lien URL meurt immédiatement
+ * (anti-fuite historique/logs). Déclaré AVANT `/:token`.
  */
 publicSpaceRouter.post(
   '/session',
   validateBody(z.object({ token: z.string().min(1) })),
   asyncHandler(async (req, res) => {
     const { token: raw } = req.body as { token: string };
-    const journalist = await requireJournalist(raw);
-    const fresh = await issueJournalistAccessToken(journalist.id);
-    issueJournalistSession(res, fresh);
+    const journalist = await requireJournalistByAccessToken(raw);
+    // Rotation : l'URL reçue par email ne doit plus pouvoir être rejouée.
+    await issueJournalistAccessToken(journalist.id);
+    issueJournalistSession(res, { jid: journalist.id, eid: journalist.eventId });
     sendData(res, { ok: true });
   }),
 );
 
-/** Ferme la session journaliste (efface le cookie). */
+/** Ferme la session journaliste (efface le cookie JWT + CSRF). */
 publicSpaceRouter.post(
   '/logout',
   asyncHandler(async (_req, res) => {
@@ -130,19 +152,20 @@ publicSpaceRouter.post(
 publicSpaceRouter.get(
   '/:token',
   asyncHandler(async (req, res) => {
-    const token = resolveSpaceToken(req);
-    // Pose/rafraîchit le cookie si l'accès se fait encore par l'URL (premier clic).
+    const journalist = await resolveSpaceJournalist(req);
+    // Premier clic sur le lien magique : pose la session JWT (sans rotation ici —
+    // la rotation est faite par POST /session côté client).
     if (req.params.token && req.params.token !== 'me') {
-      issueJournalistSession(res, token);
+      issueJournalistSession(res, { jid: journalist.id, eid: journalist.eventId });
     }
-    sendData(res, await buildSpacePayload(token));
+    sendData(res, await buildSpacePayload(journalist));
   }),
 );
 
 publicSpaceRouter.post(
   '/:token/press-conferences/:conferenceId/register',
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     sendData(res, await registerJournalistForConference(journalist, req.params.conferenceId!));
   }),
 );
@@ -150,7 +173,7 @@ publicSpaceRouter.post(
 publicSpaceRouter.delete(
   '/:token/press-conferences/:conferenceId/registration',
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     await cancelConferenceRegistration(journalist, req.params.conferenceId!);
     sendData(res, { cancelled: true });
   }),
@@ -174,8 +197,8 @@ publicSpaceRouter.post(
   validateBody(RequestSchema),
   asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof RequestSchema>;
-    const token = resolveSpaceToken(req);
-    const request = await submitRequest({ token, ...body });
+    const journalist = await resolveSpaceJournalist(req);
+    const request = await submitRequest({ journalist, ...body });
     sendData(res, request, 201);
   }),
 );
@@ -188,7 +211,8 @@ publicSpaceRouter.post(
   validateBody(PasswordSchema),
   asyncHandler(async (req, res) => {
     const { password } = req.body as z.infer<typeof PasswordSchema>;
-    await setSpacePassword(resolveSpaceToken(req), password);
+    const journalist = await resolveSpaceJournalist(req);
+    await setSpacePassword(journalist, password);
     sendData(res, { ok: true });
   }),
 );
@@ -213,7 +237,7 @@ publicSpaceRouter.post(
   '/:token/coverage',
   validateBody(CoverageSchema),
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     const b = req.body as z.infer<typeof CoverageSchema>;
     const item = await createCoverage({
       eventId: journalist.eventId,
@@ -233,7 +257,7 @@ publicSpaceRouter.post(
 publicSpaceRouter.delete(
   '/:token/coverage/:id',
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     await deleteCoverage(req.params.id!, { journalistId: journalist.id });
     sendData(res, { ok: true });
   }),
@@ -243,7 +267,7 @@ publicSpaceRouter.delete(
 publicSpaceRouter.post(
   '/:token/assets/sign',
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     sendData(res, await signUpload(journalist.eventId, Math.floor(Date.now() / 1000)));
   }),
 );
@@ -255,7 +279,7 @@ publicSpaceRouter.post(
 publicSpaceRouter.get(
   '/:token/export',
   asyncHandler(async (req, res: Response) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     const payload = await exportOwnJournalistPersonalData(journalist);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
@@ -271,7 +295,7 @@ publicSpaceRouter.get(
 publicSpaceRouter.get(
   '/:token/badge',
   asyncHandler(async (req, res) => {
-    const journalist = await requireJournalist(resolveSpaceToken(req));
+    const journalist = await resolveSpaceJournalist(req);
     res.setHeader('Cache-Control', 'no-store');
     sendData(res, await buildJournalistBadge(journalist.eventId, journalist.id));
   }),
