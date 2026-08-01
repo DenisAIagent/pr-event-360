@@ -2900,6 +2900,19 @@ select.status-select {
     min-width: 88px;
   }
   .dayof-scan-btn { min-height: 48px; }
+  .dayof-manual-btn {
+    min-height: 48px !important;
+    min-width: min(100%, 200px);
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700 !important;
+    white-space: nowrap;
+  }
+  .dayof-arrival.is-present {
+    background: color-mix(in srgb, var(--color-success, #16a34a) 6%, #fff) !important;
+  }
   .dayof input[type='search'],
   .dayof input[type='text'],
   .dayof input[type='date'],

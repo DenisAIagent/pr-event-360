@@ -11,6 +11,7 @@ import {
   Undo2,
   Users,
   Mic,
+  UserCheck,
 } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
@@ -298,7 +299,7 @@ export function DayOfPage() {
 
       <section className="card dayof-checkin" style={{ padding: 14 }}>
         <h3 style={{ margin: '0 0 10px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <QrCode size={18} /> Check-in arrivée
+          <QrCode size={18} /> Check-in par QR
         </h3>
         <div className="dayof-checkin-row">
           <input
@@ -339,17 +340,29 @@ export function DayOfPage() {
             </button>
           </div>
         )}
+        <p className="muted" style={{ margin: '12px 0 0', fontSize: 12.5, lineHeight: 1.4 }}>
+          En cas de panne caméra / QR illisible : utilisez la liste ci-dessous et le bouton{' '}
+          <strong>Accueil physique OK</strong>.
+        </p>
       </section>
 
-      <section>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+      <section className="card dayof-manual" style={{ padding: 14 }}>
+        <h3 style={{ margin: '0 0 6px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <UserCheck size={18} /> Accueil physique (secours)
+        </h3>
+        <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45 }}>
+          Identifiez le journaliste (pièce d’identité / badge / liste) puis validez manuellement —
+          même effet qu’un scan QR pour la présence RP et le compteur « Présents ».
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
           <Search size={16} className="muted" />
           <input
             type="search"
-            placeholder="Rechercher un accrédité…"
+            placeholder="Nom, média ou email…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ flex: 1, minHeight: 44, fontSize: 16 }}
+            style={{ flex: 1, minHeight: 48, fontSize: 16 }}
+            autoComplete="off"
           />
         </div>
         <div className="stack" style={{ gap: 8 }}>
@@ -359,16 +372,16 @@ export function DayOfPage() {
             return (
               <div
                 key={a.id}
-                className="card"
+                className={`card dayof-arrival${present ? ' is-present' : ''}`}
                 style={{
                   padding: '12px 14px',
                   display: 'flex',
                   gap: 12,
                   alignItems: 'center',
-                  opacity: present ? 0.85 : 1,
+                  flexWrap: 'wrap',
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ fontWeight: 600 }}>{name}</div>
                   <div className="muted" style={{ fontSize: 12 }}>
                     {a.media ?? '—'} · {a.accreditationType ?? 'presse'}
@@ -376,25 +389,30 @@ export function DayOfPage() {
                   </div>
                 </div>
                 {present ? (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    style={{ minHeight: 40 }}
-                    disabled={busyId === a.id}
-                    onClick={() => void undo(a.id)}
-                    title="Annuler le check-in"
-                  >
-                    <Undo2 size={16} />
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="badge badge-success" style={{ whiteSpace: 'nowrap' }}>
+                      Présent
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      style={{ minHeight: 44 }}
+                      disabled={busyId === a.id}
+                      onClick={() => void undo(a.id)}
+                      title="Annuler la présence"
+                    >
+                      <Undo2 size={16} /> Annuler
+                    </button>
+                  </div>
                 ) : (
                   <button
                     type="button"
-                    className="btn btn-primary btn-sm"
-                    style={{ minHeight: 40, minWidth: 88 }}
+                    className="btn btn-primary dayof-manual-btn"
                     disabled={busyId === a.id}
                     onClick={() => void doCheckIn({ journalistId: a.id })}
                   >
-                    Check-in
+                    <UserCheck size={16} />
+                    Accueil physique OK
                   </button>
                 )}
               </div>
@@ -402,7 +420,9 @@ export function DayOfPage() {
           })}
           {filteredArrivals.length === 0 && (
             <p className="muted" style={{ textAlign: 'center', padding: 16 }}>
-              Aucun accrédité à afficher.
+              {q.trim()
+                ? 'Aucun accrédité ne correspond à la recherche.'
+                : 'Aucun accrédité à afficher.'}
             </p>
           )}
         </div>
