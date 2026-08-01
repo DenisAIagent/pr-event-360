@@ -573,7 +573,7 @@ function DoneStep({ eventId, onOpen }: { eventId: string; onOpen: () => void }) 
           <span className="n">3</span>
           <span>
             Le jour J, ouvrez{' '}
-            <Link to={`${base}/jour`}>Jour J</Link> pour le check-in QR à l’entrée presse.
+            <Link to={`${base}/jour`}>Jour J</Link> pour l’accueil physique à l’entrée presse.
           </span>
         </li>
       </ol>

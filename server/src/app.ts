@@ -291,7 +291,7 @@ export function createApp(): Express {
   app.use('/api/admin/events', eventCollabRouter);
   app.use('/api/admin/events', eventProductionRouter);
   app.use('/api/admin/events', eventTicketingRouter);
-  // Jour J : agenda du jour, check-in QR, badge.
+  // Jour J : agenda du jour, check-in (accueil physique), badge.
   app.use('/api/admin/events', eventDayOfRouter);
   // Médias / newsroom / newsletters : mêmes routes /:eventId/* que eventsRouter,
   // déclaré après lui pour récupérer les chemins non gérés (assets, press, etc.).

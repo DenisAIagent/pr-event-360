@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   CalendarDays,
@@ -6,7 +6,6 @@ import {
   Clock,
   MapPin,
   Presentation,
-  QrCode,
   Search,
   Undo2,
   Users,
@@ -90,7 +89,7 @@ function formatWhen(iso: string): string {
 
 /**
  * Vue opérationnelle Jour J — optimisée tactile / mobile :
- * check-in QR ou recherche, arrivées, interviews et conférences du jour.
+ * accueil physique manuel (recherche + validation identité), arrivées, interviews et conférences.
  */
 type ArrivalFilter = 'waiting' | 'present' | 'all';
 
@@ -105,13 +104,8 @@ export function DayOfPage() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [arrivalFilter, setArrivalFilter] = useState<ArrivalFilter>('waiting');
-  const [code, setCode] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lastCheckIn, setLastCheckIn] = useState<CheckInResult | null>(null);
-  const [scanning, setScanning] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanTimer = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,24 +126,18 @@ export function DayOfPage() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    return () => {
-      stopScan();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function doCheckIn(payload: { journalistId?: string; code?: string }) {
-    setBusyId(payload.journalistId ?? 'code');
+  async function doCheckIn(journalistId: string) {
+    setBusyId(journalistId);
     try {
-      const res = await api.post<CheckInResult>(`/admin/events/${eventId}/check-in`, payload);
+      const res = await api.post<CheckInResult>(`/admin/events/${eventId}/check-in`, {
+        journalistId,
+      });
       setLastCheckIn(res);
       toast.success(
         res.alreadyCheckedIn
           ? `${res.journalist.firstName} déjà présent`
           : `${res.journalist.firstName} — accueil enregistré ✓`,
       );
-      setCode('');
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Check-in impossible');
@@ -169,12 +157,12 @@ export function DayOfPage() {
     const name = `${a.firstName} ${a.lastName ?? ''}`.trim();
     const ok = await confirm({
       title: 'Accueil physique',
-      message: `Confirmez-vous l’identité de « ${name} »${a.media ? ` (${a.media})` : ''} ?\n\n${a.email}\n\nLa présence sera enregistrée comme un check-in (compteur Présents + Jour J RP).`,
+      message: `Confirmez-vous l’identité de « ${name} »${a.media ? ` (${a.media})` : ''} ?\n\n${a.email}\n\nLa présence sera enregistrée (compteur Présents + Jour J RP).`,
       confirmLabel: 'Accueil physique OK',
       cancelLabel: 'Annuler',
     });
     if (!ok) return;
-    await doCheckIn({ journalistId: a.id });
+    await doCheckIn(a.id);
   }
 
   async function undo(journalistId: string) {
@@ -196,55 +184,6 @@ export function DayOfPage() {
       toast.error(err instanceof Error ? err.message : 'Annulation impossible');
     } finally {
       setBusyId(null);
-    }
-  }
-
-  function stopScan() {
-    setScanning(false);
-    if (scanTimer.current) {
-      window.clearInterval(scanTimer.current);
-      scanTimer.current = null;
-    }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  }
-
-  async function startScan() {
-    // BarcodeDetector (Chrome/Android) — pas de dépendance lourde.
-    const BD = (window as unknown as { BarcodeDetector?: new (opts: { formats: string[] }) => {
-      detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue: string }>>;
-    } }).BarcodeDetector;
-    if (!BD) {
-      toast.error('Scan caméra non supporté sur ce navigateur — collez le code manuellement.');
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setScanning(true);
-      await new Promise((r) => setTimeout(r, 50));
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      const detector = new BD({ formats: ['qr_code'] });
-      scanTimer.current = window.setInterval(() => {
-        const video = videoRef.current;
-        if (!video || video.readyState < 2) return;
-        void detector.detect(video).then((codes) => {
-          const value = codes[0]?.rawValue;
-          if (value?.startsWith('pr360ci1.')) {
-            stopScan();
-            void doCheckIn({ code: value });
-          }
-        });
-      }, 400);
-    } catch {
-      toast.error('Caméra inaccessible. Autorisez l’accès ou saisissez le code.');
-      stopScan();
     }
   }
 
@@ -331,15 +270,13 @@ export function DayOfPage() {
         </div>
       )}
 
-      {/* Accueil manuel en premier : le flux terrain de secours (et souvent le principal). */}
       <section className="card dayof-manual" style={{ padding: 14 }}>
         <h3 style={{ margin: '0 0 6px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
           <UserCheck size={18} /> Accueil physique
         </h3>
         <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.45 }}>
-          <strong>Contrôle manuel</strong> : vérifiez l’identité (badge, pièce d’identité, liste), puis
-          appuyez sur <strong>Accueil physique OK</strong>. Même effet qu’un scan pour le compteur
-          Présents et le RP.
+          Cherchez la personne, vérifiez son identité, puis validez avec{' '}
+          <strong>Accueil physique OK</strong>. C’est le mode de check-in sur le terrain (pas de QR).
         </p>
         <div className="segmented dayof-filter" role="tablist" aria-label="Filtrer la liste">
           <button
@@ -374,7 +311,7 @@ export function DayOfPage() {
           <Search size={16} className="muted" />
           <input
             type="search"
-            placeholder="Chercher pour valider manuellement…"
+            placeholder="Nom, média ou email…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             style={{ flex: 1, minHeight: 48, fontSize: 16 }}
@@ -438,59 +375,6 @@ export function DayOfPage() {
           )}
         </div>
       </section>
-
-      <details className="card dayof-checkin" style={{ padding: 14 }}>
-        <summary
-          style={{
-            cursor: 'pointer',
-            fontWeight: 600,
-            fontSize: 15,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            listStyle: 'none',
-          }}
-        >
-          <QrCode size={18} /> Check-in par QR (optionnel)
-        </summary>
-        <p className="muted" style={{ margin: '10px 0 12px', fontSize: 12.5 }}>
-          Si le QR fonctionne : scannez ou collez le code. Sinon restez sur l’accueil physique ci-dessus.
-        </p>
-        <div className="dayof-checkin-row">
-          <input
-            type="text"
-            placeholder="Coller le code QR…"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            autoComplete="off"
-            inputMode="text"
-            enterKeyHint="go"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && code.trim()) void doCheckIn({ code: code.trim() });
-            }}
-          />
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={!code.trim() || busyId === 'code'}
-            onClick={() => void doCheckIn({ code: code.trim() })}
-          >
-            Valider
-          </button>
-        </div>
-        {!scanning ? (
-          <button type="button" className="btn btn-ghost dayof-scan-btn" onClick={() => void startScan()}>
-            Scanner avec la caméra
-          </button>
-        ) : (
-          <div className="stack" style={{ gap: 8, marginTop: 10 }}>
-            <video ref={videoRef} muted playsInline className="dayof-video" />
-            <button type="button" className="btn btn-ghost" onClick={stopScan}>
-              Arrêter le scan
-            </button>
-          </div>
-        )}
-      </details>
 
       {data.interviews.length > 0 && (
         <section className="card" style={{ padding: 16 }}>

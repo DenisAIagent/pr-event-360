@@ -94,7 +94,7 @@ Une conférence est affichée après confirmation et publication par le RP :
 | Communications | newsletters ciblées et aperçu |
 | Revue de presse | retombées, suivi et relances |
 | Bilan | KPIs, exports CSV Excel, impression PDF du bilan presse |
-| Jour J | check-in QR, badge, agenda interviews/conférences du jour (mobile) |
+| Jour J | accueil physique manuel, badge, agenda interviews/conférences du jour (mobile) |
 | Paramètres | poids, templates, clôture, récap et domaines |
 | Apparence | logo et couleurs |
 | Aperçu | accréditation, espace et newsroom dans une iframe authentifiée par cookie |

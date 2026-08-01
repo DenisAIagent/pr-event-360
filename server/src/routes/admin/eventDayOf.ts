@@ -14,7 +14,7 @@ import {
 } from '../../services/dayOfService';
 
 /**
- * Jour J : agenda du jour, check-in d'arrivée (QR), badge journaliste, check-in conférence.
+ * Jour J : agenda du jour, check-in d'arrivée (accueil physique), badge journaliste, check-in conférence.
  */
 export const eventDayOfRouter = Router();
 eventDayOfRouter.use(requireAuth);
