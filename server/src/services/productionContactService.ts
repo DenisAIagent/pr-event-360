@@ -53,9 +53,15 @@ async function assertArtistsInEvent(artistIds: string[], eventId: string): Promi
   }
 }
 
+function normalizeJobTitle(jobTitle?: string | null): string | null {
+  const t = jobTitle?.trim() ?? '';
+  return t.length > 0 ? t : null;
+}
+
 export async function createProductionContact(input: {
   eventId: string;
   name: string;
+  jobTitle?: string | null;
   email: string;
   artistIds: string[];
 }): Promise<ProductionContact> {
@@ -63,6 +69,7 @@ export async function createProductionContact(input: {
   const id = await insertProductionContact({
     eventId: input.eventId,
     name: input.name.trim(),
+    jobTitle: normalizeJobTitle(input.jobTitle),
     email: input.email.trim().toLowerCase(),
   });
   await setContactArtists(id, input.artistIds);
@@ -75,6 +82,7 @@ export async function editProductionContact(input: {
   contactId: string;
   eventId: string;
   name: string;
+  jobTitle?: string | null;
   email: string;
   artistIds: string[];
 }): Promise<ProductionContact> {
@@ -83,6 +91,7 @@ export async function editProductionContact(input: {
   await assertArtistsInEvent(input.artistIds, input.eventId);
   await updateProductionContact(input.contactId, input.eventId, {
     name: input.name.trim(),
+    jobTitle: normalizeJobTitle(input.jobTitle),
     email: input.email.trim().toLowerCase(),
   });
   await setContactArtists(input.contactId, input.artistIds);
@@ -126,7 +135,7 @@ export async function sendProductionAccessLink(
   const covered = artists.filter((a) => contact.artistIds.includes(a.id)).map((a) => a.name);
 
   const innerHtml = `
-    <p>Bonjour ${escapeHtml(contact.name)},</p>
+    <p>Bonjour ${escapeHtml(contact.name)}${contact.jobTitle ? ` (${escapeHtml(contact.jobTitle)})` : ''},</p>
     <p>
       L’équipe presse de <strong>${escapeHtml(event.name)}</strong> vous invite à donner votre avis sur les
       demandes d’interview et de reportage adressées à

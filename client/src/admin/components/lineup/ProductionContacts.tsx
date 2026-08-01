@@ -9,6 +9,8 @@ import { EmptyState } from '../EmptyState';
 export interface ProductionContact {
   id: string;
   name: string;
+  /** Fonction / poste (manager, attaché production…). */
+  jobTitle: string | null;
   email: string;
   tokenExpiresAt: string | null;
   lastSentAt: string | null;
@@ -20,7 +22,7 @@ interface ArtistOption {
   name: string;
 }
 
-const EMPTY = { name: '', email: '', artistIds: [] as string[] };
+const EMPTY = { name: '', jobTitle: '', email: '', artistIds: [] as string[] };
 
 /**
  * Contacts production d'un événement : qui représente quels artistes, et envoi
@@ -38,7 +40,8 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
 
-  const canSubmit = form.name.trim() && form.email.trim() && form.artistIds.length > 0 && !busy;
+  const canSubmit =
+    form.name.trim() && form.jobTitle.trim() && form.email.trim() && form.artistIds.length > 0 && !busy;
 
   async function create() {
     if (!canSubmit) return;
@@ -46,6 +49,7 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
     try {
       await api.post(`/admin/events/${eventId}/production-contacts`, {
         name: form.name.trim(),
+        jobTitle: form.jobTitle.trim(),
         email: form.email.trim(),
         artistIds: form.artistIds,
       });
@@ -127,7 +131,11 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
               }}
             >
               <div>
-                <strong>{c.name}</strong> <span className="muted">· {c.email}</span>
+                <strong>{c.name}</strong>
+                {c.jobTitle && <span className="muted"> · {c.jobTitle}</span>}
+                <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
+                  {c.email}
+                </div>
                 <div className="muted" style={{ fontSize: 'var(--text-sm)' }}>
                   {c.artistIds.map(artistName).join(', ') || 'Aucun artiste rattaché'}
                   {c.lastSentAt && ` · lien envoyé le ${new Date(c.lastSentAt).toLocaleDateString('fr-FR')}`}
@@ -147,20 +155,34 @@ export function ProductionContacts({ eventId, artists }: { eventId: string; arti
       )}
 
       <div className="stack" style={{ borderTop: '1px solid var(--color-line)', paddingTop: 'var(--space-4)' }}>
-        <div className="row">
+        <div className="row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-3)' }}>
           <div className="field">
-            <label htmlFor="pc-name">Nom du contact</label>
+            <label htmlFor="pc-name">Nom</label>
             <input
               id="pc-name"
+              autoComplete="name"
+              placeholder="Jean Dupont"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             />
           </div>
           <div className="field">
-            <label htmlFor="pc-email">Email</label>
+            <label htmlFor="pc-job">Fonction</label>
+            <input
+              id="pc-job"
+              autoComplete="organization-title"
+              placeholder="Manager, attaché production…"
+              value={form.jobTitle}
+              onChange={(e) => setForm((f) => ({ ...f, jobTitle: e.target.value }))}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="pc-email">Mail</label>
             <input
               id="pc-email"
               type="email"
+              autoComplete="email"
+              placeholder="prod@exemple.com"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />

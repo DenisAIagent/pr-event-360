@@ -6,6 +6,8 @@ export interface ProductionContact {
   id: string;
   eventId: string;
   name: string;
+  /** Fonction / poste (manager, attaché production, etc.). */
+  jobTitle: string | null;
   email: string;
   tokenExpiresAt: Date | null;
   lastSentAt: Date | null;
@@ -18,6 +20,7 @@ interface ContactRow {
   id: string;
   event_id: string;
   name: string;
+  job_title: string | null;
   email: string;
   token_expires_at: Date | null;
   last_sent_at: Date | null;
@@ -29,6 +32,7 @@ const mapContact = (r: ContactRow): ProductionContact => ({
   id: r.id,
   eventId: r.event_id,
   name: r.name,
+  jobTitle: r.job_title,
   email: r.email,
   tokenExpiresAt: r.token_expires_at,
   lastSentAt: r.last_sent_at,
@@ -38,7 +42,7 @@ const mapContact = (r: ContactRow): ProductionContact => ({
 
 /** `token_hash` n'est jamais sélectionné : il ne doit pas circuler hors de la vérification. */
 const SELECT_CONTACT = `
-  SELECT c.id, c.event_id, c.name, c.email, c.token_expires_at, c.last_sent_at, c.created_at,
+  SELECT c.id, c.event_id, c.name, c.job_title, c.email, c.token_expires_at, c.last_sent_at, c.created_at,
          COALESCE(
            (SELECT array_agg(a.artist_id) FROM production_contact_artists a WHERE a.contact_id = c.id),
            '{}'
@@ -80,12 +84,13 @@ export async function findProductionContactByTokenHash(
 }
 
 export async function insertProductionContact(
-  input: { eventId: string; name: string; email: string },
+  input: { eventId: string; name: string; jobTitle?: string | null; email: string },
   db: Queryable = pool,
 ): Promise<string> {
   const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO production_contacts (event_id, name, email) VALUES ($1, $2, $3) RETURNING id`,
-    [input.eventId, input.name, input.email],
+    `INSERT INTO production_contacts (event_id, name, job_title, email)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [input.eventId, input.name, input.jobTitle ?? null, input.email],
   );
   return rows[0]!.id;
 }
@@ -93,15 +98,14 @@ export async function insertProductionContact(
 export async function updateProductionContact(
   id: string,
   eventId: string,
-  input: { name: string; email: string },
+  input: { name: string; jobTitle?: string | null; email: string },
   db: Queryable = pool,
 ): Promise<void> {
-  await db.query(`UPDATE production_contacts SET name = $3, email = $4 WHERE id = $1 AND event_id = $2`, [
-    id,
-    eventId,
-    input.name,
-    input.email,
-  ]);
+  await db.query(
+    `UPDATE production_contacts SET name = $3, job_title = $4, email = $5
+     WHERE id = $1 AND event_id = $2`,
+    [id, eventId, input.name, input.jobTitle ?? null, input.email],
+  );
 }
 
 export async function deleteProductionContact(id: string, eventId: string, db: Queryable = pool): Promise<void> {

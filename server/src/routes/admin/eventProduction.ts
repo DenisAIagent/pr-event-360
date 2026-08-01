@@ -24,6 +24,7 @@ eventProductionRouter.use(requireAuth);
 
 const ContactSchema = z.object({
   name: z.string().trim().min(1).max(200),
+  jobTitle: z.string().trim().max(200).nullish(),
   email: z.string().trim().email().max(320),
   artistIds: z.array(z.string().uuid()).max(200).default([]),
 });
