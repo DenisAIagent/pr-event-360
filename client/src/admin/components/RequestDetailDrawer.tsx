@@ -165,20 +165,24 @@ export function RequestDetailDrawer({
       }}
     >
       <aside
+        className="req-drawer"
         style={{
           width: 'min(420px, 100vw)',
           height: '100%',
+          maxHeight: '100dvh',
           background: 'var(--color-surface, #fff)',
           boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <header
           style={{
-            padding: '16px 18px',
+            padding: '14px 16px',
+            paddingTop: 'max(14px, env(safe-area-inset-top, 0px))',
             borderBottom: '1px solid var(--color-line)',
             display: 'flex',
             alignItems: 'flex-start',

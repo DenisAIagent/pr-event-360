@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate } from 'react-router-dom';
-import { Search, Bell, ChevronRight, UserRound, CalendarDays } from 'lucide-react';
+import { Search, Bell, ChevronRight, UserRound, CalendarDays, Menu, X } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { useFetch } from '../lib/useFetch';
 import type { EventSummary } from '../lib/types';
+import { useMobileNav } from './AdminShell';
 
 const PAGE_LABEL: Record<string, string> = {
   requests: 'Demandes',
@@ -50,6 +51,7 @@ export function Topbar() {
   const api = useAuthedApi();
   const navigate = useNavigate();
   const loc = useLocation();
+  const { open: menuOpen, toggleMenu } = useMobileNav();
   const match = useMatch('/admin/events/:eventId/*');
   const eventId = match?.params.eventId ?? null;
   const events = useFetch<EventSummary[]>(() => api.get<EventSummary[]>('/admin/events'), []);
@@ -115,11 +117,20 @@ export function Topbar() {
 
   return (
     <header className="topbar">
+      <button
+        type="button"
+        className="icon-btn m-menu-btn"
+        onClick={toggleMenu}
+        aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
       <div className="crumbs">
         {ev ? (
           <>
-            <span>{ev.name}</span>
-            <ChevronRight size={13} />
+            <span className="crumbs-ev">{ev.name}</span>
+            <ChevronRight size={13} className="crumbs-sep" />
             <b>{pageLabel}</b>
           </>
         ) : (
@@ -135,7 +146,7 @@ export function Topbar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => q.length >= 2 && setOpen(true)}
-            placeholder="Rechercher un journaliste, un média…"
+            placeholder="Rechercher…"
             aria-label="Rechercher"
           />
         </div>

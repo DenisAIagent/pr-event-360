@@ -233,31 +233,28 @@ export function DayOfPage() {
   const remaining = Math.max(0, s.accredited - s.checkedIn);
 
   return (
-    <div className="stack dayof" style={{ gap: 'var(--space-4)', maxWidth: 720, margin: '0 auto' }}>
-      <header style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{ flex: '1 1 200px' }}>
-          <div className="muted" style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Jour J
+    <div className="stack dayof" style={{ gap: 'var(--space-3)', maxWidth: 720, margin: '0 auto' }}>
+      <header className="dayof-header">
+        <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+          <div className="muted" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+            Jour J · terrain
           </div>
-          <h2 style={{ margin: '4px 0 0', fontSize: 'var(--text-xl)' }}>{data.event.name}</h2>
-          <div className="muted" style={{ fontSize: 13, display: 'flex', flexWrap: 'wrap', gap: '8px 14px', marginTop: 4 }}>
+          <h2 style={{ margin: '4px 0 0', fontSize: 'clamp(1.1rem, 4vw, 1.35rem)', lineHeight: 1.25 }}>
+            {data.event.name}
+          </h2>
+          <div className="muted dayof-meta">
             {data.event.location && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <span>
                 <MapPin size={13} /> {data.event.location}
               </span>
             )}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <label className="dayof-date">
               <CalendarDays size={13} />
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                style={{ font: 'inherit', border: 'none', background: 'transparent', color: 'inherit' }}
-              />
-            </span>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </label>
           </div>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => void load()}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => void load()} style={{ flex: 'none' }}>
           Actualiser
         </button>
       </header>
@@ -299,49 +296,49 @@ export function DayOfPage() {
         </div>
       )}
 
-      <section className="card" style={{ padding: 16 }}>
-        <h3 style={{ margin: '0 0 12px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <section className="card dayof-checkin" style={{ padding: 14 }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
           <QrCode size={18} /> Check-in arrivée
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              placeholder="Coller le code QR…"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              style={{ flex: '1 1 180px', minHeight: 44, fontSize: 16 }}
-              autoComplete="off"
-              inputMode="text"
+        <div className="dayof-checkin-row">
+          <input
+            type="text"
+            placeholder="Coller le code QR…"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            autoComplete="off"
+            inputMode="text"
+            enterKeyHint="go"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && code.trim()) void doCheckIn({ code: code.trim() });
+            }}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!code.trim() || busyId === 'code'}
+            onClick={() => void doCheckIn({ code: code.trim() })}
+          >
+            Valider
+          </button>
+        </div>
+        {!scanning ? (
+          <button type="button" className="btn btn-ghost dayof-scan-btn" onClick={() => void startScan()}>
+            Scanner avec la caméra
+          </button>
+        ) : (
+          <div className="stack" style={{ gap: 8, marginTop: 10 }}>
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className="dayof-video"
             />
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ minHeight: 44, minWidth: 100 }}
-              disabled={!code.trim() || busyId === 'code'}
-              onClick={() => void doCheckIn({ code: code.trim() })}
-            >
-              Valider
+            <button type="button" className="btn btn-ghost" onClick={stopScan}>
+              Arrêter le scan
             </button>
           </div>
-          {!scanning ? (
-            <button type="button" className="btn btn-ghost" style={{ minHeight: 44 }} onClick={() => void startScan()}>
-              Scanner avec la caméra
-            </button>
-          ) : (
-            <div className="stack" style={{ gap: 8 }}>
-              <video
-                ref={videoRef}
-                muted
-                playsInline
-                style={{ width: '100%', maxHeight: 240, borderRadius: 12, background: '#000' }}
-              />
-              <button type="button" className="btn btn-ghost btn-sm" onClick={stopScan}>
-                Arrêter le scan
-              </button>
-            </div>
-          )}
-        </div>
+        )}
       </section>
 
       <section>

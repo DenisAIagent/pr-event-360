@@ -547,11 +547,41 @@ textarea {
 .jspace-crumbs { font-size: 14px; color: var(--color-ink, #1a1a2e); font-weight: 600; }
 .jspace-canvas { padding: 24px 28px 60px; max-width: 900px; width: 100%; margin: 0 auto; }
 @media (max-width: 820px) {
-  .jspace { grid-template-columns: 1fr; }
-  .jspace-rail { position: static; height: auto; }
-  .jspace-nav { flex-direction: row; flex-wrap: wrap; }
-  .jspace-nav-item { width: auto; }
-  .jspace-nav-item.active::before { display: none; }
+  .jspace {
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+  .jspace-rail {
+    position: static;
+    height: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .jspace-nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+  }
+  .jspace-nav-item {
+    width: auto;
+    flex: none;
+    min-height: 40px;
+  }
+  .jspace-nav-item.active::before {
+    display: none;
+  }
+  .jspace-canvas {
+    padding: 16px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+  .jspace input,
+  .jspace select,
+  .jspace textarea {
+    font-size: 16px; /* anti-zoom iOS */
+  }
+  .jspace .btn {
+    min-height: 44px;
+  }
 }
 
 /* Corps des communiqués (HTML riche assaini) : lecteur vidéo YouTube responsive.

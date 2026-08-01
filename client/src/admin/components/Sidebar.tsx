@@ -59,6 +59,9 @@ export function Sidebar() {
   const [switchOpen, setSwitchOpen] = useState(false);
   const switchRef = useRef<HTMLDivElement>(null);
 
+  // Sur mobile le rail est un drawer ; on ne force pas de prop ici — le CSS
+  // .app.nav-open .rail gère la visibilité.
+
   // Fermeture du sélecteur d'événement au clic extérieur.
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
