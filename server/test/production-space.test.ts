@@ -25,6 +25,7 @@ const contact: ProductionContact = {
   id: 'c1',
   eventId: 'e1',
   name: 'Manager A',
+  jobTitle: 'Manager',
   email: 'manager@prod.test',
   tokenExpiresAt: null,
   lastSentAt: null,
