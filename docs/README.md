@@ -17,7 +17,9 @@ PR Event 360 gère les relations presse des festivals et concerts, mais aussi de
 | [security-rgpd.md](security-rgpd.md) | Authentification, sessions, uploads et RGPD |
 | [deployment.md](deployment.md) | Configuration, build, Railway, sauvegarde et rollback |
 | [custom-domains.md](custom-domains.md) | Sous-domaines et domaines personnalisés |
+| [commercial-offers.md](commercial-offers.md) | Offres, crédits événement, Stripe Price IDs |
 | [rgpd/](rgpd/) | Registre, DPA, procédures, AIPD et transferts |
+| [security-audit-2026-08-05.md](security-audit-2026-08-05.md) | Audit sécurité (2026-08-05) |
 
 Documents complémentaires :
 

@@ -1,4 +1,4 @@
-import { Router, type Response } from 'express';
+import { Router, type Request, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { asyncHandler } from '../../http/asyncHandler';
@@ -8,7 +8,18 @@ import { validateBody } from '../../middleware/validate';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { issueSession, clearSession, csrfValid } from '../../lib/session';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
-import { sharedStoreOrUndefined } from '../../lib/rateLimitStore';
+import {
+  authRateLimitKey,
+  authRateLimitStoreOrUndefined,
+} from '../../lib/rateLimitStore';
+import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
+import { mfaRequiredFor } from '../../lib/mfaPolicy';
+import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
+import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
+import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
+import { getOrgInvite, acceptOrgInvite } from '../../services/orgInviteService';
+import { passwordSchema } from '../../lib/passwordPolicy';
+import { findUserById } from '../../db/repositories/userRepo';
 
 /** Si le résultat contient un jeton, ouvre la session (cookie httpOnly + CSRF) avant de répondre. */
 function withSession<T extends object>(res: Response, result: T, status = 200): void {
@@ -21,22 +32,31 @@ function withSession<T extends object>(res: Response, result: T, status = 200): 
   }
   sendData(res, result, status);
 }
-import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
-import { mfaRequiredFor } from '../../lib/mfaPolicy';
-import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
-import { acceptInvitation, getInvitationByToken } from '../../services/invitationService';
-import { googleClientId, isGoogleEnabled, loginWithGoogle } from '../../services/googleAuthService';
-import { getOrgInvite, acceptOrgInvite } from '../../services/orgInviteService';
-import { passwordSchema } from '../../lib/passwordPolicy';
 
 export const authRouter = Router();
 
+const authStore = authRateLimitStoreOrUndefined();
+
 // Limite de débit sur la réinitialisation de mot de passe (surface publique) :
 // anti force brute sur les jetons et anti-énumération des comptes.
-// Store partagé Redis si configuré (sinon le bruteforce serait ×N instances).
-const resetLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
-// Anti force brute / credential-stuffing sur le login admin (le plus ciblé).
-const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
+// Store auth fail-closed si Redis configuré (sinon MemoryStore local).
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  store: authStore,
+  keyGenerator: (req: Request) =>
+    authRateLimitKey('reset', req.ip, (req.body as { email?: unknown } | undefined)?.email),
+});
+// Anti force brute / credential-stuffing : clé IP + email normalisé.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  store: authStore,
+  keyGenerator: (req: Request) =>
+    authRateLimitKey('login', req.ip, (req.body as { email?: unknown } | undefined)?.email),
+});
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -45,6 +65,7 @@ const LoginSchema = z.object({
 
 authRouter.post(
   '/login',
+  // Body parsé par express.json global : le keyGenerator lit email avant validateBody.
   loginLimiter,
   validateBody(LoginSchema),
   asyncHandler(async (req, res) => {
@@ -55,17 +76,24 @@ authRouter.post(
 );
 
 // Session courante (le front ne peut pas lire le cookie httpOnly) : hydrate l'UI au démarrage.
+// Profil complet depuis la DB (pas seulement les claims JWT) pour ne jamais faire
+// confiance au localStorage côté client.
 authRouter.get(
   '/me',
   requireAuth,
   asyncHandler(async (req, res) => {
-    // Signale au front qu'un enrôlement MFA est obligatoire (compte à privilèges
-    // sans MFA active) → il force l'écran d'activation au rechargement.
     let mfaSetupRequired = false;
     if (mfaRequiredFor(req.user!.role, req.user!.isPlatformAdmin)) {
       mfaSetupRequired = !(await getMfaStatus(req.user!.sub)).enabled;
     }
-    sendData(res, { user: req.user, mfaSetupRequired });
+    const full = await findUserById(req.user!.sub);
+    if (!full) throw AppError.unauthorized('Compte introuvable');
+    // Conserve l'organizationId du contexte super-admin (switch org) si présent.
+    const user = {
+      ...full,
+      organizationId: req.user!.organizationId,
+    };
+    sendData(res, { user, mfaSetupRequired });
   }),
 );
 
@@ -83,7 +111,13 @@ authRouter.post(
 
 // ── Double authentification (TOTP) ──────────────────────────────────
 const MfaCodeSchema = z.object({ code: z.string().min(6).max(8) });
-const mfaLoginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
+const mfaLoginLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  store: authStore,
+  keyGenerator: (req: Request) => authRateLimitKey('mfa', req.ip, undefined),
+});
 
 // 2e étape du login : challenge (issu de /login) + code TOTP → jeton de session.
 authRouter.post(

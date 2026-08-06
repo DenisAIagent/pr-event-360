@@ -26,6 +26,7 @@ import {
   Presentation,
   Users2,
   Ticket,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth, useAuthedApi } from '../auth/AuthContext';
@@ -218,6 +219,7 @@ export function Sidebar() {
         <NavItem to="/admin" label="Événements" icon={LayoutGrid} end />
         <NavItem to="/admin/avis" label="Votre avis" icon={Star} />
         {isAdmin && <NavItem to="/admin/team" label="Équipe" icon={Users} />}
+        {isAdmin && <NavItem to="/admin/facturation" label="Facturation" icon={CreditCard} />}
         {user?.isPlatformAdmin && (
           <>
             <NavItem to="/admin/organizations" label="Organisations" icon={Building2} />

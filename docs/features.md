@@ -150,6 +150,7 @@ Les inscriptions sont indépendantes de l’accréditation et des demandes indiv
 ## Plateforme
 
 - organisations et abonnements isolés ;
+- offres commerciales à l’événement (800 € HT), Pack 3, Agence, Média Plus — voir [commercial-offers.md](commercial-offers.md) ;
 - inscription Stripe ou invitation ;
 - avis produit modérés avant affichage public ;
 - intégrations chiffrées réservées au super-admin ;

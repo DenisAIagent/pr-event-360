@@ -27,4 +27,8 @@ export class AppError extends Error {
   static conflict(message: string): AppError {
     return new AppError(409, message);
   }
+  /** Quota / licence / paiement requis (crédits événement épuisés). */
+  static paymentRequired(message: string, details?: unknown): AppError {
+    return new AppError(402, message, details);
+  }
 }

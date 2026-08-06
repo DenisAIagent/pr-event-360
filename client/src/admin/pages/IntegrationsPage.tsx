@@ -3,6 +3,7 @@ import {
   Bell,
   CheckCircle2,
   CircleDashed,
+  CreditCard,
   Image as ImageIcon,
   Mail,
   MessageSquare,
@@ -27,6 +28,7 @@ const SOURCE_LABEL: Record<SecretStatus['source'], string> = {
 
 const GROUP_ICON: Record<string, typeof Plug> = {
   notifications: Bell,
+  stripe: CreditCard,
   cloudinary: ImageIcon,
   brevo: Mail,
   twilio: MessageSquare,
@@ -131,7 +133,7 @@ export function IntegrationsPage() {
       <PageHero
         eyebrow="Configuration"
         title="Intégrations"
-        subtitle="Clés des outils externes : stockage des médias, envoi d'emails et de SMS. Saisies ici, elles sont chiffrées et prennent effet immédiatement."
+        subtitle="Clés des outils externes : Stripe, Cloudinary, emails et SMS. Saisies ici, elles sont chiffrées et priment sur Railway sans redéploiement."
       />
 
       <p
@@ -195,6 +197,15 @@ export function IntegrationsPage() {
               <div className="banner banner-info" style={{ marginBottom: 0 }}>
                 Tant que ces quatre valeurs ne sont pas renseignées, l'envoi de fichiers renvoie une
                 erreur : aucun visuel, aucune vidéo et aucun dossier de presse ne peut être déposé.
+              </div>
+            )}
+
+            {group.id === 'stripe' && (
+              <div className="banner banner-info" style={{ marginBottom: 0 }}>
+                Renseignez au minimum <strong>Secret Key</strong> + <strong>Webhook secret</strong> et
+                le Price ID de l'offre Événement (<code>price_…</code>). Les autres Price IDs sont
+                optionnels tant que vous ne vendez pas ces offres. Les valeurs ici remplacent celles de
+                Railway sans redéployer.
               </div>
             )}
 

@@ -15,6 +15,12 @@ export const SETTINGS_GROUPS = [
       'Mode d’envoi global et fournisseurs utilisés. En simulation, aucun message ne part réellement.',
   },
   {
+    id: 'stripe',
+    label: 'Stripe — paiements et offres',
+    description:
+      'Clés API et Price IDs des offres commerciales (Événement, Pack 3, Agence, Média Plus). Saisis ici, ils priment sur Railway sans redéploiement.',
+  },
+  {
     id: 'cloudinary',
     label: 'Cloudinary — photos, vidéos et dossiers de presse',
     description:
@@ -37,6 +43,7 @@ export type SettingsGroupId = (typeof SETTINGS_GROUPS)[number]['id'];
 /**
  * Clés de configuration gérables via l'UI. `secret` = valeur masquée à l'affichage,
  * `hint` = aide affichée sous le champ (où trouver la valeur, contraintes à respecter).
+ * `optional` = non requis pour marquer le groupe « Configuré ».
  */
 export const MANAGED_KEYS = [
   {
@@ -53,6 +60,69 @@ export const MANAGED_KEYS = [
     group: 'notifications',
     secret: false,
     hint: 'brevo ou twilio',
+  },
+
+  {
+    key: 'STRIPE_SECRET_KEY',
+    label: 'Secret Key',
+    group: 'stripe',
+    secret: true,
+    hint: 'Dashboard Stripe → Developers → API keys → Secret key (sk_live_… ou sk_test_…).',
+  },
+  {
+    key: 'STRIPE_WEBHOOK_SECRET',
+    label: 'Webhook signing secret',
+    group: 'stripe',
+    secret: true,
+    hint: 'Developers → Webhooks → endpoint /api/stripe/webhook → Signing secret (whsec_…).',
+  },
+  {
+    key: 'STRIPE_PRICE_EVENT',
+    label: 'Price ID — Événement (800 €)',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Products → prix one-time 800 € HT → ID price_…. Repli aussi sur STRIPE_PRICE_ID.',
+  },
+  {
+    key: 'STRIPE_PRICE_ID',
+    label: 'Price ID — repli historique',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Ancien champ unique. Utilisé si STRIPE_PRICE_EVENT est vide.',
+  },
+  {
+    key: 'STRIPE_PRICE_PACK3',
+    label: 'Price ID — Pack 3 (2 100 €)',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Prix one-time 2 100 € HT → price_…',
+  },
+  {
+    key: 'STRIPE_PRICE_AGENCY',
+    label: 'Price ID — Agence (6 000 € / an)',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Prix abonnement annuel 6 000 € HT → price_… (mode subscription).',
+  },
+  {
+    key: 'STRIPE_PRICE_AGENCY_EXTRA',
+    label: 'Price ID — Extra agence (450 €)',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Prix one-time 450 € HT par événement supplémentaire.',
+  },
+  {
+    key: 'STRIPE_PRICE_MEDIA_PLUS',
+    label: 'Price ID — Média Plus (+200 €)',
+    group: 'stripe',
+    secret: false,
+    optional: true,
+    hint: 'Prix one-time +200 € HT pour 100 Go sur un événement.',
   },
 
   {
@@ -203,12 +273,42 @@ export async function getStorageSettings(): Promise<StorageSettings> {
   };
 }
 
+export interface StripeSettings {
+  secretKey?: string;
+  webhookSecret?: string;
+  /** Repli historique / offre Événement. */
+  priceId?: string;
+  priceEvent?: string;
+  pricePack3?: string;
+  priceAgency?: string;
+  priceAgencyExtra?: string;
+  priceMediaPlus?: string;
+}
+
+/** Config Stripe effective (surcharge DB chiffrée sinon variables d'environnement). */
+export async function getStripeSettings(): Promise<StripeSettings> {
+  const env = loadEnv();
+  const o = await dbOverrides();
+  const pick = (key: ManagedKey, fallback?: string) => (o.has(key) ? o.get(key) : fallback);
+  return {
+    secretKey: pick('STRIPE_SECRET_KEY', env.STRIPE_SECRET_KEY),
+    webhookSecret: pick('STRIPE_WEBHOOK_SECRET', env.STRIPE_WEBHOOK_SECRET),
+    priceId: pick('STRIPE_PRICE_ID', env.STRIPE_PRICE_ID),
+    priceEvent: pick('STRIPE_PRICE_EVENT', env.STRIPE_PRICE_EVENT),
+    pricePack3: pick('STRIPE_PRICE_PACK3', env.STRIPE_PRICE_PACK3),
+    priceAgency: pick('STRIPE_PRICE_AGENCY', env.STRIPE_PRICE_AGENCY),
+    priceAgencyExtra: pick('STRIPE_PRICE_AGENCY_EXTRA', env.STRIPE_PRICE_AGENCY_EXTRA),
+    priceMediaPlus: pick('STRIPE_PRICE_MEDIA_PLUS', env.STRIPE_PRICE_MEDIA_PLUS),
+  };
+}
+
 export interface SecretStatus {
   key: string;
   label: string;
   group: string;
   hint: string;
   secret: boolean;
+  optional?: boolean;
   source: 'db' | 'env' | 'none';
   preview: string | null; // valeur (non secrète) ou masque (secrète)
 }
@@ -232,18 +332,27 @@ export async function getSettingsStatus(): Promise<SettingsStatus> {
   const env = loadEnv() as unknown as Record<string, string | undefined>;
   const o = await dbOverrides();
 
-  const items = MANAGED_KEYS.map(({ key, label, group, hint, secret }): SecretStatus => {
+  const items = MANAGED_KEYS.map((m): SecretStatus => {
+    const { key, label, group, hint, secret } = m;
+    const optional = 'optional' in m && m.optional === true;
     const inDb = o.has(key);
     const value = inDb ? o.get(key) : env[key];
     const source: SecretStatus['source'] = inDb ? 'db' : value ? 'env' : 'none';
     let preview: string | null = null;
     if (value) preview = secret ? maskSecret(value) : value;
-    return { key, label, group, hint, secret, source, preview };
+    return { key, label, group, hint, secret, optional, source, preview };
   });
 
   const groups = SETTINGS_GROUPS.map(({ id, label, description }): SettingsGroupStatus => {
     const own = items.filter((it) => it.group === id);
-    return { id, label, description, configured: own.every((it) => it.source !== 'none') };
+    // Les champs optionnels (Price IDs Stripe secondaires) n'empêchent pas « Configuré ».
+    const required = own.filter((it) => !it.optional);
+    return {
+      id,
+      label,
+      description,
+      configured: required.length > 0 && required.every((it) => it.source !== 'none'),
+    };
   });
 
   return { encryptionReady: isEncryptionAvailable(), groups, items };

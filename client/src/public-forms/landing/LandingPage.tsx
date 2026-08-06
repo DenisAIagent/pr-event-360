@@ -44,15 +44,47 @@ const FEATURES: readonly (readonly [LucideIcon, string, string])[] = [
   [Users2, 'Collaboration équipe', 'Travaillez à plusieurs sur un même événement, en toute clarté.'],
 ] as const;
 
-const PLAN_FEATURES = [
-  'Événements illimités',
-  "Membres d'équipe illimités",
-  "Accréditations & demandes d'interview",
-  'Planning & génération de créneaux',
-  'Newsroom & communications',
-  'Espace journaliste (lien magique + compte)',
-  'Multilingue FR / EN / PT / ES',
-  'Support FR',
+const LAUNCH_PLANS = [
+  {
+    id: 'event',
+    name: 'Événement',
+    price: '800 €',
+    period: 'HT / événement',
+    note: '1 licence · 20 Go · Google Drive inclus',
+    features: [
+      'Accréditations & demandes',
+      'Badges, exports, équipes',
+      'Espaces journalistes sécurisés',
+      '20 Go stockage + Drive inclus',
+    ],
+  },
+  {
+    id: 'pack3',
+    name: 'Pack 3',
+    price: '2 100 €',
+    period: 'HT',
+    note: 'Soit 700 € / événement · valable 12 mois',
+    highlight: true,
+    features: [
+      '3 crédits événement',
+      'Toutes les fonctionnalités',
+      'Multi-marques / multi-clients',
+      'Économie 300 € HT',
+    ],
+  },
+  {
+    id: 'agency',
+    name: 'Agence',
+    price: '6 000 €',
+    period: 'HT / an',
+    note: '10 événements / an · +450 € au-delà',
+    features: [
+      'Jusqu’à 10 événements / an',
+      'Support prioritaire & onboarding',
+      'Vue consolidée multi-clients',
+      'Suivi des crédits',
+    ],
+  },
 ] as const;
 
 const prefersReducedMotion = () =>
@@ -281,35 +313,54 @@ export function LandingPage() {
       <section id="pricing" className="lp-section lp-section-line">
         <div className="lp-wrap lp-section-inner">
           <div className="lp-section-head">
-            <span className="eyebrow">Tarif simple</span>
-            <h2 className="lp-h2">Un abonnement, tout inclus</h2>
+            <span className="eyebrow">Tarifs</span>
+            <h2 className="lp-h2">À l’événement, sans surprise</h2>
             <p className="lp-section-lede">
-              Un seul plan, sans surprise. Tous les modules, événements et membres illimités.
+              800 € HT par événement, 20 Go de stockage et Google Drive inclus. Remises au volume, pas en
+              retirant des fonctionnalités. Option Média Plus +200 € HT (100 Go).
             </p>
           </div>
-          <Reveal>
-            <div className="lp-price-card">
-              <span className="eyebrow">Plan unique</span>
-              <div className="lp-price-row">
-                <span className="lp-price-amount">800 €</span>
-                <span className="lp-price-period">/ an</span>
-              </div>
-              <p className="lp-price-note">par organisation · facturation annuelle</p>
-              <ul className="lp-price-list">
-                {PLAN_FEATURES.map((f) => (
-                  <li key={f}>
-                    <Check size={17} color="var(--color-success)" strokeWidth={2.4} /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link className="btn btn-primary lp-price-cta" to="/admin/abonnement">
-                {PRIMARY_CTA_LABEL} <ArrowRight size={18} />
-              </Link>
-              <a href={DEMO_MAILTO} className="lp-price-alt">
-                ou demander une démo
-              </a>
-            </div>
-          </Reveal>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '1.25rem',
+            }}
+          >
+            {LAUNCH_PLANS.map((plan) => (
+              <Reveal key={plan.id}>
+                <div
+                  className="lp-price-card"
+                  style={
+                    'highlight' in plan && plan.highlight
+                      ? { outline: '2px solid var(--color-accent, #5b5bd6)' }
+                      : undefined
+                  }
+                >
+                  <span className="eyebrow">{plan.name}</span>
+                  <div className="lp-price-row">
+                    <span className="lp-price-amount">{plan.price}</span>
+                    <span className="lp-price-period">{plan.period}</span>
+                  </div>
+                  <p className="lp-price-note">{plan.note}</p>
+                  <ul className="lp-price-list">
+                    {plan.features.map((f) => (
+                      <li key={f}>
+                        <Check size={17} color="var(--color-success)" strokeWidth={2.4} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link className="btn btn-primary lp-price-cta" to="/admin/abonnement">
+                    {PRIMARY_CTA_LABEL} <ArrowRight size={18} />
+                  </Link>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <p className="lp-section-lede" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+            Modules inclus : accréditations, conférences, badges, newsroom, billetterie, exports…{' '}
+            <a href={DEMO_MAILTO}>Demander une démo</a>
+          </p>
         </div>
       </section>
 

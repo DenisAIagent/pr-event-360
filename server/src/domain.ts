@@ -18,6 +18,21 @@ export interface Organization {
   name: string;
   slug: string;
   createdAt: string;
+  /** Plan commercial : event | pack3 | agency | legacy | comped | none */
+  commercialPlan: string;
+  /**
+   * Crédits événement restants.
+   * null = illimité (legacy / bootstrap / comped sans quota).
+   */
+  eventCreditsBalance: number | null;
+  eventCreditsExpireAt: string | null;
+  billingSource: string;
+}
+
+export interface EventStorage {
+  storageQuotaBytes: number;
+  mediaPlus: boolean;
+  creditConsumed: boolean;
 }
 
 export interface User {
@@ -180,6 +195,11 @@ export interface Journalist {
   consent: boolean;
   /** Hash argon2 du mot de passe d'espace (null = aucun mot de passe défini). Jamais sérialisé tel quel. */
   passwordHash: string | null;
+  /**
+   * Dernier changement de mot de passe (révocation des JWT jspace antérieurs).
+   * Null si jamais défini / colonne absente avant migration.
+   */
+  passwordChangedAt: Date | null;
   /** Présence enregistrée à l'entrée presse (Jour J), null si pas encore check-in. */
   checkedInAt: string | null;
   createdAt: string;

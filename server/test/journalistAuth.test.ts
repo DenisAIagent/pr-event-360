@@ -48,6 +48,7 @@ const accepted = (over: Record<string, unknown> = {}): Journalist =>
     publishDelayDays: 0,
     consent: true,
     passwordHash: null,
+    passwordChangedAt: null,
     checkedInAt: null,
     createdAt: 'now',
     ...over,

@@ -94,12 +94,17 @@ export async function insertEvent(
     startDate?: string | null;
     endDate?: string | null;
     languages: Lang[];
+    storageQuotaBytes?: number;
+    mediaPlus?: boolean;
   },
   db: Queryable = pool,
 ): Promise<Event> {
   const { rows } = await db.query<EventRow>(
-    `INSERT INTO events (organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::lang_code[])
+    `INSERT INTO events (
+       organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages,
+       storage_quota_bytes, media_plus, credit_consumed
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::lang_code[], $9, $10, true)
      RETURNING id, organization_id, owner_user_id, name, event_type, location, start_date, end_date, languages, accreditation_deadline, custom_domain, custom_domain_verified, subdomain_slug, created_at`,
     [
       input.organizationId,
@@ -110,6 +115,8 @@ export async function insertEvent(
       input.startDate ?? null,
       input.endDate ?? null,
       input.languages,
+      input.storageQuotaBytes ?? 20 * 1024 * 1024 * 1024,
+      input.mediaPlus ?? false,
     ],
   );
   return mapEvent(rows[0]!);

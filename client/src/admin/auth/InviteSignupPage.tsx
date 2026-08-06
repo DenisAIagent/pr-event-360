@@ -4,7 +4,8 @@ import { api, ApiError } from '../../lib/api';
 import { useAuth } from './AuthContext';
 import { GoogleButton } from './GoogleAuth';
 
-const MIN_LENGTH = 8;
+/** Aligné sur server/src/lib/passwordPolicy.ts (12 caractères minimum). */
+const MIN_LENGTH = 12;
 
 /**
  * Inscription sur INVITATION (accès offert par le super-admin, sans paiement).

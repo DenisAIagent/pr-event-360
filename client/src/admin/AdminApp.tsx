@@ -34,6 +34,7 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { ReviewsModerationPage } from './pages/ReviewsModerationPage';
 import { SecurityPage } from './pages/SecurityPage';
+import { BillingPage } from './pages/BillingPage';
 import { EventWizard } from './pages/EventWizard';
 import { PressConferencesTab } from './pages/PressConferencesTab';
 import './admin.css';
@@ -75,6 +76,7 @@ export function AdminApp() {
             <Route path="events/new" element={<EventWizard />} />
             <Route element={<AdminRoute />}>
               <Route path="team" element={<TeamPage />} />
+              <Route path="facturation" element={<BillingPage />} />
             </Route>
             <Route element={<PlatformRoute />}>
               <Route path="organizations" element={<OrganizationsPage />} />

@@ -45,8 +45,10 @@ export function TermsPage() {
         <div>
           <h2>3. Abonnement, prix et paiement</h2>
           <p>
-            Le Service est proposé par <strong>abonnement annuel</strong> au tarif indiqué sur la page
-            d'inscription (à ce jour <strong>800&nbsp;€&nbsp;HT&nbsp;/&nbsp;an</strong>), tous modules,
+            Le Service est proposé sous forme de <strong>licences à l'événement</strong> et d'offres pack /
+            agence, aux tarifs indiqués sur la page d'inscription (à ce jour{' '}
+            <strong>800&nbsp;€&nbsp;HT par événement</strong>, pack 3 à 2&nbsp;100&nbsp;€&nbsp;HT, offre Agence
+            6&nbsp;000&nbsp;€&nbsp;HT&nbsp;/&nbsp;an), tous modules,
             événements et membres d'équipe inclus. Le paiement est traité par notre prestataire{' '}
             <strong>Stripe</strong>&nbsp;; aucune donnée bancaire n'est stockée par l'Éditeur. La TVA
             applicable est ajoutée le cas échéant.

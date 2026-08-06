@@ -9,9 +9,12 @@ import {
 import { JSPACE_COOKIE, journalistSessionFromReq } from '../src/lib/journalistSession';
 
 describe('JWT session journaliste (typ:jspace)', () => {
-  it('signe et vérifie des claims jid/eid', () => {
+  it('signe et vérifie des claims jid/eid (+ iat pour révocation)', () => {
     const token = signJournalistSession({ jid: 'j-1', eid: 'e-1' });
-    expect(verifyJournalistSession(token)).toEqual({ jid: 'j-1', eid: 'e-1' });
+    const claims = verifyJournalistSession(token);
+    expect(claims.jid).toBe('j-1');
+    expect(claims.eid).toBe('e-1');
+    expect(typeof claims.iat).toBe('number');
   });
 
   it('rejette un JWT de session admin comme session journaliste', () => {
@@ -34,7 +37,9 @@ describe('JWT session journaliste (typ:jspace)', () => {
   it('lit les claims depuis le cookie de requête', () => {
     const token = signJournalistSession({ jid: 'j-9', eid: 'e-9' });
     const req = { cookies: { [JSPACE_COOKIE]: token } } as never;
-    expect(journalistSessionFromReq(req)).toEqual({ jid: 'j-9', eid: 'e-9' });
+    const claims = journalistSessionFromReq(req);
+    expect(claims?.jid).toBe('j-9');
+    expect(claims?.eid).toBe('e-9');
   });
 
   it('renvoie null si le cookie est absent ou invalide', () => {

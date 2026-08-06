@@ -69,10 +69,13 @@ const JSPACE_EXPIRES_IN = '30d';
 export interface JournalistSessionClaims {
   jid: string; // journalist id
   eid: string; // event id
+  iat?: number; // issued-at (révocation après changement de mot de passe)
 }
 
 export function signJournalistSession(claims: JournalistSessionClaims): string {
-  return jwt.sign({ ...claims, typ: 'jspace' }, env.JWT_SECRET, { expiresIn: JSPACE_EXPIRES_IN });
+  return jwt.sign({ jid: claims.jid, eid: claims.eid, typ: 'jspace' }, env.JWT_SECRET, {
+    expiresIn: JSPACE_EXPIRES_IN,
+  });
 }
 
 export function verifyJournalistSession(token: string): JournalistSessionClaims {
@@ -80,7 +83,7 @@ export function verifyJournalistSession(token: string): JournalistSessionClaims 
     typ?: string;
   };
   if (payload.typ !== 'jspace') throw new Error('Jeton de session journaliste invalide');
-  return { jid: payload.jid, eid: payload.eid };
+  return { jid: payload.jid, eid: payload.eid, iat: payload.iat };
 }
 
 // ── Session espace production : même modèle, typ:'pspace'. Porte l'id du contact

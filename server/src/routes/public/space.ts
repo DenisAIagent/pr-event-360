@@ -52,13 +52,17 @@ async function requireJournalistByAccessToken(token: string): Promise<Journalist
 /**
  * Résout le journaliste authentifié :
  * - segment `me` (ou absent) → cookie JWT session `pr360_jspace` (+ CSRF sur mutations) ;
- * - sinon bearer d'accès encore présent dans l'URL (rétrocompat / e2e).
- * Les droits (accréditation acceptée) sont toujours relus en base.
+ * - sinon bearer d'accès encore présent dans l'URL (rétrocompat / e2e) : rotation
+ *   immédiate du bearer pour rendre le lien single-use dès le premier hit API.
+ * Les droits (accréditation acceptée) et la révocation MDP sont toujours relus en base.
  */
 async function resolveSpaceJournalist(req: Request): Promise<Journalist> {
   const param = req.params.token;
   if (param && param !== 'me') {
-    return requireJournalistByAccessToken(param);
+    const journalist = await requireJournalistByAccessToken(param);
+    // Single-use : invalide le bearer d'URL dès le premier accès API (même hors POST /session).
+    await issueJournalistAccessToken(journalist.id);
+    return journalist;
   }
 
   const claims = journalistSessionFromReq(req);
@@ -71,6 +75,14 @@ async function resolveSpaceJournalist(req: Request): Promise<Journalist> {
   }
   if (journalist.accStatus !== 'acceptee') {
     throw AppError.forbidden('Accréditation non encore acceptée');
+  }
+  // Reset MDP → sessions JWT antérieures refusées (miroir requireAuth admin).
+  if (
+    journalist.passwordChangedAt &&
+    claims.iat &&
+    claims.iat * 1000 < journalist.passwordChangedAt.getTime()
+  ) {
+    throw AppError.unauthorized('Session expirée (mot de passe modifié)');
   }
   if (MUTATING.has(req.method) && !csrfValid(req)) {
     throw AppError.forbidden('Jeton CSRF manquant ou invalide');

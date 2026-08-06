@@ -229,11 +229,14 @@ Toutes les routes exigent `admin`.
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
-| GET | `/config` | public | activation et prix |
-| POST | `/checkout` | public, limité | crée Stripe Checkout |
+| GET | `/config` | public | catalogue multi-offres + `billingEnabled` |
+| POST | `/checkout` | public, limité | inscription Stripe (`planId`: event \| pack3 \| agency) |
+| GET | `/status` | auth | solde crédits événement de l’org |
+| POST | `/purchase` | admin org, limité | achat complémentaire (pack, extra, média plus) |
 | POST | `/api/stripe/webhook` | signature Stripe | traite paiement/abonnement |
 
-Le checkout email ne stocke pas le mot de passe envoyé avant preuve. Le webhook vérifie la session et le prix, est idempotent via `stripe_events`, puis lance l’activation du compte.
+Catalogue commercial : [commercial-offers.md](commercial-offers.md).  
+Le checkout email ne stocke pas le mot de passe avant preuve. Le webhook vérifie la session et le prix, est idempotent via `stripe_events`, crédite les licences événement, puis active le compte.
 
 ### `/api/admin/organizations`
 

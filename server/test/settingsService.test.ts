@@ -12,6 +12,7 @@ import {
   __resetSettingsCache,
   getNotifSettings,
   getSettingsStatus,
+  getStripeSettings,
 } from '../src/services/settingsService';
 
 beforeEach(() => {
@@ -51,5 +52,28 @@ describe('getSettingsStatus — masquage des secrets', () => {
     expect(apiKey.source).toBe('db');
     expect(apiKey.preview).toMatch(/1234$/); // 4 derniers caractères
     expect(apiKey.preview).not.toContain('xkeysib'); // début masqué
+  });
+
+  it('expose le groupe Stripe et marque les Price IDs optionnels', async () => {
+    vi.mocked(secretRepo.getAllSecrets).mockResolvedValue([]);
+    const { groups, items } = await getSettingsStatus();
+    expect(groups.some((g) => g.id === 'stripe')).toBe(true);
+    const priceEvent = items.find((i) => i.key === 'STRIPE_PRICE_EVENT');
+    expect(priceEvent?.optional).toBe(true);
+    const secret = items.find((i) => i.key === 'STRIPE_SECRET_KEY');
+    expect(secret?.secret).toBe(true);
+    expect(secret?.optional).toBeFalsy();
+  });
+});
+
+describe('getStripeSettings — résolution DB > env', () => {
+  it('une surcharge DB de Price ID prend le dessus', async () => {
+    vi.mocked(secretRepo.getAllSecrets).mockResolvedValue([
+      { key: 'STRIPE_PRICE_EVENT', valueEncrypted: encryptSecret('price_from_db_xxx'), updatedAt: 'now' },
+      { key: 'STRIPE_SECRET_KEY', valueEncrypted: encryptSecret('sk_test_from_db'), updatedAt: 'now' },
+    ]);
+    const s = await getStripeSettings();
+    expect(s.priceEvent).toBe('price_from_db_xxx');
+    expect(s.secretKey).toBe('sk_test_from_db');
   });
 });

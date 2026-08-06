@@ -26,10 +26,17 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
 
   // Stripe (inscription payante). Optionnels : sans eux, la facturation est dormante.
-  // Clés SECRÈTES → uniquement via l'environnement. STRIPE_PRICE_ID est public.
+  // Clés SECRÈTES → uniquement via l'environnement.
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  // Legacy / repli offre Événement (paiement unique 800 €).
   STRIPE_PRICE_ID: z.string().optional(),
+  // Price IDs par offre (Dashboard Stripe).
+  STRIPE_PRICE_EVENT: z.string().optional(),
+  STRIPE_PRICE_PACK3: z.string().optional(),
+  STRIPE_PRICE_AGENCY: z.string().optional(),
+  STRIPE_PRICE_AGENCY_EXTRA: z.string().optional(),
+  STRIPE_PRICE_MEDIA_PLUS: z.string().optional(),
 
   // Sentry (suivi des erreurs serveur). Optionnel : sans DSN, aucune télémétrie (dormant).
   SENTRY_DSN: z.string().optional(),

@@ -22,6 +22,7 @@ interface JournalistRow {
   publish_delay_days: number;
   consent: boolean;
   password_hash: string | null;
+  password_changed_at: Date | null;
   checked_in_at: string | null;
   created_at: string;
 }
@@ -44,13 +45,15 @@ const map = (r: JournalistRow): Journalist => ({
   publishDelayDays: r.publish_delay_days,
   consent: r.consent,
   passwordHash: r.password_hash,
+  passwordChangedAt: r.password_changed_at ?? null,
   checkedInAt: r.checked_in_at,
   createdAt: r.created_at,
 });
 
 const COLS = `id, event_id, first_name, last_name, email, phone, media,
   media_type_id, audience, prev_article, lang, accreditation_type, acc_status,
-  commit_publish, publish_delay_days, consent, password_hash, checked_in_at, created_at`;
+  commit_publish, publish_delay_days, consent, password_hash, password_changed_at,
+  checked_in_at, created_at`;
 
 export interface CreateJournalistInput {
   eventId: string;
@@ -215,7 +218,11 @@ export async function setJournalistPassword(
   passwordHash: string,
   db: Queryable = pool,
 ): Promise<void> {
-  await db.query('UPDATE journalists SET password_hash = $2 WHERE id = $1', [id, passwordHash]);
+  // password_changed_at révoque les JWT jspace émis avant ce timestamp.
+  await db.query(
+    'UPDATE journalists SET password_hash = $2, password_changed_at = now() WHERE id = $1',
+    [id, passwordHash],
+  );
 }
 
 export interface JournalistSearchHit {

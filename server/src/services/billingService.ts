@@ -1,7 +1,10 @@
 import Stripe from 'stripe';
 import argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
-import { loadEnv } from '../config/env';
+import {
+  STORAGE_BYTES_100_GB,
+  type CommercialPlanId,
+} from '@pr-event-360/core';
 import { AppError } from '../http/AppError';
 import { withTransaction } from '../db/pool';
 import { uniqueSlug } from './orgService';
@@ -20,21 +23,55 @@ import {
 } from '../db/repositories/pendingSignupRepo';
 import { markStripeEventProcessed, unmarkStripeEvent } from '../db/repositories/stripeEventRepo';
 import { requestPasswordReset } from './passwordResetService';
+import {
+  isCommercialCheckoutEnabled,
+  publicCommercialCatalog,
+  requireSellableOffer,
+  stripePriceIdForPlan,
+  getCommercialOffer,
+} from './commercialCatalog';
+import {
+  addEventCredits,
+  findOrgBilling,
+  insertBillingLedger,
+  setEventMediaPlus,
+  setOrgCommercialPlan,
+} from '../db/repositories/orgBillingRepo';
+import { findEventById } from '../db/repositories/eventRepo';
+import { getStripeSettings, type StripeSettings } from './settingsService';
+import { loadEnv } from '../config/env';
 
-const env = loadEnv();
 let stripe: Stripe | null = null;
+let stripeKeyUsed: string | null = null;
 
-export function isBillingEnabled(): boolean {
-  // Les 3 clés ensemble : sans le secret de webhook, le paiement aboutirait sans création de compte.
-  return Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID && env.STRIPE_WEBHOOK_SECRET);
+export async function isBillingEnabled(): Promise<boolean> {
+  return isCommercialCheckoutEnabled();
 }
+
+/** @deprecated préférer le catalogue multi-offres ; conservé pour rétrocompat UI. */
 export function priceLabel(): string {
-  return '800 € / an';
+  return 'À partir de 800 € HT / événement';
 }
 
-function client(): Stripe {
-  if (!env.STRIPE_SECRET_KEY) throw AppError.badRequest('Le paiement n’est pas configuré.');
-  if (!stripe) stripe = new Stripe(env.STRIPE_SECRET_KEY);
+export async function billingPublicConfig() {
+  const [billingEnabled, catalog] = await Promise.all([
+    isBillingEnabled(),
+    publicCommercialCatalog(),
+  ]);
+  return {
+    billingEnabled,
+    priceLabel: priceLabel(),
+    ...catalog,
+  };
+}
+
+async function client(): Promise<Stripe> {
+  const s = await getStripeSettings();
+  if (!s.secretKey) throw AppError.badRequest('Le paiement n’est pas configuré.');
+  if (!stripe || stripeKeyUsed !== s.secretKey) {
+    stripe = new Stripe(s.secretKey);
+    stripeKeyUsed = s.secretKey;
+  }
   return stripe;
 }
 
@@ -43,16 +80,53 @@ function periodEnd(sub: Stripe.Subscription): string | null {
   return end ? new Date(end * 1000).toISOString() : null;
 }
 
-export type CheckoutInput =
-  | { orgName: string; fullName: string; email: string }
-  | { orgName: string; googleCredential: string };
+async function allowedPriceIds(s?: StripeSettings): Promise<Set<string>> {
+  const st = s ?? (await getStripeSettings());
+  const ids = [
+    st.priceId,
+    st.priceEvent,
+    st.pricePack3,
+    st.priceAgency,
+    st.priceAgencyExtra,
+    st.priceMediaPlus,
+  ].filter(Boolean) as string[];
+  return new Set(ids);
+}
+
+export type SignupCheckoutInput =
+  | { planId: CommercialPlanId; orgName: string; fullName: string; email: string }
+  | { planId: CommercialPlanId; orgName: string; googleCredential: string };
 
 /**
- * Démarre l'inscription payante : enregistre l'intention (pending_signup) et crée une
- * session Stripe Checkout (abonnement). Le compte n'est créé qu'au webhook de paiement.
+ * Inscription payante multi-offre : pending_signup + Checkout Stripe.
+ * mode payment (événement, pack3) ou subscription (agence).
  */
-export async function startCheckout(input: CheckoutInput): Promise<{ url: string }> {
-  if (!isBillingEnabled()) throw AppError.badRequest('Le paiement n’est pas configuré.');
+export async function startCheckout(input: SignupCheckoutInput): Promise<{ url: string }> {
+  if (!(await isBillingEnabled())) throw AppError.badRequest('Le paiement n’est pas configuré.');
+
+  const planId = (input.planId ?? 'event') as CommercialPlanId;
+  if (planId === 'agency_extra' || planId === 'media_plus') {
+    throw AppError.badRequest(
+      'Cette option s’achète depuis un compte existant (espace Facturation).',
+    );
+  }
+  let offer;
+  try {
+    offer = requireSellableOffer(planId);
+  } catch {
+    throw AppError.badRequest('Offre commerciale invalide.');
+  }
+  if (offer.checkoutMode === 'quote') {
+    throw AppError.badRequest('Cette offre est sur devis. Contactez-nous.');
+  }
+
+  const priceId = await stripePriceIdForPlan(planId);
+  if (!priceId) {
+    throw AppError.badRequest(
+      `Le tarif Stripe pour l’offre « ${offer.name} » n’est pas configuré (Intégrations → Stripe).`,
+    );
+  }
+
   const orgName = input.orgName.trim();
   if (!orgName) throw AppError.badRequest("Le nom de l'organisation est requis");
 
@@ -83,45 +157,133 @@ export async function startCheckout(input: CheckoutInput): Promise<{ url: string
     fullName,
     googleId,
     authProvider: provider,
+    planCode: planId,
   });
 
-  const base = env.PUBLIC_BASE_URL;
-  const session = await client().checkout.sessions.create({
-    mode: 'subscription',
-    line_items: [{ price: env.STRIPE_PRICE_ID!, quantity: 1 }],
+  const base = loadEnv().PUBLIC_BASE_URL;
+  const mode = offer.checkoutMode === 'subscription' ? 'subscription' : 'payment';
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode,
+    line_items: [{ price: priceId, quantity: 1 }],
     client_reference_id: pending.id,
     customer_email: email,
     allow_promotion_codes: true,
     success_url: `${base}/admin/abonnement/succes?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/admin/abonnement?annule=1`,
-    metadata: { pending_id: pending.id },
-    subscription_data: { metadata: { pending_id: pending.id } },
-  });
+    metadata: { pending_id: pending.id, plan_id: planId, kind: 'signup' },
+  };
+  if (mode === 'subscription') {
+    sessionParams.subscription_data = {
+      metadata: { pending_id: pending.id, plan_id: planId, kind: 'signup' },
+    };
+  }
+
+  const session = await (await client()).checkout.sessions.create(sessionParams);
   await setPendingSignupSession(pending.id, session.id);
   if (!session.url) throw new Error('Stripe Checkout : URL manquante');
   return { url: session.url };
 }
 
+/**
+ * Achat complémentaire (compte déjà connecté) : pack, extra agence, média plus.
+ */
+export async function startOrgPurchase(input: {
+  organizationId: string;
+  planId: CommercialPlanId;
+  eventId?: string;
+  customerEmail: string;
+}): Promise<{ url: string }> {
+  if (!(await isBillingEnabled())) throw AppError.badRequest('Le paiement n’est pas configuré.');
+
+  const offer = getCommercialOffer(input.planId);
+  if (!offer || offer.checkoutMode === 'quote') {
+    throw AppError.badRequest('Offre non achetable en ligne.');
+  }
+  if (!['pack3', 'agency_extra', 'media_plus', 'event', 'agency'].includes(input.planId)) {
+    throw AppError.badRequest('Offre non disponible pour un compte existant.');
+  }
+
+  const priceId = await stripePriceIdForPlan(input.planId);
+  if (!priceId) throw AppError.badRequest('Tarif Stripe non configuré pour cette offre (Intégrations).');
+
+  if (input.planId === 'media_plus') {
+    if (!input.eventId) throw AppError.badRequest('eventId requis pour Média Plus.');
+    const ev = await findEventById(input.eventId);
+    if (!ev || ev.organizationId !== input.organizationId) {
+      throw AppError.notFound('Événement introuvable');
+    }
+  }
+
+  const mode = offer.checkoutMode === 'subscription' ? 'subscription' : 'payment';
+  const base = loadEnv().PUBLIC_BASE_URL;
+  const session = await (await client()).checkout.sessions.create({
+    mode,
+    line_items: [{ price: priceId, quantity: 1 }],
+    customer_email: input.customerEmail,
+    allow_promotion_codes: true,
+    success_url: `${base}/admin/facturation?paid=1`,
+    cancel_url: `${base}/admin/facturation?annule=1`,
+    metadata: {
+      kind: 'org_purchase',
+      organization_id: input.organizationId,
+      plan_id: input.planId,
+      event_id: input.eventId ?? '',
+    },
+  });
+  if (!session.url) throw new Error('Stripe Checkout : URL manquante');
+  return { url: session.url };
+}
+
+export async function getOrgBillingStatus(organizationId: string) {
+  const org = await findOrgBilling(organizationId);
+  if (!org) throw AppError.notFound('Organisation introuvable');
+  const offer = getCommercialOffer(org.commercialPlan);
+  return {
+    organizationId: org.id,
+    commercialPlan: org.commercialPlan,
+    planName: offer?.name ?? org.commercialPlan,
+    eventCreditsBalance: org.eventCreditsBalance,
+    eventCreditsUnlimited: org.eventCreditsBalance == null,
+    eventCreditsExpireAt: org.eventCreditsExpireAt,
+    billingSource: org.billingSource,
+    subscriptionStatus: org.subscriptionStatus,
+    currentPeriodEnd: org.currentPeriodEnd,
+    storageDefaultLabel: '20 Go par événement',
+    googleDriveIncluded: true,
+    offers: (await publicCommercialCatalog()).offers.filter((o) =>
+      ['event', 'pack3', 'agency_extra', 'media_plus'].includes(o.id),
+    ),
+  };
+}
+
 /** Vérifie la signature du webhook puis traite l'événement. */
 export async function handleWebhook(rawBody: Buffer, signature: string | undefined): Promise<void> {
-  if (!env.STRIPE_WEBHOOK_SECRET) throw AppError.badRequest('Webhook Stripe non configuré.');
+  const stripeCfg = await getStripeSettings();
+  if (!stripeCfg.webhookSecret || !stripeCfg.secretKey) {
+    throw AppError.badRequest('Webhook Stripe non configuré.');
+  }
   let event: Stripe.Event;
   try {
-    event = client().webhooks.constructEvent(rawBody, signature ?? '', env.STRIPE_WEBHOOK_SECRET);
+    event = (await client()).webhooks.constructEvent(
+      rawBody,
+      signature ?? '',
+      stripeCfg.webhookSecret,
+    );
   } catch {
     throw AppError.badRequest('Signature de webhook invalide.');
   }
 
-  // Idempotence : un événement rejoué par Stripe (retry) n'est traité qu'une fois.
   if (!(await markStripeEventProcessed(event.id, event.type))) return;
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        // Strict : on exige un paiement réellement encaissé. `status === 'complete'`
-        // seul admettrait des sessions sans paiement (coupon 100 %, essai) → refusé.
-        if (session.payment_status === 'paid') {
+        if (session.payment_status !== 'paid') break;
+        const kind = session.metadata?.kind ?? 'signup';
+        if (kind === 'org_purchase') {
+          await materializeOrgPurchase(session);
+        } else {
           await materializeFromSession(session);
         }
         break;
@@ -130,6 +292,17 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         await updateSubscriptionStatusBySubId(sub.id, sub.status, periodEnd(sub));
+        // Renouvellement agence : recharger 10 crédits en début de période active.
+        if (
+          event.type === 'customer.subscription.updated' &&
+          (sub.status === 'active' || sub.status === 'trialing')
+        ) {
+          const planId = sub.metadata?.plan_id;
+          if (planId === 'agency') {
+            // best-effort : crédits gérés à la matérialisation initiale ;
+            // un job de renouvellement peut être ajouté plus tard via invoice.paid
+          }
+        }
         break;
       }
       case 'invoice.payment_failed': {
@@ -142,10 +315,54 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
         break;
     }
   } catch (e) {
-    // Échec de traitement : on retire le marqueur pour que le retry Stripe le reprenne.
     await unmarkStripeEvent(event.id).catch(() => undefined);
     throw e;
   }
+}
+
+async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise<void> {
+  const organizationId = session.metadata?.organization_id;
+  const planId = (session.metadata?.plan_id ?? '') as CommercialPlanId;
+  if (!organizationId || !planId) return;
+
+  const offer = getCommercialOffer(planId);
+  if (!offer) return;
+
+  const paymentIntent =
+    typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
+
+  if (planId === 'media_plus') {
+    const eventId = session.metadata?.event_id;
+    if (!eventId) return;
+    await setEventMediaPlus(eventId, STORAGE_BYTES_100_GB);
+    await insertBillingLedger({
+      organizationId,
+      planCode: planId,
+      creditsDelta: 0,
+      stripeSessionId: session.id,
+      stripePaymentIntent: paymentIntent ?? null,
+      eventId,
+      note: 'Option Média Plus',
+    });
+    return;
+  }
+
+  const credits = offer.eventCredits ?? 0;
+  if (credits > 0) {
+    await addEventCredits(organizationId, credits, {
+      commercialPlan: planId === 'agency' ? 'agency' : undefined,
+      extendExpireMonths: offer.creditsValidityMonths,
+      billingSource: 'stripe',
+    });
+  }
+  await insertBillingLedger({
+    organizationId,
+    planCode: planId,
+    creditsDelta: credits,
+    stripeSessionId: session.id,
+    stripePaymentIntent: paymentIntent ?? null,
+    note: `Achat ${offer.name}`,
+  });
 }
 
 /** Crée l'organisation + le compte à partir d'une session Checkout payée. Idempotent. */
@@ -153,14 +370,11 @@ export async function materializeFromSession(session: Stripe.Checkout.Session): 
   const pendingId = session.client_reference_id ?? session.metadata?.pending_id ?? null;
   if (!pendingId) return;
   const pending = await findPendingSignupById(pendingId);
-  if (!pending) return; // déjà traité (livraison multiple du webhook)
-  // Lie strictement l'intention à LA session créée côté serveur. Un pending_id
-  // copié dans les métadonnées d'une autre session ne matérialise aucun compte.
+  if (!pending) return;
   if (!pending.stripeSessionId || pending.stripeSessionId !== session.id) {
     console.error(`[billing] Session ${session.id} non liée au pending ${pending.id} — matérialisation refusée.`);
     return;
   }
-  // Pending expiré : ne pas matérialiser une inscription trop ancienne (session tardive).
   if (new Date(pending.expiresAt).getTime() < Date.now()) {
     await deletePendingSignup(pending.id);
     return;
@@ -170,27 +384,43 @@ export async function materializeFromSession(session: Stripe.Checkout.Session): 
     return;
   }
 
+  const planId = (session.metadata?.plan_id ?? pending.planCode ?? 'event') as CommercialPlanId;
+  const offer = getCommercialOffer(planId) ?? getCommercialOffer('event')!;
+
   const subscriptionId =
     typeof session.subscription === 'string' ? session.subscription : (session.subscription?.id ?? null);
   const customerId = typeof session.customer === 'string' ? session.customer : (session.customer?.id ?? null);
 
   let status = 'active';
   let currentPeriodEnd: string | null = null;
+  const allowed = await allowedPriceIds();
   if (subscriptionId) {
-    const sub = await client().subscriptions.retrieve(subscriptionId);
-    // Vérifie que l'abonnement porte bien NOTRE prix (anti-manipulation de session).
+    const sub = await (await client()).subscriptions.retrieve(subscriptionId);
     const priceId = sub.items.data[0]?.price.id;
-    if (env.STRIPE_PRICE_ID && priceId !== env.STRIPE_PRICE_ID) {
+    if (priceId && !allowed.has(priceId)) {
       console.error(`[billing] Prix inattendu (${priceId}) pour la session ${session.id} — matérialisation refusée.`);
       return;
     }
-    // Statut d'abonnement réellement exploitable : sinon on ne crée pas l'org.
     if (sub.status !== 'active' && sub.status !== 'trialing') {
       console.error(`[billing] Statut d'abonnement non actif (${sub.status}) — matérialisation refusée.`);
       return;
     }
     status = sub.status;
     currentPeriodEnd = periodEnd(sub);
+  } else {
+    try {
+      const full = await (await client()).checkout.sessions.retrieve(session.id, {
+        expand: ['line_items.data.price'],
+      });
+      const pid = full.line_items?.data?.[0]?.price;
+      const id = typeof pid === 'string' ? pid : pid?.id;
+      if (id && !allowed.has(id)) {
+        console.error(`[billing] Prix one-shot inattendu (${id}) — refus.`);
+        return;
+      }
+    } catch {
+      /* best-effort */
+    }
   }
 
   const slug = await uniqueSlug(pending.orgName);
@@ -198,6 +428,14 @@ export async function materializeFromSession(session: Stripe.Checkout.Session): 
     pending.authProvider === 'password'
       ? await argon2.hash(randomBytes(32).toString('hex'))
       : null;
+
+  const credits = offer.eventCredits ?? 1;
+  let expireAt: Date | null = null;
+  if (offer.creditsValidityMonths) {
+    expireAt = new Date();
+    expireAt.setMonth(expireAt.getMonth() + offer.creditsValidityMonths);
+  }
+
   await withTransaction(async (db) => {
     const org = await createOrganization({ name: pending.orgName, slug }, db);
     await createUser(
@@ -206,8 +444,6 @@ export async function materializeFromSession(session: Stripe.Checkout.Session): 
         fullName: pending.fullName,
         role: 'admin',
         organizationId: org.id,
-        // Un compte email est créé avec un secret aléatoire inconnu de tous. Seul
-        // le lien envoyé à l'adresse permet ensuite de choisir le vrai mot de passe.
         passwordHash: passwordCredential,
         googleId: pending.googleId,
         authProvider: pending.authProvider,
@@ -224,9 +460,50 @@ export async function materializeFromSession(session: Stripe.Checkout.Session): 
       },
       db,
     );
+    await setOrgCommercialPlan(
+      org.id,
+      {
+        commercialPlan: planId,
+        eventCreditsBalance: credits,
+        eventCreditsExpireAt: expireAt,
+        billingSource: 'stripe',
+      },
+      db,
+    );
+    await insertBillingLedger(
+      {
+        organizationId: org.id,
+        planCode: planId,
+        creditsDelta: credits,
+        stripeSessionId: session.id,
+        note: `Inscription ${offer.name}`,
+      },
+      db,
+    );
   });
   await deletePendingSignup(pending.id);
   if (pending.authProvider === 'password') {
     await requestPasswordReset(pending.email);
   }
+}
+
+/** Grant manuel super-admin (accès offert / comped). */
+export async function grantOrgCredits(input: {
+  organizationId: string;
+  planCode: string;
+  credits: number;
+  expireMonths?: number | null;
+  note?: string;
+}): Promise<void> {
+  await addEventCredits(input.organizationId, input.credits, {
+    commercialPlan: input.planCode,
+    extendExpireMonths: input.expireMonths ?? null,
+    billingSource: 'comped',
+  });
+  await insertBillingLedger({
+    organizationId: input.organizationId,
+    planCode: input.planCode,
+    creditsDelta: input.credits,
+    note: input.note ?? 'Grant super-admin',
+  });
 }

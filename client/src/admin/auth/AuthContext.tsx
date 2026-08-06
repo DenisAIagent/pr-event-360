@@ -3,11 +3,6 @@ import { api, ApiError } from '../../lib/api';
 
 export type UserRole = 'admin' | 'attache' | 'assistant';
 
-/** Miroir de server/src/lib/mfaPolicy.ts : MFA obligatoire pour admin + super-admin. */
-function requiresMfa(user: { role: UserRole; isPlatformAdmin: boolean } | null): boolean {
-  return !!user && (user.role === 'admin' || user.isPlatformAdmin);
-}
-
 interface AuthUser {
   id: string;
   email: string;
@@ -27,6 +22,11 @@ type GoogleOutcome = { needsSignup: true } | { mfaRequired: true; challenge: str
 
 interface AuthValue {
   user: AuthUser | null;
+  /**
+   * false tant que GET /auth/me n'a pas tranché (cookie valide ou non).
+   * Évite d'afficher le back-office sur un simple localStorage forgé.
+   */
+  sessionChecked: boolean;
   /** Compte à privilèges dont la MFA obligatoire n'est pas encore activée : accès bloqué hors enrôlement. */
   mfaSetupRequired: boolean;
   login: (email: string, password: string) => Promise<LoginOutcome>;
@@ -41,6 +41,7 @@ interface AuthValue {
 
 // On ne persiste QUE le profil (non sensible) pour l'affichage instantané du rail.
 // Le jeton de session vit dans un cookie httpOnly, jamais accessible au JavaScript.
+// Au boot, /admin/auth/me revalide le cookie et efface le storage si invalide.
 const STORAGE_KEY = 'pr360.user';
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -53,29 +54,54 @@ function readStored(): AuthUser | null {
   }
 }
 
+function toAuthUser(raw: AuthUser & { id?: string }): AuthUser {
+  return {
+    id: raw.id,
+    email: raw.email,
+    fullName: raw.fullName,
+    role: raw.role,
+    organizationId: raw.organizationId,
+    organizationName: raw.organizationName,
+    isPlatformAdmin: raw.isPlatformAdmin,
+    subscriptionStatus: raw.subscriptionStatus,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readStored());
   const [mfaSetupRequired, setMfaSetupRequired] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const persist = useCallback((u: AuthUser) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    setUser(u);
+    const normalized = toAuthUser(u);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    setUser(normalized);
   }, []);
 
-  // Au rechargement : l'utilisateur vient du localStorage (pas de flag MFA). Pour un
-  // compte à privilèges, on vérifie l'état MFA côté serveur (endpoint autorisé même
-  // en session « MFA en attente ») afin de forcer l'enrôlement si nécessaire.
+  // Hydratation obligatoire : le cookie httpOnly est la source de vérité.
+  // Sans session serveur, on purge le localStorage (anti cosplay d'UI admin).
   useEffect(() => {
-    if (!requiresMfa(user)) return;
     let cancelled = false;
-    api
-      .get<{ enabled: boolean }>('/admin/auth/mfa/status')
-      .then((s) => { if (!cancelled) setMfaSetupRequired(!s.enabled); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-    // Uniquement au changement d'identité (id) — évite une reboucle sur chaque render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+    (async () => {
+      try {
+        const me = await api.get<{ user: AuthUser; mfaSetupRequired?: boolean }>('/admin/auth/me');
+        if (cancelled) return;
+        persist(me.user);
+        setMfaSetupRequired(Boolean(me.mfaSetupRequired));
+      } catch {
+        if (!cancelled) {
+          localStorage.removeItem(STORAGE_KEY);
+          setUser(null);
+          setMfaSetupRequired(false);
+        }
+      } finally {
+        if (!cancelled) setSessionChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [persist]);
 
   const login = useCallback(
     async (email: string, password: string): Promise<LoginOutcome> => {
@@ -85,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if ('mfaRequired' in result) return { mfaRequired: true, challenge: result.challenge };
       setMfaSetupRequired(Boolean(result.mfaSetupRequired));
       persist(result.user);
+      setSessionChecked(true);
       return undefined;
     },
     [persist],
@@ -93,8 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const completeMfa = useCallback(
     async (challenge: string, code: string) => {
       const result = await api.post<{ user: AuthUser }>('/admin/auth/login/mfa', { challenge, code });
-      setMfaSetupRequired(false); // MFA validée → active par définition
+      setMfaSetupRequired(false);
       persist(result.user);
+      setSessionChecked(true);
     },
     [persist],
   );
@@ -110,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if ('mfaRequired' in result) return { mfaRequired: true, challenge: result.challenge };
       setMfaSetupRequired(Boolean(result.mfaSetupRequired));
       persist(result.user);
+      setSessionChecked(true);
       return undefined;
     },
     [persist],
@@ -119,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (body: { token: string; orgName: string; fullName?: string; password?: string; googleCredential?: string }) => {
       const result = await api.post<{ user: AuthUser }>('/admin/auth/org-invite/accept', body);
       persist(result.user);
+      setSessionChecked(true);
     },
     [persist],
   );
@@ -134,16 +164,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const onMfaEnabled = useCallback(() => setMfaSetupRequired(false), []);
 
   const logout = useCallback(() => {
-    // Efface le cookie de session côté serveur (best-effort), puis l'état local.
     void api.post('/admin/auth/logout').catch(() => {});
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
     setMfaSetupRequired(false);
+    setSessionChecked(true);
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ user, mfaSetupRequired, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, onMfaEnabled, logout }),
-    [user, mfaSetupRequired, login, completeMfa, loginWithGoogle, acceptOrgInvite, switchOrg, onMfaEnabled, logout],
+    () => ({
+      user,
+      sessionChecked,
+      mfaSetupRequired,
+      login,
+      completeMfa,
+      loginWithGoogle,
+      acceptOrgInvite,
+      switchOrg,
+      onMfaEnabled,
+      logout,
+    }),
+    [
+      user,
+      sessionChecked,
+      mfaSetupRequired,
+      login,
+      completeMfa,
+      loginWithGoogle,
+      acceptOrgInvite,
+      switchOrg,
+      onMfaEnabled,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -10,6 +10,7 @@ export interface PendingSignup {
   authProvider: 'password' | 'google';
   stripeSessionId: string | null;
   expiresAt: string;
+  planCode: string;
 }
 
 interface Row {
@@ -21,9 +22,11 @@ interface Row {
   auth_provider: 'password' | 'google';
   stripe_session_id: string | null;
   expires_at: string;
+  plan_code: string;
 }
 
-const COLS = 'id, email, org_name, full_name, google_id, auth_provider, stripe_session_id, expires_at';
+const COLS =
+  'id, email, org_name, full_name, google_id, auth_provider, stripe_session_id, expires_at, plan_code';
 
 const map = (r: Row): PendingSignup => ({
   id: r.id,
@@ -34,6 +37,7 @@ const map = (r: Row): PendingSignup => ({
   authProvider: r.auth_provider,
   stripeSessionId: r.stripe_session_id,
   expiresAt: r.expires_at,
+  planCode: r.plan_code ?? 'event',
 });
 
 const TTL_MS = 60 * 60 * 1000; // 1 h pour finaliser le paiement
@@ -45,6 +49,7 @@ export async function createPendingSignup(
     fullName: string;
     googleId?: string | null;
     authProvider: 'password' | 'google';
+    planCode?: string;
   },
   db: Queryable = pool,
 ): Promise<PendingSignup> {
@@ -52,8 +57,8 @@ export async function createPendingSignup(
   // Plusieurs checkouts peuvent coexister pour un même email. Une nouvelle
   // tentative ne doit jamais invalider une session Stripe déjà payée/en cours.
   const { rows } = await db.query<Row>(
-    `INSERT INTO pending_signups (email, org_name, full_name, google_id, auth_provider, expires_at)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO pending_signups (email, org_name, full_name, google_id, auth_provider, expires_at, plan_code)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING ${COLS}`,
     [
       input.email,
@@ -62,6 +67,7 @@ export async function createPendingSignup(
       input.googleId ?? null,
       input.authProvider,
       expiresAt,
+      input.planCode ?? 'event',
     ],
   );
   return map(rows[0]!);

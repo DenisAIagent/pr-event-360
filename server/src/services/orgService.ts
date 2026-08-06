@@ -4,6 +4,7 @@ import { AppError } from '../http/AppError';
 import { signToken } from '../lib/jwt';
 import { createOrganization, findOrganizationBySlug } from '../db/repositories/organizationRepo';
 import { createUser, findUserByEmail } from '../db/repositories/userRepo';
+import { setOrgCommercialPlan } from '../db/repositories/orgBillingRepo';
 import type { User } from '../domain';
 
 function slugify(name: string): string {
@@ -51,6 +52,17 @@ export async function createOrgAndAdmin(input: {
 
   const user = await withTransaction(async (db) => {
     const org = await createOrganization({ name: orgName, slug }, db);
+    // Invitation super-admin / onboarding offert : accès complet sans quota (comped).
+    await setOrgCommercialPlan(
+      org.id,
+      {
+        commercialPlan: 'comped',
+        eventCreditsBalance: null,
+        eventCreditsExpireAt: null,
+        billingSource: 'comped',
+      },
+      db,
+    );
     return createUser(
       {
         email,

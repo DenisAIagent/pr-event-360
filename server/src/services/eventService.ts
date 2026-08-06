@@ -21,6 +21,11 @@ import {
   listTemplates,
 } from '../db/repositories/eventRepo';
 import { DEFAULT_TEMPLATE_TEXT } from './notifications/templates';
+import {
+  insertBillingLedger,
+  tryConsumeEventCredit,
+} from '../db/repositories/orgBillingRepo';
+import { STORAGE_BYTES_20_GB } from '@pr-event-360/core';
 
 /** Identité minimale d'un utilisateur authentifié pour les contrôles d'accès. */
 export interface AccessActor {
@@ -80,6 +85,14 @@ export interface CreateEventInput {
  */
 export async function createEvent(input: CreateEventInput): Promise<Event> {
   return withTransaction(async (db) => {
+    // Licence commerciale : 1 crédit = 1 événement (null balance = legacy illimité).
+    const credit = await tryConsumeEventCredit(input.organizationId, db);
+    if (!credit.ok) {
+      throw AppError.paymentRequired(credit.reason ?? 'Crédit événement requis', {
+        code: 'EVENT_CREDIT_REQUIRED',
+      });
+    }
+
     const event = await insertEvent(
       {
         organizationId: input.organizationId,
@@ -90,6 +103,18 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
         startDate: input.startDate,
         endDate: input.endDate,
         languages: input.languages,
+        storageQuotaBytes: STORAGE_BYTES_20_GB,
+      },
+      db,
+    );
+
+    await insertBillingLedger(
+      {
+        organizationId: input.organizationId,
+        planCode: 'event_consume',
+        creditsDelta: -1,
+        eventId: event.id,
+        note: 'Consommation licence à la création d’événement',
       },
       db,
     );

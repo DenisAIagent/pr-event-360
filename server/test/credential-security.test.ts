@@ -34,6 +34,8 @@ describe('credentials sensibles', () => {
       publishDelayDays: 8,
       consent: true,
       passwordHash: 'argon2-secret-hash',
+      passwordChangedAt: null,
+      checkedInAt: null,
       createdAt: 'now',
     });
     expect(dto).not.toHaveProperty('passwordHash');

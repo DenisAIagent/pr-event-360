@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 
-const MIN_LENGTH = 8;
+/** Aligné sur server/src/lib/passwordPolicy.ts (12 caractères minimum). */
+const MIN_LENGTH = 12;
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Administrateur',
   attache: 'Attaché de presse',

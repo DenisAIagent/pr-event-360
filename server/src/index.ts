@@ -17,8 +17,10 @@ async function main(): Promise<void> {
     );
   }
   if (env.NODE_ENV === 'production' && !env.REDIS_URL) {
+    // Ne pas tuer le boot sans Redis (config ops) : le rate-limit retombe en mémoire
+    // locale (bruteforce ×N). Forcer l'échec avec REQUIRE_REDIS=true en multi-instance.
     console.error(
-      '[security] REDIS_URL absent en production : les rate-limits sont locaux à chaque instance (bruteforce ×N). Définissez REDIS_URL ou REQUIRE_REDIS=true.',
+      '[security] REDIS_URL absent en production : rate-limits locaux (bruteforce ×N). Définissez REDIS_URL et REQUIRE_REDIS=true.',
     );
   }
   if (env.NODE_ENV === 'production' && !env.METRICS_TOKEN) {
