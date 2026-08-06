@@ -1,0 +1,284 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "Manrope Variable",
+      "fontSize": "54.4px",
+      "fontWeight": "300",
+      "lineHeight": "59.84px",
+      "letterSpacing": "-1.088px",
+      "color": "#07142F",
+      "sampleText": "Pilotez vos relations presse événementielles à 360°"
+    },
+    {
+      "role": "heading",
+      "fontFamily": "Manrope Variable",
+      "fontSize": "40px",
+      "fontWeight": "300",
+      "lineHeight": "48px",
+      "letterSpacing": "-0.8px",
+      "color": "#FFFFFF",
+      "sampleText": "Les RP événementielles, parfaitement orchestrées."
+    },
+    {
+      "role": "heading-2",
+      "fontFamily": "Manrope Variable",
+      "fontSize": "38.4px",
+      "fontWeight": "400",
+      "lineHeight": "46.08px",
+      "letterSpacing": "-0.576px",
+      "color": "#07142F",
+      "sampleText": "De l'invitation à la retombée média"
+    },
+    {
+      "role": "body",
+      "fontFamily": "Inter Variable",
+      "fontSize": "18.4px",
+      "fontWeight": "400",
+      "lineHeight": "28.52px",
+      "letterSpacing": "normal",
+      "color": "#4A5568",
+      "sampleText": "Centralisez vos contacts médias, invitations, relances, accr"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "Manrope Variable",
+      "fontSize": "17.6px",
+      "fontWeight": "600",
+      "lineHeight": "21.12px",
+      "letterSpacing": "-0.264px",
+      "color": "#07142F",
+      "sampleText": "Gestion des contacts presse"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Inter Variable",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "lineHeight": "26.35px",
+      "letterSpacing": "normal",
+      "color": "#0F7CB0",
+      "sampleText": ""
+    },
+    {
+      "role": "body-small",
+      "fontFamily": "Inter Variable",
+      "fontSize": "12.8px",
+      "fontWeight": "400",
+      "lineHeight": "19.84px",
+      "letterSpacing": "normal",
+      "color": "#6B7686",
+      "sampleText": "Aperçu du tableau de bord — événement et chiffres de démonst"
+    },
+    {
+      "role": "label",
+      "fontFamily": "Inter Variable",
+      "fontSize": "12.48px",
+      "fontWeight": "400",
+      "lineHeight": "19.344px",
+      "letterSpacing": "normal",
+      "color": "#6B7686",
+      "sampleText": "Invités"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      2,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      16,
+      17,
+      20,
+      21,
+      24,
+      26,
+      30,
+      40
+    ],
+    "baseUnit": 8
+  },
+  "radius": [
+    "8px",
+    "16px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(21, 152, 211, 0.28) 0px 6px 18px 0px",
+      "count": 6
+    },
+    {
+      "value": "rgba(7, 20, 47, 0.1) 0px 12px 32px 0px",
+      "count": 4
+    }
+  ],
+  "buttons": [
+    {
+      "label": "Demander un accès",
+      "background": "#1598D3",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "11.2px 20.8px",
+      "borderRadius": "8px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "boxShadow": "rgba(21, 152, 211, 0.28) 0px 6px 18px 0px",
+      "fontSize": "17px",
+      "fontWeight": "600",
+      "height": "50.7188px"
+    },
+    {
+      "label": "Demander un accès  Demander une démo",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(7, 20, 47)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "50.7188px"
+    },
+    {
+      "label": "Demander une démo",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#4A5568",
+      "padding": "11.2px 20.8px",
+      "borderRadius": "8px",
+      "border": "1px solid rgb(230, 236, 242)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "600",
+      "height": "50.7188px"
+    },
+    {
+      "label": "Les RP événementielles, parfaitement orc",
+      "background": "#07142F",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(7, 20, 47)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "353.25px"
+    },
+    {
+      "label": "button",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "0px",
+      "borderRadius": "50%",
+      "border": "1px solid rgba(21, 152, 211, 0.25)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "360px"
+    },
+    {
+      "label": "button",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "0px",
+      "borderRadius": "50%",
+      "border": "1px solid rgba(21, 152, 211, 0.18)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "240px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "#FFFFFF",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "24px",
+      "borderRadius": "16px",
+      "border": "1px solid rgb(230, 236, 242)",
+      "boxShadow": "rgba(7, 20, 47, 0.1) 0px 12px 32px 0px",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "279.109px"
+    },
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#07142F",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(7, 20, 47)",
+      "boxShadow": "none",
+      "fontSize": "17px",
+      "fontWeight": "400",
+      "height": "384.469px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "#FFFFFF",
+    "backgroundImage": "",
+    "backdropFilter": "blur(10px)",
+    "color": "#07142F",
+    "padding": "0px",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "fontSize": "17px",
+    "fontWeight": "400",
+    "height": "71px"
+  },
+  "chips": [
+    {
+      "label": "En cours",
+      "background": "#EAF7FC",
+      "color": "#0F7CB0",
+      "padding": "3px 10px",
+      "borderRadius": "999px",
+      "border": "0px none rgb(15, 124, 176)",
+      "boxShadow": "none",
+      "fontSize": "11.2px",
+      "fontWeight": "600",
+      "height": "23.3594px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [
+    {
+      "value": "radial-gradient(120% 80% at 100% 0%, rgb(234, 247, 252) 0%, rgba(0, 0, 0, 0) 45%), none",
+      "area": 5964660
+    },
+    {
+      "value": "linear-gradient(rgb(246, 248, 251) 0%, rgb(255, 255, 255) 100%)",
+      "area": 1081350
+    }
+  ],
+  "glass": [
+    {
+      "backdropFilter": "blur(10px)",
+      "background": "rgba(255, 255, 255, 0.85)",
+      "border": "",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 136320
+    }
+  ]
+}

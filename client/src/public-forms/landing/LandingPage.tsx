@@ -21,6 +21,7 @@ import './landing.css';
 import { usePageTitle } from '../../lib/usePageTitle';
 import { DEMO_SUBJECT, PRIMARY_CTA_LABEL, contactMailto } from '../../lib/contact';
 import { LandingHeader } from './LandingHeader';
+import { VideoShowcase } from './VideoShowcase';
 
 const DEMO_MAILTO = contactMailto(DEMO_SUBJECT);
 
@@ -241,6 +242,22 @@ export function LandingPage() {
           </div>
           <Reveal delay={150}>
             <HeroPreview />
+          </Reveal>
+        </div>
+      </section>
+
+      <section id="demo" className="lp-section lp-section-line">
+        <div className="lp-wrap lp-section-inner">
+          <div className="lp-section-head">
+            <span className="eyebrow">La plateforme en une minute</span>
+            <h2 className="lp-h2">Voyez PR Event 360 en action</h2>
+            <p className="lp-section-lede">
+              Du premier mail d'invitation à la revue de presse : le parcours complet, en moins d'une
+              minute.
+            </p>
+          </div>
+          <Reveal>
+            <VideoShowcase />
           </Reveal>
         </div>
       </section>

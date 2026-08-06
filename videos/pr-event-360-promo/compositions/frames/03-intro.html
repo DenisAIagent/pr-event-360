@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#07142F}
+#root{width:1920px;height:1080px;position:relative;font-family:Inter,system-ui,-apple-system,sans-serif;overflow:hidden}
+.clip{position:absolute;inset:0}
+.bg-navy{background:radial-gradient(1300px 900px at 78% 20%,#1B3C6E 0%,#0D2044 45%,#07142F 100%)}
+.stage{display:flex;flex-direction:row;align-items:center;gap:86px;padding:96px 110px}
+.h1{font-size:60px;font-weight:800;line-height:1.14;letter-spacing:-.022em;color:#FFFFFF}
+.accent-line{display:flex;align-items:center;gap:22px;font-size:34px;font-weight:700;color:#5CC0E8}
+.bar{width:6px;height:52px;border-radius:3px;background:#5CC0E8;flex-shrink:0}
+.panel{border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 40px 90px rgba(0,0,0,.45)}
+.panel img{display:block;width:100%;height:auto}
+.caption{margin-top:22px;font-size:22px;font-weight:550;color:rgba(255,255,255,.62);text-align:center}
+.ring{position:absolute;border-radius:50%;border:2px solid rgba(92,192,232,.12)}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="03-intro" data-start="0" data-duration="8.38" data-width="1920" data-height="1080">
+
+  <div id="f3-bg" class="clip bg-navy" data-start="0" data-duration="8.38" data-track-index="0">
+    <div class="ring" data-layout-allow-overflow style="width:1240px;height:1240px;left:-420px;bottom:-520px"></div>
+  </div>
+
+  <div id="f3-stage" class="clip stage" data-start="0" data-duration="8.38" data-track-index="1">
+
+    <div style="width:760px;flex-shrink:0">
+      <img id="logo" src="assets/logo-pr-event-360-white.png" style="height:88px;opacity:0" onerror="this.style.display='none'">
+      <div class="h1" id="tag" style="opacity:0;margin-top:44px">Une seule plateforme<br>pour vos relations presse<br>événementielles.</div>
+      <div class="accent-line" id="cyc" style="opacity:0;margin-top:48px"><span class="bar"></span>De l’invitation à la retombée.</div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+      <div class="panel" id="panel" style="opacity:0;width:840px">
+        <img src="assets/ui-dashboard.png" alt="">
+      </div>
+      <div class="caption" id="cap" style="opacity:0">Tableau de bord — suivi des invités et des accréditations</div>
+    </div>
+
+  </div>
+
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+// « PR Event 360 » — la marque d'abord.
+tl.fromTo("#logo", {opacity:0,y:20}, {opacity:1,y:0,duration:0.65,ease:"power3.out"}, 0);
+
+// Le produit apparaît pendant que la voix nomme la marque.
+tl.fromTo("#panel", {opacity:0,y:36,scale:0.96}, {opacity:1,y:0,scale:1,duration:0.8,ease:"power3.out"}, 0.85);
+tl.fromTo("#cap", {opacity:0}, {opacity:1,duration:0.5}, 1.9);
+
+// « une seule plateforme pour vos relations presse événementielles »
+tl.fromTo("#tag", {opacity:0,y:24}, {opacity:1,y:0,duration:0.7,ease:"power3.out"}, 2.57);
+
+// « de l'invitation à la retombée »
+tl.fromTo("#cyc", {opacity:0,x:-26}, {opacity:1,x:0,duration:0.6,ease:"power3.out"}, 5.96);
+
+window.__timelines["03-intro"] = tl;
+</script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+{
+  "files": [
+    {
+      "file": "inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "inter-cyrillic-wght-normal-DqGufNeO.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "inter-greek-ext-wght-normal-DlzME5K_.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "inter-greek-wght-normal-CkhJZR-_.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "inter-latin-ext-wght-normal-DO1Apj_S.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "inter-latin-wght-normal-Dx4kXJAl.woff2",
+      "family": "Inter",
+      "rawFamily": "Inter",
+      "subfamily": "Regular",
+      "postscript": "Inter-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "jetbrains-mono-cyrillic-wght-normal-D73BlboJ.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "jetbrains-mono-greek-wght-normal-Bw9x6K1M.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "jetbrains-mono-latin-ext-wght-normal-DBQx-q_a.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "jetbrains-mono-latin-wght-normal-B9CIFXIH.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "jetbrains-mono-vietnamese-wght-normal-Bt-aOZkq.woff2",
+      "family": "JetBrains Mono",
+      "rawFamily": "JetBrains Mono",
+      "subfamily": "Regular",
+      "postscript": "JetBrainsMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "manrope-greek-wght-normal-DL7QRZyv.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "manrope-latin-wght-normal-DHIcAJRg.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "manrope-vietnamese-wght-normal-usUDDRr7.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    }
+  ],
+  "families": [
+    {
+      "family": "Inter",
+      "weights": [
+        400
+      ],
+      "variable": true,
+      "fileCount": 6,
+      "files": [
+        "inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2",
+        "inter-cyrillic-wght-normal-DqGufNeO.woff2",
+        "inter-greek-ext-wght-normal-DlzME5K_.woff2",
+        "inter-greek-wght-normal-CkhJZR-_.woff2",
+        "inter-latin-ext-wght-normal-DO1Apj_S.woff2",
+        "inter-latin-wght-normal-Dx4kXJAl.woff2"
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "weights": [
+        400
+      ],
+      "variable": true,
+      "fileCount": 5,
+      "files": [
+        "jetbrains-mono-cyrillic-wght-normal-D73BlboJ.woff2",
+        "jetbrains-mono-greek-wght-normal-Bw9x6K1M.woff2",
+        "jetbrains-mono-latin-ext-wght-normal-DBQx-q_a.woff2",
+        "jetbrains-mono-latin-wght-normal-B9CIFXIH.woff2",
+        "jetbrains-mono-vietnamese-wght-normal-Bt-aOZkq.woff2"
+      ]
+    },
+    {
+      "family": "Manrope",
+      "weights": [
+        200
+      ],
+      "variable": true,
+      "fileCount": 5,
+      "files": [
+        "manrope-cyrillic-wght-normal-Dvxsihut.woff2",
+        "manrope-greek-wght-normal-DL7QRZyv.woff2",
+        "manrope-latin-ext-wght-normal-Ch3YOpNY.woff2",
+        "manrope-latin-wght-normal-DHIcAJRg.woff2",
+        "manrope-vietnamese-wght-normal-usUDDRr7.woff2"
+      ]
+    }
+  ],
+  "unidentified": [],
+  "meta": {
+    "generatedAt": "2026-08-06T07:04:30.164Z",
+    "tool": "fontkit"
+  }
+}

@@ -38,6 +38,7 @@ export function LandingHeader() {
         </Link>
 
         <nav className="lp-nav" aria-label="Navigation principale">
+          <a href="/#demo">Vidéo</a>
           <a href="/#features">Fonctionnalités</a>
           <a href="/#pricing">Tarifs</a>
           <Link to="/ressources">Ressources</Link>
@@ -66,6 +67,9 @@ export function LandingHeader() {
 
       <div id={panelId} className={`lp-panel${open ? ' is-open' : ''}`} hidden={!open}>
         <nav className="lp-panel-nav" aria-label="Navigation mobile">
+          <a href="/#demo" onClick={close}>
+            Vidéo
+          </a>
           <a href="/#features" onClick={close}>
             Fonctionnalités
           </a>

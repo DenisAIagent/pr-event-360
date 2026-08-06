@@ -1,0 +1,40 @@
+{
+  "provider": "kokoro",
+  "speed": 1,
+  "lines": [
+    {
+      "id": "01",
+      "text": "Toujours dix onglets pour un seul festival ? Tableurs, mails, badges… et l'imprévu le jour J."
+    },
+    {
+      "id": "02",
+      "text": "Les accréditations se perdent. Les demandes d'interview s'éparpillent. La newsroom vit dans un autre dossier."
+    },
+    {
+      "id": "03",
+      "text": "PR Event 360. Une plateforme pour piloter les relations presse événementielles — de l'invitation à la retombée."
+    },
+    {
+      "id": "04",
+      "text": "Invitez. Validez les accréditations. Traitez les demandes d'interview. Organisez les conférences. Générez les badges. Collectez la revue de presse."
+    },
+    {
+      "id": "05",
+      "text": "Chaque journaliste a son espace sécurisé. Chaque contact production voit seulement ce qui le concerne. Vos équipes collaborent sans perdre le fil."
+    },
+    {
+      "id": "06",
+      "text": "Dès huit cents euros hors taxes par événement. Vingt gigas de stockage. Google Drive inclus. Pack trois pour l'année, ou offre Agence pour dix événements."
+    },
+    {
+      "id": "07",
+      "text": "Conforme RGPD. Support en français. Sans installation. Demandez un accès — et pilotez votre prochain événement à trois cent soixante degrés."
+    }
+  ],
+  "bgm": {
+    "mode": "retrieve",
+    "query": "confident minimal tech underscore",
+    "blob": "Centralisez accréditations, journalistes et newsroom — dès 800 € HT par événement",
+    "arc": "PAS with feature-benefit progression"
+  }
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#F6F8FB}
+#root{width:1920px;height:1080px;position:relative;font-family:Inter,system-ui,-apple-system,sans-serif;color:#07142F;overflow:hidden}
+.clip{position:absolute;inset:0}
+.bg-canvas{background:linear-gradient(180deg,#FFFFFF 0%,#EEF3F9 100%)}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:96px 120px}
+.eyebrow{font-size:24px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:#1598D3}
+.h2{font-size:66px;font-weight:800;line-height:1.08;letter-spacing:-.022em;text-align:center}
+.cards{display:flex;gap:34px;margin-top:78px;width:1660px;align-items:stretch}
+.pcard{flex:1;position:relative;background:#FFFFFF;border:1px solid #E0E8F1;border-radius:24px;padding:44px 40px;box-shadow:0 22px 54px rgba(7,20,47,.09);display:flex;flex-direction:column}
+.pcard.hi{border:2px solid #1598D3;box-shadow:0 28px 64px rgba(21,152,211,.24)}
+.tagpill{position:absolute;top:-19px;left:40px;padding:9px 20px;border-radius:999px;background:#1598D3;color:#FFFFFF;font-size:18px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}
+.plan{font-size:21px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;color:#1598D3}
+.price{font-size:74px;font-weight:800;letter-spacing:-.03em;margin-top:14px;line-height:1}
+.per{font-size:26px;font-weight:600;color:#4A5568;margin-top:12px}
+.feat{margin-top:26px;display:flex;flex-direction:column;gap:13px}
+.feat div{font-size:23px;font-weight:550;color:#4A5568;display:flex;align-items:center;gap:12px}
+.tick{width:9px;height:9px;border-radius:50%;background:#2FBF71;flex-shrink:0}
+.incl{margin-top:58px;display:inline-flex;align-items:center;gap:16px;padding:20px 36px;border-radius:999px;background:#FFFFFF;border:1px solid #D8E6F2;font-size:28px;font-weight:700;box-shadow:0 14px 36px rgba(7,20,47,.08)}
+.led{width:12px;height:12px;border-radius:50%;background:#2FBF71;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="06-pricing" data-start="0" data-duration="9.08" data-width="1920" data-height="1080">
+
+  <div id="f6-bg" class="clip bg-canvas" data-start="0" data-duration="9.08" data-track-index="0"></div>
+
+  <div id="f6-stage" class="clip stage" data-start="0" data-duration="9.08" data-track-index="1">
+    <div class="eyebrow" id="e6" style="opacity:0">Tarifs clairs</div>
+    <div class="h2" id="t6" style="opacity:0;margin-top:18px">À l’événement, sans boîte noire</div>
+
+    <div class="cards">
+      <div class="pcard" id="pl1" style="opacity:0">
+        <div class="plan">Événement</div>
+        <div class="price">800 €<span style="font-size:30px;font-weight:700;color:#4A5568"> HT</span></div>
+        <div class="per">1 licence · 1 événement</div>
+        <div class="feat">
+          <div><span class="tick"></span>20 Go de stockage</div>
+          <div><span class="tick"></span>Google Drive inclus</div>
+          <div><span class="tick"></span>Toutes les fonctionnalités</div>
+        </div>
+      </div>
+
+      <div class="pcard hi" id="pl2" style="opacity:0">
+        <div class="tagpill">Recommandé</div>
+        <div class="plan">Pack 3</div>
+        <div class="price">2 100 €<span style="font-size:30px;font-weight:700;color:#4A5568"> HT</span></div>
+        <div class="per">3 crédits · valables 12 mois</div>
+        <div class="feat">
+          <div><span class="tick"></span>Soit 700 € par événement</div>
+          <div><span class="tick"></span>Multi-marques, multi-clients</div>
+          <div><span class="tick"></span>Économie de 300 € HT</div>
+        </div>
+      </div>
+
+      <div class="pcard" id="pl3" style="opacity:0">
+        <div class="plan">Agence</div>
+        <div class="price">6 000 €<span style="font-size:30px;font-weight:700;color:#4A5568"> HT / an</span></div>
+        <div class="per">Jusqu’à 10 événements par an</div>
+        <div class="feat">
+          <div><span class="tick"></span>Vue consolidée multi-clients</div>
+          <div><span class="tick"></span>Onboarding personnalisé</div>
+          <div><span class="tick"></span>Support prioritaire</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="incl" id="drive" style="opacity:0"><span class="led"></span>20 Go par événement · Google Drive connecté inclus</div>
+  </div>
+
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+tl.fromTo("#e6", {opacity:0,y:12}, {opacity:1,y:0,duration:0.4,ease:"power3.out"}, 0);
+tl.fromTo("#t6", {opacity:0,y:20}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.05);
+
+// « 800 euros hors taxe par événement »
+tl.fromTo("#pl1", {opacity:0,y:32}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.15);
+// « 20 gigas de stockage, Google Drive inclus »
+tl.fromTo("#drive", {opacity:0,y:18}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 2.45);
+// « Pack 3 pour l'année »
+tl.fromTo("#pl2", {opacity:0,y:32}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 4.9);
+// « ou offre Agence pour dix événements »
+tl.fromTo("#pl3", {opacity:0,y:32}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 6.25);
+
+window.__timelines["06-pricing"] = tl;
+</script>
+</body>
+</html>

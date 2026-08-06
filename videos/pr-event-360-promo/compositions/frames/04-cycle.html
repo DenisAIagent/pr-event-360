@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#F6F8FB}
+#root{width:1920px;height:1080px;position:relative;font-family:Inter,system-ui,-apple-system,sans-serif;color:#07142F;overflow:hidden}
+.clip{position:absolute;inset:0}
+.bg-canvas{background:linear-gradient(180deg,#FFFFFF 0%,#EEF3F9 100%)}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:96px 120px}
+.eyebrow{font-size:24px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:#1598D3}
+.h2{font-size:66px;font-weight:800;line-height:1.08;letter-spacing:-.022em;text-align:center}
+.track{position:relative;width:1680px;margin-top:104px}
+.rail{position:absolute;left:140px;right:140px;top:32px;height:5px;border-radius:3px;background:#D5E0EC;transform-origin:left center}
+.steps{position:relative;display:flex}
+.step{flex:1;display:flex;flex-direction:column;align-items:center}
+.badge{width:68px;height:68px;border-radius:50%;background:#1598D3;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:800;box-shadow:0 0 0 12px #F4F8FC,0 10px 26px rgba(21,152,211,.32)}
+.step-label{margin-top:26px;font-size:30px;font-weight:750;letter-spacing:-.01em;text-align:center}
+.step-sub{margin-top:10px;font-size:21px;font-weight:500;color:#4A5568;text-align:center;max-width:230px;line-height:1.35}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="04-cycle" data-start="0" data-duration="8.6" data-width="1920" data-height="1080">
+
+  <div id="f4-bg" class="clip bg-canvas" data-start="0" data-duration="8.6" data-track-index="0"></div>
+
+  <div id="f4-stage" class="clip stage" data-start="0" data-duration="8.6" data-track-index="1">
+    <div class="eyebrow" id="e4" style="opacity:0">Tout le cycle RP</div>
+    <div class="h2" id="t4" style="opacity:0;margin-top:18px">De l’invitation à la retombée</div>
+
+    <div class="track">
+      <div class="rail" id="rail"></div>
+      <div class="steps">
+        <div class="step" id="s1" style="opacity:0">
+          <div class="badge">1</div><div class="step-label">Invitez</div>
+          <div class="step-sub">Listes presse et envois ciblés</div>
+        </div>
+        <div class="step" id="s2" style="opacity:0">
+          <div class="badge">2</div><div class="step-label">Accréditez</div>
+          <div class="step-sub">Validation des demandes en un clic</div>
+        </div>
+        <div class="step" id="s3" style="opacity:0">
+          <div class="badge">3</div><div class="step-label">Interviews</div>
+          <div class="step-sub">Demandes centralisées et priorisées</div>
+        </div>
+        <div class="step" id="s4" style="opacity:0">
+          <div class="badge">4</div><div class="step-label">Conférences</div>
+          <div class="step-sub">Sessions, intervenants et places</div>
+        </div>
+        <div class="step" id="s5" style="opacity:0">
+          <div class="badge">5</div><div class="step-label">Badges</div>
+          <div class="step-sub">Génération et accueil le jour J</div>
+        </div>
+        <div class="step" id="s6" style="opacity:0">
+          <div class="badge">6</div><div class="step-label">Retombées</div>
+          <div class="step-sub">Revue de presse et reporting</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+tl.fromTo("#e4", {opacity:0,y:12}, {opacity:1,y:0,duration:0.4,ease:"power3.out"}, 0);
+tl.fromTo("#t4", {opacity:0,y:20}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.05);
+tl.fromTo("#rail", {scaleX:0}, {scaleX:1,duration:6.6,ease:"none"}, 0.3);
+
+// Une étape par verbe prononcé.
+const beats = [0.30, 0.98, 2.28, 4.01, 5.52, 6.78];
+for (let i = 1; i <= 6; i++) {
+  tl.fromTo("#s" + i, {opacity:0,y:26,scale:0.9}, {opacity:1,y:0,scale:1,duration:0.45,ease:"back.out(1.6)"}, beats[i-1]);
+}
+
+window.__timelines["04-cycle"] = tl;
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#07142F}
+#root{width:1920px;height:1080px;position:relative;font-family:Inter,system-ui,-apple-system,sans-serif;overflow:hidden}
+.clip{position:absolute;inset:0}
+.bg-navy{background:radial-gradient(1400px 900px at 50% 6%,#1B3C6E 0%,#0D2044 42%,#07142F 100%)}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 120px}
+.eyebrow{font-size:24px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:#5CC0E8}
+.h1{font-size:104px;font-weight:800;line-height:1.05;letter-spacing:-.028em;color:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:12px;padding:18px 32px;border-radius:999px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);font-size:28px;font-weight:650;color:#FFFFFF}
+.dot{width:10px;height:10px;border-radius:50%;background:#5CC0E8;flex-shrink:0}
+.tail{font-size:40px;font-weight:650;color:#FFCFC6}
+.ring{position:absolute;border-radius:50%;border:2px solid rgba(92,192,232,.13)}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="01-hook" data-start="0" data-duration="9.11" data-width="1920" data-height="1080">
+
+  <div id="f1-bg" class="clip bg-navy" data-start="0" data-duration="9.11" data-track-index="0">
+    <div class="ring" data-layout-allow-overflow style="width:1180px;height:1180px;left:-340px;top:-380px"></div>
+    <div class="ring" data-layout-allow-overflow style="width:900px;height:900px;right:-280px;bottom:-340px"></div>
+  </div>
+
+  <div id="f1-stage" class="clip stage" data-start="0" data-duration="9.11" data-track-index="1">
+    <div class="eyebrow" id="e1" style="opacity:0">Relations presse événementielles</div>
+
+    <div class="h1" id="q1" style="opacity:0;margin-top:34px">Toujours <span style="color:#5CC0E8">dix onglets</span></div>
+    <div class="h1" id="q2" style="opacity:0;margin-top:4px">pour un seul festival&nbsp;?</div>
+
+    <div style="display:flex;gap:22px;margin-top:64px">
+      <div class="chip" id="c1" style="opacity:0"><span class="dot"></span>Tableurs</div>
+      <div class="chip" id="c2" style="opacity:0"><span class="dot"></span>Mails</div>
+      <div class="chip" id="c3" style="opacity:0"><span class="dot"></span>Badges</div>
+    </div>
+
+    <div class="tail" id="tail" style="opacity:0;margin-top:58px">Et l’imprévu le jour J.</div>
+  </div>
+
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+tl.fromTo("#e1", {opacity:0,y:14}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.05);
+tl.fromTo("#q1", {opacity:0,y:30}, {opacity:1,y:0,duration:0.7,ease:"power3.out"}, 0.22);
+tl.fromTo("#q2", {opacity:0,y:30}, {opacity:1,y:0,duration:0.7,ease:"power3.out"}, 0.44);
+
+// Chips calées sur la voix : « Tableur… mail… badge… »
+tl.fromTo("#c1", {opacity:0,y:22}, {opacity:1,y:0,duration:0.42,ease:"power3.out"}, 3.65);
+tl.fromTo("#c2", {opacity:0,y:22}, {opacity:1,y:0,duration:0.42,ease:"power3.out"}, 4.06);
+tl.fromTo("#c3", {opacity:0,y:22}, {opacity:1,y:0,duration:0.42,ease:"power3.out"}, 4.84);
+
+// « Et l'imprévu le jour J. »
+tl.fromTo("#tail", {opacity:0,y:18}, {opacity:1,y:0,duration:0.55,ease:"power3.out"}, 5.75);
+
+window.__timelines["01-hook"] = tl;
+</script>
+</body>
+</html>

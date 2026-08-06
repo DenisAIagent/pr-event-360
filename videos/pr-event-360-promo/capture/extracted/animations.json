@@ -1,0 +1,54 @@
+{
+  "summary": {
+    "webAnimations": 1,
+    "cssDeclarations": 31,
+    "scrollTargets": 15,
+    "cdpAnimations": 27,
+    "canvases": 0
+  },
+  "namedAnimations": [
+    "lp-fill"
+  ],
+  "scrollTriggeredElements": 15,
+  "representativeAnimations": [
+    {
+      "type": "CSSAnimation",
+      "playState": "finished",
+      "animationName": "lp-fill",
+      "targetSelector": "div.lp-progress-fill",
+      "targetRect": {
+        "x": 1056.09375,
+        "y": 436.234375,
+        "width": 268.390625,
+        "height": 7,
+        "top": 436.234375,
+        "right": 1324.484375,
+        "bottom": 443.234375,
+        "left": 1056.09375
+      },
+      "keyframes": [
+        {
+          "offset": 0,
+          "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+          "composite": "auto",
+          "width": "0px",
+          "computedOffset": 0
+        },
+        {
+          "offset": 1,
+          "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+          "composite": "auto",
+          "width": "62%",
+          "computedOffset": 1
+        }
+      ],
+      "timing": {
+        "duration": 1400,
+        "delay": 300,
+        "iterations": 1,
+        "easing": "linear",
+        "direction": "normal"
+      }
+    }
+  ]
+}

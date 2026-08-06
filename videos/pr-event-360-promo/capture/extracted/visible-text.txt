@@ -1,0 +1,87 @@
+[a] Fonctionnalités
+[a] Ressources
+[a] Connexion
+[a] Demander un accès
+[a] Fonctionnalités
+[a] Ressources
+[a] Connexion
+[a] Demander un accès
+[span] Votre orchestrateur de relations presse
+[h1] Pilotez vos relations presse événementielles à
+[span] 360°
+[p] Centralisez vos contacts médias, invitations, relances, accréditations et retombées dans une plateforme pensée pour les événements.
+[a] Demander un accès
+[a] Demander une démo
+[span] Sans installation
+[span] Conforme RGPD
+[span] Support FR
+[strong] Salon Tech & Médias
+[span] En cours
+[span] 247
+[div] Invités
+[div] Réponse
+[span] Accréditations validées
+[strong] 42/68
+[figcaption] Aperçu du tableau de bord — événement et chiffres de démonstration.
+[span] Une plateforme, tout le cycle RP
+[h2] De l'invitation à la retombée média
+[p] Coordonnez chaque étape de vos relations presse événementielles depuis un seul outil, clair et structuré.
+[h3] Gestion des contacts presse
+[p] Centralisez journalistes et médias avec tags, historique et engagement.
+[h3] Invitations & accréditations
+[p] Envoyez, suivez et validez les demandes en quelques clics.
+[h3] Relances automatisées
+[p] Programmez des relances ciblées et ne manquez aucune réponse.
+[h3] Suivi des présences
+[p] Visualisez accréditations, confirmations et présences en temps réel.
+[h3] Reporting média
+[p] Mesurez les retombées et le ROI de chaque événement.
+[h3] Collaboration équipe
+[p] Travaillez à plusieurs sur un même événement, en toute clarté.
+[span] Ce qu'en disent les attachés de presse
+[blockquote] La plateforme parfaite pour les attachés de presse de festivals ! Un gain de temps et de productivité sans précédents !
+[strong] Denis
+[figcaption] · Attaché de presse, Issoudun Reggae Temple Festival
+[blockquote] Si j'avais eu ça pour le Motocultor, le gain de temps et de tableaux Excel évités ! C'est un gain de temps fou.
+[strong] Yann Landry
+[figcaption] · ex-attaché de presse, Motocultor Festival
+[span] Tarifs
+[h2] À l’événement, sans surprise
+[p] 800 € HT par événement, 20 Go de stockage et Google Drive inclus. Remises au volume, pas en retirant des fonctionnalités. Option Média Plus +200 € HT (100 Go).
+[span] Événement
+[span] 800 €
+[span] HT / événement
+[p] 1 licence · 20 Go · Google Drive inclus
+[li] Accréditations & demandes
+[li] Badges, exports, équipes
+[li] Espaces journalistes sécurisés
+[li] 20 Go stockage + Drive inclus
+[a] Demander un accès
+[span] Pack 3
+[span] 2 100 €
+[p] Soit 700 € / événement · valable 12 mois
+[li] 3 crédits événement
+[li] Toutes les fonctionnalités
+[li] Multi-marques / multi-clients
+[li] Économie 300 € HT
+[a] Demander un accès
+[span] Agence
+[span] 6 000 €
+[span] HT / an
+[p] 10 événements / an · +450 € au-delà
+[li] Jusqu’à 10 événements / an
+[li] Support prioritaire & onboarding
+[li] Vue consolidée multi-clients
+[li] Suivi des crédits
+[a] Demander un accès
+[p] Modules inclus : accréditations, conférences, badges, newsroom, billetterie, exports…
+[a] Demander une démo
+[h2] Les RP événementielles,
+[span] parfaitement orchestrées.
+[p] Rejoignez les équipes communication qui centralisent et mesurent leurs relations presse avec PR Event 360.
+[a] Demander un accès
+[a] Demander une démo
+[a] Ressources
+[a] Confidentialité
+[a] Mentions légales
+[span] © 2026 PR Event 360

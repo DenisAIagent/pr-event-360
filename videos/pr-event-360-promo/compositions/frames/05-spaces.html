@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#FFFFFF}
+#root{width:1920px;height:1080px;position:relative;font-family:Inter,system-ui,-apple-system,sans-serif;color:#07142F;overflow:hidden}
+.clip{position:absolute;inset:0}
+.bg-canvas{background:radial-gradient(1200px 800px at 50% 0%,#EAF4FC 0%,#FFFFFF 55%,#F6F8FB 100%)}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:96px 120px}
+.eyebrow{font-size:24px;font-weight:750;letter-spacing:.16em;text-transform:uppercase;color:#1598D3}
+.h2{font-size:66px;font-weight:800;line-height:1.08;letter-spacing:-.022em;text-align:center}
+.cards{display:flex;gap:36px;margin-top:86px;width:1680px}
+.card{flex:1;background:#FFFFFF;border:1px solid #E0E8F1;border-radius:24px;padding:46px 42px;box-shadow:0 22px 54px rgba(7,20,47,.09);display:flex;flex-direction:column}
+.card-role{font-size:21px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;color:#1598D3}
+.card-title{font-size:42px;font-weight:800;letter-spacing:-.015em;margin-top:16px;line-height:1.12}
+.card-text{font-size:25px;font-weight:500;color:#4A5568;line-height:1.42;margin-top:20px}
+.lock{margin-top:auto;padding-top:30px;display:flex;align-items:center;gap:12px;font-size:21px;font-weight:650;color:#2FBF71}
+.led{width:11px;height:11px;border-radius:50%;background:#2FBF71;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="05-spaces" data-start="0" data-duration="8.26" data-width="1920" data-height="1080">
+
+  <div id="f5-bg" class="clip bg-canvas" data-start="0" data-duration="8.26" data-track-index="0"></div>
+
+  <div id="f5-stage" class="clip stage" data-start="0" data-duration="8.26" data-track-index="1">
+    <div class="eyebrow" id="e5" style="opacity:0">Cloisonnement métier</div>
+    <div class="h2" id="t5" style="opacity:0;margin-top:18px">Chacun son espace, chacun ses droits</div>
+
+    <div class="cards">
+      <div class="card" id="sp1" style="opacity:0">
+        <div class="card-role">Journaliste</div>
+        <div class="card-title">Son espace sécurisé</div>
+        <div class="card-text">Accréditation, dossier de presse et médias, accessibles par lien privé.</div>
+        <div class="lock"><span class="led"></span>Accès personnel</div>
+      </div>
+      <div class="card" id="sp2" style="opacity:0">
+        <div class="card-role">Production</div>
+        <div class="card-title">Seulement ce qui le concerne</div>
+        <div class="card-text">Chaque contact voit ses artistes, ses horaires et ses demandes. Rien d’autre.</div>
+        <div class="lock"><span class="led"></span>Périmètre cloisonné</div>
+      </div>
+      <div class="card" id="sp3" style="opacity:0">
+        <div class="card-role">Équipe RP</div>
+        <div class="card-title">La vue d’ensemble</div>
+        <div class="card-text">Plusieurs organisateurs collaborent sur le même événement, sans perdre le fil.</div>
+        <div class="lock"><span class="led"></span>Travail à plusieurs</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+window.__timelines = window.__timelines || {};
+const tl = gsap.timeline({ paused: true });
+
+tl.fromTo("#e5", {opacity:0,y:12}, {opacity:1,y:0,duration:0.4,ease:"power3.out"}, 0);
+tl.fromTo("#t5", {opacity:0,y:20}, {opacity:1,y:0,duration:0.5,ease:"power3.out"}, 0.05);
+
+// « chaque journaliste » / « chaque contact production » / « vos équipes »
+tl.fromTo("#sp1", {opacity:0,y:34}, {opacity:1,y:0,duration:0.55,ease:"power3.out"}, 0.15);
+tl.fromTo("#sp2", {opacity:0,y:34}, {opacity:1,y:0,duration:0.55,ease:"power3.out"}, 2.46);
+tl.fromTo("#sp3", {opacity:0,y:34}, {opacity:1,y:0,duration:0.55,ease:"power3.out"}, 6.06);
+
+window.__timelines["05-spaces"] = tl;
+</script>
+</body>
+</html>

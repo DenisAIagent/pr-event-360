@@ -1,0 +1,56 @@
+{
+  "bgm": null,
+  "bgm_pending": false,
+  "voices": [
+    {
+      "frame": 1,
+      "path": "media/voice/frame-01.wav",
+      "duration_s": 9.11,
+      "words": [],
+      "text": "Toujours dix onglets pour un seul festival ? Tableurs, mails, badges… et l'imprévu le jour J."
+    },
+    {
+      "frame": 2,
+      "path": "media/voice/frame-02.wav",
+      "duration_s": 6.27,
+      "words": [],
+      "text": "Les accréditations se perdent. Les demandes d'interview s'éparpillent. La newsroom vit dans un autre dossier."
+    },
+    {
+      "frame": 3,
+      "path": "media/voice/frame-03.wav",
+      "duration_s": 8.38,
+      "words": [],
+      "text": "PR Event 360. Une plateforme pour piloter les relations presse événementielles — de l'invitation à la retombée."
+    },
+    {
+      "frame": 4,
+      "path": "media/voice/frame-04.wav",
+      "duration_s": 8.6,
+      "words": [],
+      "text": "Invitez. Validez les accréditations. Traitez les demandes d'interview. Organisez les conférences. Générez les badges. Collectez la revue de presse."
+    },
+    {
+      "frame": 5,
+      "path": "media/voice/frame-05.wav",
+      "duration_s": 8.26,
+      "words": [],
+      "text": "Chaque journaliste a son espace sécurisé. Chaque contact production voit seulement ce qui le concerne. Vos équipes collaborent sans perdre le fil."
+    },
+    {
+      "frame": 6,
+      "path": "media/voice/frame-06.wav",
+      "duration_s": 9.08,
+      "words": [],
+      "text": "Dès huit cents euros hors taxes par événement. Vingt gigas de stockage. Google Drive inclus. Pack trois pour l'année, ou offre Agence pour dix événements."
+    },
+    {
+      "frame": 7,
+      "path": "media/voice/frame-07.wav",
+      "duration_s": 8.657,
+      "words": [],
+      "text": "Conforme RGPD. Support en français. Sans installation. Demandez un accès — et pilotez votre prochain événement à trois cent soixante degrés."
+    }
+  ],
+  "sfx": []
+}

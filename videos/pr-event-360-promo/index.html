@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #07142F;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #07142F;
+      }
+      /* Chaque scène est un calque plein cadre et OPAQUE. Les scènes se succèdent
+         par coupe franche : leurs fenêtres ne se recouvrent jamais, donc deux textes
+         ne peuvent pas se superposer pendant une transition. Le mouvement d'entrée
+         est porté par la timeline interne de chaque scène. */
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="58.357" data-width="1920" data-height="1080">
+
+      <div id="el-01-hook" class="scene" data-composition-id="01-hook" data-composition-src="compositions/frames/01-hook.html" data-start="0" data-duration="9.11" data-track-index="0"></div>
+      <audio id="el-01-hook-voice" src="media/voice/frame-01.wav" data-start="0" data-duration="9.11" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-02-pain" class="scene" data-composition-id="02-pain" data-composition-src="compositions/frames/02-pain.html" data-start="9.11" data-duration="6.27" data-track-index="1"></div>
+      <audio id="el-02-pain-voice" src="media/voice/frame-02.wav" data-start="9.11" data-duration="6.27" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-03-intro" class="scene" data-composition-id="03-intro" data-composition-src="compositions/frames/03-intro.html" data-start="15.38" data-duration="8.38" data-track-index="2"></div>
+      <audio id="el-03-intro-voice" src="media/voice/frame-03.wav" data-start="15.38" data-duration="8.38" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-04-cycle" class="scene" data-composition-id="04-cycle" data-composition-src="compositions/frames/04-cycle.html" data-start="23.76" data-duration="8.6" data-track-index="3"></div>
+      <audio id="el-04-cycle-voice" src="media/voice/frame-04.wav" data-start="23.76" data-duration="8.6" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-05-spaces" class="scene" data-composition-id="05-spaces" data-composition-src="compositions/frames/05-spaces.html" data-start="32.36" data-duration="8.26" data-track-index="4"></div>
+      <audio id="el-05-spaces-voice" src="media/voice/frame-05.wav" data-start="32.36" data-duration="8.26" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-06-pricing" class="scene" data-composition-id="06-pricing" data-composition-src="compositions/frames/06-pricing.html" data-start="40.62" data-duration="9.08" data-track-index="5"></div>
+      <audio id="el-06-pricing-voice" src="media/voice/frame-06.wav" data-start="40.62" data-duration="9.08" data-track-index="10" data-volume="1"></audio>
+
+      <div id="el-07-cta" class="scene" data-composition-id="07-cta" data-composition-src="compositions/frames/07-cta.html" data-start="49.7" data-duration="8.657" data-track-index="6"></div>
+      <audio id="el-07-cta-voice" src="media/voice/frame-07.wav" data-start="49.7" data-duration="8.657" data-track-index="10" data-volume="1"></audio>
+
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      var mainTl = gsap.timeline({ paused: true });
+      // Ancre pleine durée : main.duration() == durée totale de la composition.
+      mainTl.to({}, { duration: 58.357 }, 0);
+      window.__timelines["main"] = mainTl;
+    </script>
+  </body>
+</html>
