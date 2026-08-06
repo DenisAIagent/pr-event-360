@@ -37,3 +37,14 @@ test-results/
 playwright-report/
 /blob-report/
 .playwright/
+
+# HyperFrames — caches, rendus intermédiaires et captures de revue.
+# Les sources (compositions/, assets/, media/, docs) restent versionnées ;
+# la vidéo publiée est copiée dans client/public/media/.
+videos/**/.thumbnails/
+videos/**/.media/
+videos/**/.hyperframes/
+videos/**/.waveform-cache/
+videos/**/snapshots/
+videos/**/renders/
+videos/**/node_modules/
