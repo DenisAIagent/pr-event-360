@@ -33,6 +33,7 @@ import {
 import {
   addEventCredits,
   findOrgBilling,
+  findOrgIdByStripeSubscription,
   insertBillingLedger,
   setEventMediaPlus,
   setOrgCommercialPlan,
@@ -300,17 +301,11 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         await updateSubscriptionStatusBySubId(sub.id, sub.status, periodEnd(sub));
-        // Renouvellement agence : recharger 10 crédits en début de période active.
-        if (
-          event.type === 'customer.subscription.updated' &&
-          (sub.status === 'active' || sub.status === 'trialing')
-        ) {
-          const planId = sub.metadata?.plan_id;
-          if (planId === 'agency') {
-            // best-effort : crédits gérés à la matérialisation initiale ;
-            // un job de renouvellement peut être ajouté plus tard via invoice.paid
-          }
-        }
+        break;
+      }
+      case 'invoice.paid': {
+        // Renouvellement d'abonnement : recharge les crédits de l'offre.
+        await handleInvoicePaid(event.data.object as Stripe.Invoice);
         break;
       }
       case 'invoice.payment_failed': {
@@ -326,6 +321,62 @@ export async function handleWebhook(rawBody: Buffer, signature: string | undefin
     await unmarkStripeEvent(event.id).catch(() => undefined);
     throw e;
   }
+}
+
+/**
+ * Facture d'abonnement payée. Seul billing_reason=subscription_cycle recharge
+ * les crédits (la première facture est couverte par la matérialisation du
+ * checkout). Les crédits s'AJOUTENT au solde (un reliquat non consommé reste
+ * utilisable) ; l'expiration, prolongée de la validité de l'offre, borne le cumul.
+ * Idempotent : l'event Stripe est dédupliqué en amont par markStripeEventProcessed.
+ */
+export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+  // Selon la version d'API Stripe, la souscription est portée par
+  // invoice.subscription (historique) ou invoice.parent.subscription_details.
+  const inv = invoice as unknown as {
+    billing_reason?: string;
+    subscription?: string | { id: string };
+    parent?: { subscription_details?: { subscription?: string | { id: string } } };
+  };
+  if (inv.billing_reason !== 'subscription_cycle') return;
+  const rawSub = inv.subscription ?? inv.parent?.subscription_details?.subscription;
+  const subscriptionId = typeof rawSub === 'string' ? rawSub : rawSub?.id;
+  if (!subscriptionId) return;
+
+  const sub = await (await client()).subscriptions.retrieve(subscriptionId);
+  const planId = sub.metadata?.plan_id as CommercialPlanId | undefined;
+  const offer = planId ? getCommercialOffer(planId) : undefined;
+  if (!planId || !offer || offer.checkoutMode !== 'subscription' || !offer.eventCredits) return;
+
+  const organizationId = await findOrgIdByStripeSubscription(subscriptionId);
+  if (!organizationId) {
+    console.error(`[billing] invoice.paid : aucune organisation liée à la souscription ${subscriptionId}`);
+    return;
+  }
+
+  const credits = offer.eventCredits;
+  await withTransaction(async (db) => {
+    await addEventCredits(
+      organizationId,
+      credits,
+      {
+        commercialPlan: planId,
+        extendExpireMonths: offer.creditsValidityMonths,
+        billingSource: 'stripe',
+      },
+      db,
+    );
+    await updateSubscriptionStatusBySubId(subscriptionId, sub.status, periodEnd(sub), db);
+    await insertBillingLedger(
+      {
+        organizationId,
+        planCode: planId,
+        creditsDelta: credits,
+        note: `Renouvellement ${offer.name}`,
+      },
+      db,
+    );
+  });
 }
 
 async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise<void> {

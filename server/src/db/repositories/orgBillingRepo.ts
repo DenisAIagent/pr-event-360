@@ -58,6 +58,18 @@ export async function findOrgBilling(
   return rows[0] ? mapBilling(rows[0]) : null;
 }
 
+/** Organisation propriétaire d'une souscription Stripe (renouvellements). */
+export async function findOrgIdByStripeSubscription(
+  stripeSubscriptionId: string,
+  db: Queryable = pool,
+): Promise<string | null> {
+  const { rows } = await db.query<{ id: string }>(
+    'SELECT id FROM organizations WHERE stripe_subscription_id = $1',
+    [stripeSubscriptionId],
+  );
+  return rows[0]?.id ?? null;
+}
+
 export async function setOrgCommercialPlan(
   organizationId: string,
   input: {
