@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CreditCard, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useAuthedApi } from '../auth/AuthContext';
 import { ApiError } from '../../lib/api';
 import { PageHero } from '../components/PageHero';
@@ -72,7 +72,6 @@ export function BillingPage() {
       <PageHero
         title="Facturation & licences"
         subtitle="Crédits événement, offres et options (Média Plus, packs)."
-        icon={<CreditCard size={22} />}
       />
 
       {paid && (

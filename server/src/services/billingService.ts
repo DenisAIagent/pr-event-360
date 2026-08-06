@@ -216,20 +216,27 @@ export async function startOrgPurchase(input: {
 
   const mode = offer.checkoutMode === 'subscription' ? 'subscription' : 'payment';
   const base = loadEnv().PUBLIC_BASE_URL;
-  const session = await (await client()).checkout.sessions.create({
+  const metadata = {
+    kind: 'org_purchase',
+    organization_id: input.organizationId,
+    plan_id: input.planId,
+    event_id: input.eventId ?? '',
+  };
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode,
     line_items: [{ price: priceId, quantity: 1 }],
     customer_email: input.customerEmail,
     allow_promotion_codes: true,
     success_url: `${base}/admin/facturation?paid=1`,
     cancel_url: `${base}/admin/facturation?annule=1`,
-    metadata: {
-      kind: 'org_purchase',
-      organization_id: input.organizationId,
-      plan_id: input.planId,
-      event_id: input.eventId ?? '',
-    },
-  });
+    metadata,
+  };
+  if (mode === 'subscription') {
+    // Reporté sur la souscription elle-même : les webhooks subscription.*
+    // peuvent alors identifier l'organisation et l'offre.
+    sessionParams.subscription_data = { metadata };
+  }
+  const session = await (await client()).checkout.sessions.create(sessionParams);
   if (!session.url) throw new Error('Stripe Checkout : URL manquante');
   return { url: session.url };
 }
@@ -250,8 +257,9 @@ export async function getOrgBillingStatus(organizationId: string) {
     currentPeriodEnd: org.currentPeriodEnd,
     storageDefaultLabel: '20 Go par événement',
     googleDriveIncluded: true,
+    // media_plus exclu : il exige un eventId et s'achète depuis un événement précis.
     offers: (await publicCommercialCatalog()).offers.filter((o) =>
-      ['event', 'pack3', 'agency_extra', 'media_plus'].includes(o.id),
+      ['event', 'pack3', 'agency_extra'].includes(o.id),
     ),
   };
 }
@@ -334,34 +342,74 @@ async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise
   if (planId === 'media_plus') {
     const eventId = session.metadata?.event_id;
     if (!eventId) return;
-    await setEventMediaPlus(eventId, STORAGE_BYTES_100_GB);
-    await insertBillingLedger({
-      organizationId,
-      planCode: planId,
-      creditsDelta: 0,
-      stripeSessionId: session.id,
-      stripePaymentIntent: paymentIntent ?? null,
-      eventId,
-      note: 'Option Média Plus',
+    await withTransaction(async (db) => {
+      await setEventMediaPlus(eventId, STORAGE_BYTES_100_GB, db);
+      await insertBillingLedger(
+        {
+          organizationId,
+          planCode: planId,
+          creditsDelta: 0,
+          stripeSessionId: session.id,
+          stripePaymentIntent: paymentIntent ?? null,
+          eventId,
+          note: 'Option Média Plus',
+        },
+        db,
+      );
     });
     return;
   }
 
-  const credits = offer.eventCredits ?? 0;
-  if (credits > 0) {
-    await addEventCredits(organizationId, credits, {
-      commercialPlan: planId === 'agency' ? 'agency' : undefined,
-      extendExpireMonths: offer.creditsValidityMonths,
-      billingSource: 'stripe',
-    });
+  // Abonnement (agence) acheté depuis un compte existant : rattacher la
+  // souscription à l'organisation pour que les webhooks subscription.* la retrouvent.
+  const subscriptionId =
+    typeof session.subscription === 'string' ? session.subscription : (session.subscription?.id ?? null);
+  const customerId = typeof session.customer === 'string' ? session.customer : (session.customer?.id ?? null);
+  let subStatus = 'active';
+  let subPeriodEnd: string | null = null;
+  if (subscriptionId) {
+    const sub = await (await client()).subscriptions.retrieve(subscriptionId);
+    subStatus = sub.status;
+    subPeriodEnd = periodEnd(sub);
   }
-  await insertBillingLedger({
-    organizationId,
-    planCode: planId,
-    creditsDelta: credits,
-    stripeSessionId: session.id,
-    stripePaymentIntent: paymentIntent ?? null,
-    note: `Achat ${offer.name}`,
+
+  const credits = offer.eventCredits ?? 0;
+  await withTransaction(async (db) => {
+    if (credits > 0) {
+      await addEventCredits(
+        organizationId,
+        credits,
+        {
+          commercialPlan: planId === 'agency' ? 'agency' : undefined,
+          extendExpireMonths: offer.creditsValidityMonths,
+          billingSource: 'stripe',
+        },
+        db,
+      );
+    }
+    if (subscriptionId) {
+      await setOrgSubscription(
+        organizationId,
+        {
+          stripeCustomerId: customerId ?? '',
+          stripeSubscriptionId: subscriptionId,
+          status: subStatus,
+          currentPeriodEnd: subPeriodEnd,
+        },
+        db,
+      );
+    }
+    await insertBillingLedger(
+      {
+        organizationId,
+        planCode: planId,
+        creditsDelta: credits,
+        stripeSessionId: session.id,
+        stripePaymentIntent: paymentIntent ?? null,
+        note: `Achat ${offer.name}`,
+      },
+      db,
+    );
   });
 }
 
@@ -495,15 +543,25 @@ export async function grantOrgCredits(input: {
   expireMonths?: number | null;
   note?: string;
 }): Promise<void> {
-  await addEventCredits(input.organizationId, input.credits, {
-    commercialPlan: input.planCode,
-    extendExpireMonths: input.expireMonths ?? null,
-    billingSource: 'comped',
-  });
-  await insertBillingLedger({
-    organizationId: input.organizationId,
-    planCode: input.planCode,
-    creditsDelta: input.credits,
-    note: input.note ?? 'Grant super-admin',
+  await withTransaction(async (db) => {
+    await addEventCredits(
+      input.organizationId,
+      input.credits,
+      {
+        commercialPlan: input.planCode,
+        extendExpireMonths: input.expireMonths ?? null,
+        billingSource: 'comped',
+      },
+      db,
+    );
+    await insertBillingLedger(
+      {
+        organizationId: input.organizationId,
+        planCode: input.planCode,
+        creditsDelta: input.credits,
+        note: input.note ?? 'Grant super-admin',
+      },
+      db,
+    );
   });
 }
