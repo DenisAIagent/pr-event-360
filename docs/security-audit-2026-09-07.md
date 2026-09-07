@@ -129,7 +129,21 @@ Aucun contrôle de dépendances n’existait — c’est ce qui a laissé passer
 
 Chaque correctif de sécurité a été validé en **RED puis GREEN** : le test échoue quand on retire le correctif, il passe quand on le remet.
 
-**Non exécuté** : tests E2E Playwright (base migrée requise), et toute vérification en environnement cible. Aucune de ces corrections n’est à ce jour **déployée** ni **vérifiée en production**.
+**Non exécuté au moment de la rédaction initiale** : tests E2E Playwright (base migrée requise).
+
+### Mise à jour du 2026-09-07 après déploiement
+
+| Étape | Résultat |
+|---|---|
+| Push `main` (27de1f7) | CI GitHub Actions **verte**, E2E Playwright inclus ([run 34095651051](https://github.com/DenisAIagent/pr-event-360/actions/runs/34095651051)) |
+| Déploiement Railway | `1f4e5828` **SUCCESS**, déployé depuis un worktree propre sur 27de1f7 |
+| Santé production | `GET /api/health` → 200 `{"status":"ok"}` |
+| Non-régression d’actif | `/media/pr-event-360-demo.mp4` → 200, 5 393 784 octets (inchangé) |
+| **SEC-01 vérifié en production** | En-tête `RateLimit-Limit: 5` observé sur `/api/admin/auth/login/mfa` — c’est le plafond par compte. L’ancien code aurait renvoyé `10`. |
+
+**Le service Railway n’est pas relié au dépôt GitHub** (`source: {repo: null}`) : un push sur `main` déclenche la CI mais **ne déploie pas**. Les déploiements se font par `railway up`, qui téléverse le répertoire de travail — d’où le passage par un worktree propre pour ne pas embarquer de fichiers non commités.
+
+SEC-02, SEC-03, SEC-04, SEC-05 et ARC-01 sont **déployés** et couverts par les tests exécutés en CI, mais n’ont pas fait l’objet d’une vérification active distincte en production : leur observation exige soit un accès authentifié, soit des sondes destructives (déclenchement volontaire d’un épuisement mémoire, écriture d’un export). Leur statut est donc « déployé », pas « vérifié dans l’environnement cible ».
 
 ---
 
@@ -149,13 +163,22 @@ Le login administrateur (`IP + email`) et le login journaliste (IP) restent cont
 
 **Prochaine action** si le risque évolue : verrouillage progressif par compte avec notification par email, plutôt qu’un plafond sec.
 
-### OPS-02 — Redis en multi-instance (hérité de l’audit précédent)
+### OPS-02 — Redis absent en production, plafonds multipliés par le nombre de répliques (**confirmé en production**)
 
-Les plafonds de SEC-01 ne sont cohérents entre instances que si `REDIS_URL` est configuré ; sinon chaque réplique compte pour elle-même et la limite effective est multipliée par N. Le store d’authentification est déjà en `fail-closed`, et `REQUIRE_REDIS=true` refuse le démarrage sans Redis. **À vérifier dans l’environnement cible** — hors de portée de cet audit.
+Point hérité de l’audit précédent, **désormais vérifié dans l’environnement cible** (2026-09-07, après déploiement) :
 
-### OPS-03 — Déploiement
+- `REDIS_URL` **n’est pas défini** dans les variables Railway de production (`REQUIRE_REDIS` non plus) ;
+- le service tourne sur **plusieurs répliques** (≈ 3, estimé) : des requêtes successives depuis une même IP sur `/api/admin/auth/login/mfa` alternent 401 et 429 avec des `RateLimit-Remaining` divergents — chaque réplique compte dans son propre `MemoryStore`.
 
-Aucun correctif de ce rapport n’est déployé. Ordre suggéré : SEC-01 et SEC-02 d’abord (seuls chemins atteignables par un tiers), puis SEC-03, puis SEC-04 et ARC-01.
+**Conséquence.** Toute limite de débit vaut en réalité `limite × nombre de répliques`. Le plafond SEC-01 de 5 échecs / 15 min par compte en vaut donc ≈ 15, et l’anti-bruteforce du login ≈ 30. La correction SEC-01 **reste un gain net** — l’attaque par rotation d’IP est fermée, le plafond ne dépend plus du nombre d’adresses de l’attaquant — mais son niveau effectif est dégradé tant que les compteurs ne sont pas partagés.
+
+**Prochaine action, prioritaire.** Provisionner un Redis Railway, définir `REDIS_URL`, puis `REQUIRE_REDIS=true` (refuse le démarrage sans Redis, évite une régression silencieuse). Vérification d’acceptation : la 6ᵉ tentative sur `/api/admin/auth/login/mfa` depuis une même IP doit renvoyer 429 de façon **déterministe**, et non une répartition 401/429.
+
+### OPS-03 — Chaîne de déploiement non automatisée
+
+Le déploiement dépend d’un `railway up` lancé depuis un poste, à partir d’un répertoire de travail qui peut différer de `main` — ici, la suppression locale non commitée de la vidéo de démonstration aurait retiré de la production un fichier de 5,4 Mo qu’elle sert réellement. C’est une source de dérive entre le code audité, le code testé par la CI et le code exécuté.
+
+**Prochaine action** : relier le service Railway au dépôt GitHub (Settings → Source) pour que la production soit toujours le reflet d’un commit passé par la CI.
 
 ---
 
@@ -163,4 +186,6 @@ Aucun correctif de ce rapport n’est déployé. Ordre suggéré : SEC-01 et SEC
 
 Le contrôle d’accès multi-locataire a été vérifié exhaustivement sur les 87 routes d’administration et leurs 28 fonctions de dépôt : **aucun défaut trouvé**. Les faiblesses corrigées portent sur l’anti-automation, la sortie de données et les bornes de ressources — des angles que la revue précédente n’avait pas couverts.
 
-Cette conclusion ne vaut que pour le **périmètre statique examiné**. Aucun test en environnement cible n’a été mené ; la configuration de production, Redis, Stripe et le DNS des domaines clients n’ont pas été vérifiés. Cet audit n’établit pas l’absence de faille, seulement l’absence de faille **détectée par les vérifications décrites ici**.
+Cette conclusion ne vaut que pour le **périmètre examiné**. Une seule correction (SEC-01) a été vérifiée activement en production ; Stripe, le DNS des domaines clients et le comportement des surfaces authentifiées en production n’ont pas été testés. La vérification post-déploiement a par ailleurs mis au jour une faiblesse d’exploitation que l’analyse statique seule n’aurait pas confirmée (OPS-02, Redis absent en multi-réplique) — rappel utile que le code corrigé et le contrôle effectif en production sont deux choses distinctes.
+
+Cet audit n’établit pas l’absence de faille, seulement l’absence de faille **détectée par les vérifications décrites ici**.
