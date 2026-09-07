@@ -9,6 +9,13 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Moindre privilège : ces jobs ne font que lire le dépôt. Sans ce bloc, le
+# GITHUB_TOKEN hérite des permissions par défaut de l'organisation, qui peuvent
+# inclure l'écriture — un script de dépendance compromis pourrait alors pousser
+# du code ou publier une release (chaîne d'approvisionnement, NIST SSDF PW.4).
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Typecheck · tests · build
@@ -46,6 +53,17 @@ jobs:
 
       - name: Build client (typecheck + vite)
         run: npm --workspace client run build
+
+      # Récidive : la faille de XSS stocké corrigée le 2026-09-07 venait d'une
+      # version vulnérable de sanitize-html, dépendance directe du serveur.
+      # Ce garde-fou échoue sur toute vulnérabilité « high » ou « critical » des
+      # dépendances RÉELLEMENT livrées en production (--omit=dev). Les avis
+      # « moderate » restent visibles sans bloquer (cf. docs/security-rgpd.md).
+      - name: Audit des dépendances de production
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit complet (informatif, n'échoue pas le job)
+        run: npm audit || true
 
   e2e:
     name: E2E Playwright (parcours critiques)

@@ -20,7 +20,29 @@ export function platformBaseDomain(): string | null {
  * les `null` sont aussi mis en cache (le domaine principal ne matche aucun event).
  */
 const TTL_MS = 60_000;
+/**
+ * Le cache est indexé par en-tête `Host`, donc par une valeur entièrement
+ * choisie par l'appelant : sans borne, une série de requêtes portant chacune un
+ * hôte différent le fait croître indéfiniment jusqu'à épuiser la mémoire du
+ * conteneur (CWE-770, déni de service non authentifié — la SPA appelle cette
+ * résolution à chaque rendu). Le plafond couvre très largement le nombre réel
+ * de domaines clients ; au-delà, on purge plutôt que de grossir.
+ */
+const MAX_CACHE_ENTRIES = 500;
 const cache = new Map<string, { event: Event | null; expires: number }>();
+
+/** Mémorise une résolution en gardant le cache borné. */
+function remember(host: string, event: Event | null, now: number): void {
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    for (const [key, value] of cache) {
+      if (value.expires <= now) cache.delete(key);
+    }
+    // Toujours plein : ce sont des hôtes récents et inconnus (flot d'attaque).
+    // On repart de zéro — les vrais domaines seront re-résolus en une requête.
+    if (cache.size >= MAX_CACHE_ENTRIES) cache.clear();
+  }
+  cache.set(host, { event, expires: now + TTL_MS });
+}
 
 export function normalizeDomain(input: string): string {
   return input
@@ -74,7 +96,7 @@ export async function resolveEventForHost(hostname: string): Promise<Event | nul
     if (candidate?.customDomainVerified) event = candidate;
   }
 
-  cache.set(host, { event, expires: now + TTL_MS });
+  remember(host, event, now);
   return event;
 }
 

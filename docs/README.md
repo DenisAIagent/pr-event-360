@@ -20,6 +20,7 @@ PR Event 360 gère les relations presse des festivals et concerts, mais aussi de
 | [commercial-offers.md](commercial-offers.md) | Offres, crédits événement, Stripe Price IDs |
 | [rgpd/](rgpd/) | Registre, DPA, procédures, AIPD et transferts |
 | [security-audit-2026-08-05.md](security-audit-2026-08-05.md) | Audit sécurité (2026-08-05) |
+| [security-audit-2026-09-07.md](security-audit-2026-09-07.md) | Audit architecture et sécurité (2026-09-07) |
 
 Documents complémentaires :
 

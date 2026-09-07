@@ -25,12 +25,27 @@ interface RouteStats {
 const routes = new Map<string, RouteStats>();
 let inFlight = 0;
 
+/**
+ * Séries maximales conservées. Garde-fou de cardinalité : une série par chemin
+ * réellement routé est bornée par le code, mais rien n'empêche un appelant de
+ * viser des chemins inexistants à l'infini.
+ */
+const MAX_SERIES = 200;
+
+/** Étiquette unique pour tout ce qui n'a pas été routé (404, fichiers statiques). */
+const UNROUTED = '<non routé>';
+
 function routeKey(req: Request): string {
   // req.route n'est renseigné qu'après le routage → on lit au finish.
   const path = (req.route as { path?: string } | undefined)?.path;
-  const base = req.baseUrl || '';
-  const raw = path ? `${base}${path}` : `${req.method} ${base || req.path}`;
-  return typeof raw === 'string' ? raw : req.path;
+  if (!path) {
+    // Sans motif de route, l'ancienne version retombait sur `req.path`, c'est-à-dire
+    // sur une valeur choisie par l'appelant : chaque chemin inexistant créait une
+    // série permanente et faisait croître la mémoire sans borne (CWE-770), en plus
+    // de polluer /api/metrics. Les requêtes non routées sont désormais agrégées.
+    return UNROUTED;
+  }
+  return `${req.baseUrl || ''}${path}`;
 }
 
 export const metricsMiddleware: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
@@ -39,11 +54,19 @@ export const metricsMiddleware: RequestHandler = (req: Request, res: Response, n
   res.on('finish', () => {
     inFlight -= 1;
     const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
-    const key = `${req.method} ${routeKey(req)}`;
+    let key = `${req.method} ${routeKey(req)}`;
     let stats = routes.get(key);
     if (!stats) {
-      stats = { count: 0, durationSumMs: 0, durationMaxMs: 0, byStatusClass: new Map() };
-      routes.set(key, stats);
+      // Plafond atteint : on agrège dans la série fourre-tout plutôt que d'en créer
+      // une nouvelle (les compteurs restent justes, la mémoire reste bornée).
+      if (routes.size >= MAX_SERIES) {
+        key = `${req.method} ${UNROUTED}`;
+        stats = routes.get(key);
+      }
+      if (!stats) {
+        stats = { count: 0, durationSumMs: 0, durationMaxMs: 0, byStatusClass: new Map() };
+        routes.set(key, stats);
+      }
     }
     stats.count += 1;
     stats.durationSumMs += durationMs;
@@ -56,6 +79,11 @@ export const metricsMiddleware: RequestHandler = (req: Request, res: Response, n
 
 function esc(label: string): string {
   return label.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/** Réinitialise les séries (tests). */
+export function resetMetricsForTest(): void {
+  routes.clear();
 }
 
 export function renderMetrics(): string {

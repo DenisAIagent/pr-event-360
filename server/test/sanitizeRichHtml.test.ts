@@ -41,3 +41,35 @@ describe('sanitizeRichHtml — iframes vidéo', () => {
     expect(sanitizeRichHtml('<iframe srcdoc="<script>alert(1)</script>"></iframe>')).not.toContain('script');
   });
 });
+
+/**
+ * Garde-fou de configuration (SEC-05).
+ *
+ * Les avis GHSA-jxwj-j7wr-gfrw (mutation-XSS via `</textarea/>`) et
+ * GHSA-g8qq-57p8-ggw5 (SVG SMIL) visent des configurations qui autorisent
+ * `textarea` ou `svg`. L'allowlist de ce projet ne les contient pas : les
+ * charges des deux avis étaient déjà neutralisées avant la montée de version.
+ * Ces tests verrouillent cette propriété — c'est elle, et non le numéro de
+ * version, qui protège la newsroom publique.
+ */
+describe('sanitizeRichHtml — charges des avis sanitize-html', () => {
+  it('neutralise la mutation-XSS par `</textarea/>` (GHSA-jxwj-j7wr-gfrw)', () => {
+    const out = sanitizeRichHtml('<p><textarea/></textarea/><img src=x onerror=alert(1)></p>');
+    expect(out).not.toContain('onerror');
+    expect(out).not.toContain('textarea');
+  });
+
+  it('neutralise les animations SMIL qui réécrivent href (GHSA-g8qq-57p8-ggw5)', () => {
+    const out = sanitizeRichHtml(
+      '<a href="https://ok.test"><svg><set attributeName="href" to="javascript:alert(1)"/></svg></a>',
+    );
+    expect(out).not.toContain('javascript:');
+    expect(out).not.toContain('<set');
+    expect(out).not.toContain('<svg');
+  });
+
+  it('n’autorise ni textarea ni svg dans l’allowlist éditoriale', () => {
+    expect(sanitizeRichHtml('<textarea>x</textarea>')).not.toContain('textarea');
+    expect(sanitizeRichHtml('<svg><circle r="1"/></svg>')).not.toContain('svg');
+  });
+});

@@ -379,6 +379,42 @@ export async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> 
   });
 }
 
+/**
+ * Vérifie que la session Checkout a bien été payée AU TARIF de l'offre annoncée
+ * dans ses métadonnées.
+ *
+ * Le chemin d'inscription (`materializeFromSession`) faisait déjà ce contrôle ;
+ * les achats depuis un compte existant, eux, accordaient crédits et options sur
+ * la seule foi des métadonnées. La signature du webhook garantit l'authenticité
+ * de l'événement, pas la cohérence entre l'offre facturée et l'offre créditée :
+ * un Price ID modifié dans le Dashboard, une session créée par une clé Stripe
+ * compromise ou une régression du code d'achat livreraient la prestation sans
+ * l'encaissement correspondant. On refuse au lieu de créditer.
+ *
+ * Renvoie `true` si le prix ne peut pas être relu (best-effort, comme sur le
+ * chemin d'inscription) : on ne bloque pas une livraison légitime sur une
+ * indisponibilité de l'API Stripe.
+ */
+async function paidAtExpectedPrice(
+  session: Stripe.Checkout.Session,
+  planId: CommercialPlanId,
+): Promise<boolean> {
+  const expected = await stripePriceIdForPlan(planId);
+  if (!expected) return false;
+  let observed: string | undefined;
+  try {
+    const full = await (await client()).checkout.sessions.retrieve(session.id, {
+      expand: ['line_items.data.price'],
+    });
+    const price = full.line_items?.data?.[0]?.price;
+    observed = typeof price === 'string' ? price : price?.id;
+  } catch {
+    return true; // relecture impossible : on ne pénalise pas un achat légitime
+  }
+  if (!observed) return true;
+  return observed === expected;
+}
+
 async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise<void> {
   const organizationId = session.metadata?.organization_id;
   const planId = (session.metadata?.plan_id ?? '') as CommercialPlanId;
@@ -386,6 +422,13 @@ async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise
 
   const offer = getCommercialOffer(planId);
   if (!offer) return;
+
+  if (!(await paidAtExpectedPrice(session, planId))) {
+    console.error(
+      `[billing] Prix incohérent avec l'offre « ${planId} » pour la session ${session.id} — livraison refusée.`,
+    );
+    return;
+  }
 
   const paymentIntent =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id;
@@ -463,6 +506,9 @@ async function materializeOrgPurchase(session: Stripe.Checkout.Session): Promise
     );
   });
 }
+
+/** Exposé pour les tests de non-régression du contrôle de prix (SEC-04). */
+export const handleOrgPurchaseForTest = materializeOrgPurchase;
 
 /** Crée l'organisation + le compte à partir d'une session Checkout payée. Idempotent. */
 export async function materializeFromSession(session: Stripe.Checkout.Session): Promise<void> {

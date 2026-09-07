@@ -183,6 +183,29 @@ export function authRateLimitStoreOrUndefined(): Store | undefined {
 }
 
 /**
+ * Clé de rate-limit indexée sur le COMPTE ciblé, indépendamment de l'IP source.
+ *
+ * Une limite par IP seule ne protège pas un secret court : un pool d'adresses
+ * (proxies résidentiels) multiplie le quota par le nombre d'IP et rouvre le
+ * bruteforce. C'est décisif pour l'étape TOTP, dont le secret n'a que
+ * 10^6 valeurs et dont le challenge est un JWT sans état, rejouable pendant
+ * toute sa durée de vie. Cf. OWASP ASVS 4.0.3 V2.2.1 (anti-automation sur le
+ * second facteur).
+ *
+ * `accountId` doit provenir d'une valeur VÉRIFIÉE côté serveur (signature du
+ * challenge), sinon l'attaquant choisirait librement sa propre clé de comptage.
+ * Sans compte identifiable, on retombe sur l'IP pour rester borné.
+ */
+export function accountRateLimitKey(
+  prefix: string,
+  accountId: string | null | undefined,
+  ip: string | undefined,
+): string {
+  if (accountId) return `${prefix}:acct:${accountId}`;
+  return `${prefix}:ip:${ip && ip.length > 0 ? ip : 'unknown'}`;
+}
+
+/**
  * Clé de rate-limit auth : IP + email normalisé (casse / espaces).
  * Sans email (body non parsé), tombe sur l'IP seule.
  */

@@ -9,9 +9,11 @@ import { requireAuth, requireRole } from '../../middleware/auth';
 import { issueSession, clearSession, csrfValid } from '../../lib/session';
 import { login, completeMfaLogin, registerUser } from '../../services/authService';
 import {
+  accountRateLimitKey,
   authRateLimitKey,
   authRateLimitStoreOrUndefined,
 } from '../../lib/rateLimitStore';
+import { verifyMfaChallenge } from '../../lib/jwt';
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
 import { mfaRequiredFor } from '../../lib/mfaPolicy';
 import { requestPasswordReset, resetPassword } from '../../services/passwordResetService';
@@ -119,10 +121,49 @@ const mfaLoginLimiter = rateLimit({
   keyGenerator: (req: Request) => authRateLimitKey('mfa', req.ip, undefined),
 });
 
+/**
+ * Compte porté par le challenge MFA, VÉRIFIÉ par signature. Renvoie null si le
+ * challenge est absent, forgé ou expiré : la clé de comptage retombe alors sur
+ * l'IP (cf. accountRateLimitKey), donc reste bornée.
+ */
+function mfaChallengeSubject(req: Request): string | null {
+  const challenge = (req.body as { challenge?: unknown } | undefined)?.challenge;
+  if (typeof challenge !== 'string' || !challenge) return null;
+  try {
+    return verifyMfaChallenge(challenge);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Anti-bruteforce du SECOND facteur, indexé sur le compte et non sur l'IP.
+ *
+ * `mfaLoginLimiter` seul ne suffit pas : le challenge est un JWT sans état,
+ * rejouable pendant ses 5 minutes, et un pool d'IP multiplie le quota par le
+ * nombre d'adresses. Un code TOTP n'a que 10^6 valeurs (dont 3 acceptées par la
+ * tolérance de ±1 fenêtre) : sans plafond par compte, un attaquant disposant
+ * déjà du mot de passe finit par tomber juste, et la MFA — précisément le
+ * contrôle censé survivre à la fuite du mot de passe — ne protège plus rien.
+ *
+ * Pas de risque de déni de service ciblé : obtenir un challenge signé pour un
+ * compte exige d'avoir déjà passé l'étape mot de passe de ce compte.
+ * `skipSuccessfulRequests` : seules les tentatives ratées consomment le quota.
+ */
+const mfaAccountLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 5,
+  standardHeaders: true,
+  store: authStore,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req: Request) => accountRateLimitKey('mfa-account', mfaChallengeSubject(req), req.ip),
+});
+
 // 2e étape du login : challenge (issu de /login) + code TOTP → jeton de session.
 authRouter.post(
   '/login/mfa',
   mfaLoginLimiter,
+  mfaAccountLimiter,
   validateBody(z.object({ challenge: z.string().min(1), code: z.string().min(6).max(8) })),
   asyncHandler(async (req, res) => {
     const { challenge, code } = req.body as { challenge: string; code: string };

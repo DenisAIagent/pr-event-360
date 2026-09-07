@@ -129,7 +129,7 @@ Le fichier va directement du navigateur vers Cloudinary :
 ## Facturation
 
 - corps brut et signature `STRIPE_WEBHOOK_SECRET` ;
-- vérification du prix, de la session et des métadonnées ;
+- vérification du prix, de la session et des métadonnées, **sur les deux chemins** : inscription (Price ID dans la liste des tarifs configurés) et achat depuis un compte existant (Price ID facturé identique au tarif de l’offre annoncée) ;
 - `stripe_events` empêche le retraitement ;
 - aucun hash de mot de passe conservé dans `pending_signups` ;
 - compte créé après preuve de paiement ou invitation valide.
@@ -160,6 +160,8 @@ Les tokens de reset, invitation et espace sont hashés.
 - confiance limitée à un proxy en production ;
 - surfaces publiques 30 req/min ;
 - auth sensible 10 req/15 min ;
+- étape MFA (`POST /api/admin/auth/login/mfa`) : plafond supplémentaire de **5 échecs / 15 min par COMPTE**, insensible à la rotation d’IP. Le challenge MFA est un JWT sans état rejouable 5 min : un plafond par IP seul se contourne avec un pool d’adresses et rouvre le bruteforce des 10⁶ codes TOTP ;
+- séries de métriques et cache de résolution d’hôte bornés : ni le chemin d’URL ni l’en-tête `Host` ne peuvent faire croître la mémoire sans limite ;
 - compteurs de limitation partagés via Redis si `REDIS_URL` est défini (cohérents entre instances, fail-open si Redis injoignable avec journalisation d’alerte), sinon en mémoire par processus ;
 - `REQUIRE_REDIS=true` refuse le démarrage sans Redis (recommandé multi-instance) ;
 - `GET /api/metrics` protégé par `METRICS_TOKEN` (Bearer) ; 404 en production sans secret ;
@@ -173,7 +175,7 @@ Les tokens de reset, invitation et espace sont hashés.
 - score de priorité sans décision automatisée finale ;
 - droit à l’effacement par cascade ;
 - **export JSON art. 15/20** (espace journaliste + back-office) ;
-- exports opérationnels CSV / bilan (PII) : authentifiés, scopés multi-tenant, `Cache-Control: no-store` ;
+- exports opérationnels CSV / bilan (PII) : authentifiés, scopés multi-tenant, `Cache-Control: no-store`, cellules texte neutralisées contre l’injection de formules tableur (les champs viennent du formulaire d’accréditation public) ;
 - **espace de validation production** (`/prod/:token`) : surface externe cloisonnée par artiste. Lien personnel haché en base et rotaté à chaque échange, session JWT `typ:'pspace'` en cookie httpOnly, CSRF sur les mutations, page en `noindex` et `Disallow`. Minimisation : ni coordonnées du journaliste, ni score, ni demandes des autres artistes. L'avis rendu est consultatif et ne modifie aucun statut ;
 - suppression d’un journaliste : demandes, conférences et retombées ;
 - suppression événement/organisation : données rattachées ;
@@ -199,4 +201,5 @@ Les tokens de reset, invitation et espace sont hashés.
 - [ ] `NOTIFICATIONS_MODE=live` seulement après validation ;
 - [ ] régions/DPA des sous-traitants confirmés ;
 - [ ] test d’accès croisé entre deux tenants ;
+- [ ] `npm audit --omit=dev --audit-level=high` au vert (contrôlé par la CI) ;
 - [ ] sauvegarde et restauration vérifiées.

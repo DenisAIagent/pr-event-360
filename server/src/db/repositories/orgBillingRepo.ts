@@ -1,5 +1,5 @@
 import { pool } from '../pool';
-import type { Queryable } from '../types';
+import type { Queryable, TransactionClient } from '../types';
 import type { Organization } from '../../domain';
 
 interface OrgBillingRow {
@@ -101,10 +101,16 @@ export async function setOrgCommercialPlan(
  * Consomme 1 crédit événement de façon atomique.
  * Retourne false si solde insuffisant ou crédits expirés.
  * true si illimité (balance NULL) ou débit réussi.
+ *
+ * Le client de TRANSACTION est obligatoire : le `FOR UPDATE` ci-dessous ne
+ * sérialise les créations concurrentes que si le verrou tient jusqu'au COMMIT.
+ * Appelé sur le pool, il serait relâché immédiatement et deux requêtes
+ * simultanées consommeraient le même crédit (un événement gratuit par course
+ * gagnée). Cf. `TransactionClient`.
  */
 export async function tryConsumeEventCredit(
   organizationId: string,
-  db: Queryable = pool,
+  db: TransactionClient,
 ): Promise<{ ok: boolean; reason?: string }> {
   const { rows } = await db.query<{
     event_credits_balance: number | null;
@@ -139,7 +145,11 @@ export async function tryConsumeEventCredit(
   return { ok: true };
 }
 
-/** Ajoute des crédits (achat pack, extra agence, grant). */
+/**
+ * Ajoute des crédits (achat pack, extra agence, grant).
+ * Client de transaction obligatoire, même raison que `tryConsumeEventCredit` :
+ * le lire-puis-écrire doit rester atomique face à une consommation concurrente.
+ */
 export async function addEventCredits(
   organizationId: string,
   delta: number,
@@ -148,7 +158,7 @@ export async function addEventCredits(
     extendExpireMonths?: number | null;
     billingSource?: string;
   } = {},
-  db: Queryable = pool,
+  db: TransactionClient,
 ): Promise<void> {
   const { rows } = await db.query<{
     event_credits_balance: number | null;
