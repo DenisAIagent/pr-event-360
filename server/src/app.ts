@@ -189,6 +189,12 @@ export function createApp(): Express {
           frameSrc: ["'self'", 'https://accounts.google.com/gsi/', 'https://www.youtube-nocookie.com'],
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
+          // frame-ancestors : anti-clickjacking (durcit X-Frame-Options, que la CSP prime).
+          // Le produit ne s'intègre jamais en iframe tierce.
+          frameAncestors: ["'self'"],
+          // form-action : un POST ne peut cibler que notre origine, même en cas d'injection
+          // de balise <form> (les formulaires légitimes postent tous vers l'API 'self').
+          formAction: ["'self'"],
         },
       },
       referrerPolicy: { policy: 'no-referrer' },

@@ -165,8 +165,9 @@ publicSpaceRouter.get(
   '/:token',
   asyncHandler(async (req, res) => {
     const journalist = await resolveSpaceJournalist(req);
-    // Premier clic sur le lien magique : pose la session JWT (sans rotation ici —
-    // la rotation est faite par POST /session côté client).
+    // resolveSpaceJournalist a déjà tourné le bearer d'URL (single-use). Sur ce
+    // premier hit via lien magique, on pose en plus la session JWT pour que les
+    // appels suivants passent par le cookie (`/me`) sans rejouer le token.
     if (req.params.token && req.params.token !== 'me') {
       issueJournalistSession(res, { jid: journalist.id, eid: journalist.eventId });
     }

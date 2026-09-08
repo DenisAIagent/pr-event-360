@@ -6,7 +6,7 @@
 - hébergeur : Railway ;
 - santé : `GET /api/health` (exécute `SELECT 1`, répond 503 si PostgreSQL est inaccessible) ;
 - métriques : `GET /api/metrics` (format Prometheus) ;
-- dernier déploiement vérifié avec la migration `0046_audit-log`.
+- dernier déploiement vérifié avec la migration `0054_commercial-plans-credits` (la chaîne `migrate:deploy` applique toute migration en attente au démarrage).
 
 La région effective des services Railway/PostgreSQL doit être confirmée dans le dashboard avant toute affirmation RGPD.
 
@@ -168,7 +168,7 @@ curl -fsS https://<domaine>/api/health
 
 Puis contrôler :
 
-- migrations `0001` à `0046` ;
+- migrations `0001` à `0054` ;
 - `GET /api/metrics` répond au format Prometheus et les compteurs s’incrémentent ;
 - login + MFA admin ;
 - création d’un événement de chaque type ;
