@@ -5,19 +5,20 @@ import { apiLogin, attachApiSession, api } from './helpers';
  * Régression sécurité X-01 : XSS stockée dans le badge admin.
  *
  * Le nom du journaliste vient du formulaire public d'accréditation (validé en
- * longueur seulement). Avant correctif, il était injecté brut dans un
+ * longueur seulement). Avant correctif il était injecté brut dans un
  * `document.write`, dans une fenêtre `about:blank` qui hérite de l'origine de
- * l'app — donc exécuté. On soumet ici une charge utile qui, si elle s'exécutait,
- * positionnerait `window.__xss` dans la fenêtre du badge ; le test échoue tant que
- * le rendu n'échappe pas la valeur (RED avant correctif, GREEN après).
+ * l'app — donc exécuté.
+ *
+ * On teste le vrai chemin (clic « Badge » → fetch des données réelles → rendu),
+ * mais on capture le HTML écrit plutôt que de dépendre de l'ouverture effective
+ * d'un popup après un `await` (bloquée de façon non déterministe en headless).
+ * Le document écrit doit être échappé et ne contenir aucun `<script>`.
  */
-test('le badge n’exécute pas une charge XSS injectée via le nom (X-01)', async ({ page, request }) => {
+test('le badge n’injecte pas de HTML actif issu du nom (X-01)', async ({ page, request }) => {
   const auth = await apiLogin(request);
   const t = auth.csrf;
   const stamp = Date.now();
   const email = `xss.e2e.${stamp}@test.local`;
-  // Charge sans guillemets : en cas d'injection brute, l'`onerror` de l'<img> à src
-  // cassé s'exécute et pose le témoin. Échappée, elle reste du texte inerte.
   const payloadLast = `X${stamp}<img src=x onerror=window.__xss=1>`;
 
   const event = (await api(request, t, 'post', '/admin/events', {
@@ -52,30 +53,53 @@ test('le badge n’exécute pas une charge XSS injectée via le nom (X-01)', asy
   });
 
   await attachApiSession(page, auth, request);
-  // Toute boîte de dialogue (un éventuel alert d'exploitation, ou window.print) est
-  // rejetée pour ne pas bloquer le test.
-  page.on('dialog', (d) => void d.dismiss());
+  // Intercepte l'ouverture de la fenêtre du badge pour capturer le HTML écrit,
+  // sans dépendre du blocage de popup en headless. Le `document` factice couvre
+  // ce dont l'app se sert (open/write/close, images, print).
+  await page.addInitScript(() => {
+    (window as unknown as { __badgeHtml: string[] }).__badgeHtml = [];
+    window.open = () =>
+      ({
+        closed: false,
+        focus() {},
+        print() {},
+        document: {
+          open() {},
+          close() {},
+          write(html: string) {
+            (window as unknown as { __badgeHtml: string[] }).__badgeHtml.push(html);
+          },
+          images: [] as unknown[],
+        },
+      }) as unknown as Window;
+  });
   await page.goto(`/admin/events/${event.id}/accreditations`);
   await expect(page.getByRole('heading', { name: `XSS ${stamp}` })).toBeVisible();
 
-  const badgeBtn = page.getByRole('button', { name: /Badge/ }).first();
+  const badgeBtn = page.locator('button[title="Badge QR check-in"]').first();
   await expect(badgeBtn).toBeVisible();
-  const [popup] = await Promise.all([page.waitForEvent('popup'), badgeBtn.click()]);
-  popup.on('dialog', (d) => void d.dismiss());
-  await popup.waitForLoadState('domcontentloaded');
-  // Laisse le temps à un éventuel onerror de se déclencher avant de conclure.
-  await popup.waitForTimeout(300);
+  await badgeBtn.click();
 
-  // 1) Aucune exécution de script : le témoin n'est jamais posé.
-  expect(await popup.evaluate(() => (window as { __xss?: number }).__xss ?? null)).toBeNull();
-  // 2) Aucune balise <script> dans le document du badge.
-  expect(await popup.locator('script').count()).toBe(0);
-  // 3) Aucune <img> hostile : seule subsiste l'image data: du QR.
-  expect(await popup.locator('img:not([src^="data:"])').count()).toBe(0);
-  expect(await popup.locator('img[src^="data:"]').count()).toBe(1);
-  // 4) La charge ressort comme texte échappé, donc inerte.
-  await expect(popup.locator('body')).toContainText('onerror=window.__xss=1');
+  // Le HTML du badge finit par être écrit (après le fetch des données réelles).
+  await expect
+    .poll(async () => page.evaluate(() => (window as unknown as { __badgeHtml: string[] }).__badgeHtml.length), {
+      timeout: 15_000,
+    })
+    .toBeGreaterThan(0);
+  const html = (await page.evaluate(
+    () => (window as unknown as { __badgeHtml: string[] }).__badgeHtml[0],
+  )) as string;
 
-  await popup.close().catch(() => {});
+  // 1) Aucune balise <script> dans le document du badge.
+  expect(html).not.toMatch(/<script/i);
+  // 2) Le vecteur n'apparaît jamais comme balise active…
+  expect(html).not.toContain('<img src=x onerror=');
+  // 3) …mais bien comme texte échappé (donc inerte).
+  expect(html).toContain('&lt;img src=x onerror=window.__xss=1&gt;');
+  // 4) Le document verrouille l'exécution par une CSP stricte.
+  expect(html).toContain("default-src 'none'");
+  // 5) Le QR réel (image data:) est bien présent.
+  expect(html).toMatch(/<img src="data:image\/[^"]+"/);
+
   await api(request, t, 'delete', `/admin/events/${event.id}`).catch(() => {});
 });
