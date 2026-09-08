@@ -1,0 +1,133 @@
+/* Fonctionnalités : six cartes blanches sur canvas, filet chaud, icône bleue.
+   Le survol change le filet et la tuile — pas d'élévation. */
+.lp-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+.lp-feature {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color var(--duration-normal) ease;
+}
+.lp-feature:hover {
+  border-color: var(--color-accent-soft);
+}
+.lp-icon-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-tint);
+  color: var(--color-accent-strong);
+  display: inline-grid;
+  place-items: center;
+  transition: background-color var(--duration-normal) ease;
+}
+.lp-feature:hover .lp-icon-tile {
+  background: #dff2fa;
+}
+.lp-feature .lp-body {
+  font-size: var(--lp-text-sm);
+}
+@media (max-width: 900px) {
+  .lp-features-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .lp-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Vidéo de présentation : cadre vitré 16 px sur canvas, MP4 chargé au clic. */
+.lp-video {
+  max-width: 1040px;
+  margin: 0 auto;
+  border-radius: var(--lp-radius-card);
+  overflow: hidden;
+  border: 1px solid var(--lp-line);
+  background: var(--lp-navy);
+}
+.lp-video-el,
+.lp-video-poster {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+.lp-video-facade {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.lp-video-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 20, 47, 0) 45%, rgba(7, 20, 47, 0.55) 100%);
+}
+.lp-video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 5px; /* recentre le triangle optiquement */
+  background: var(--lp-glass);
+  border: 1px solid var(--lp-glass-line);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--color-accent-strong);
+  transition: transform var(--duration-normal) var(--ease-out-expo);
+}
+.lp-video-facade:hover .lp-video-play {
+  transform: scale(1.06);
+}
+.lp-video-facade:active .lp-video-play {
+  transform: scale(0.98);
+}
+.lp-video-facade:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.lp-video-meta {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--lp-glass);
+  color: var(--color-ink);
+  font-size: var(--lp-text-caption);
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@media (max-width: 640px) {
+  .lp-video-play {
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-video-play {
+    transition: none;
+  }
+  .lp-video-facade:hover .lp-video-play {
+    transform: none;
+  }
+}

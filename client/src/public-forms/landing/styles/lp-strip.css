@@ -1,0 +1,54 @@
+/* Bandeau des profils d'événement : six cellules blanches sur une même ligne,
+   séparées par des filets — la rangée de logos de la référence, sans marque inventée. */
+.lp-strip {
+  padding: var(--space-6) 0;
+}
+.lp-strip-label {
+  display: block;
+  text-align: center;
+  font-size: var(--lp-text-caption);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-faint);
+  margin-bottom: var(--space-4);
+}
+.lp-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--lp-line);
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-radius-card);
+  overflow: hidden;
+}
+.lp-strip-cell {
+  background: var(--lp-paper);
+  padding: var(--space-4) var(--space-3);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background-color var(--duration-normal) ease;
+}
+.lp-strip-cell:hover {
+  background: var(--color-accent-tint);
+}
+.lp-strip-cell strong {
+  font-size: var(--lp-text-sm);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.lp-strip-cell span {
+  font-size: 0.75rem;
+  color: var(--color-ink-faint);
+}
+@media (max-width: 900px) {
+  .lp-strip-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .lp-strip-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -97,6 +97,34 @@ Brand signatures / baselines: *Connect · Communicate · Celebrate* (institution
 
 ---
 
+## Landing page (site marketing)
+
+The public landing (`client/src/public-forms/landing/`) applies the brand through an
+**editorial, photography-led grammar** — decided in September 2026 after reviewing a
+Superhuman-style reference. Palette, type families and icon system are unchanged; what
+differs from the product UI is the composition:
+
+- **Full-bleed photograph as the hero** (a real festival crowd at golden hour from the
+  founder's own archive, silhouettes only, sponsor signage retouched out), headline in
+  navy on a light halo, and **glass product cards** (white at 84 % + backdrop blur) floating
+  over the crowd. Depth comes from layering, never from drop shadows.
+- **Warm canvas** `#f6f4ef` scoped to `.lp` (never pure white), white cards with a warm
+  hairline `#e4e1da`, no card shadows. This warmth is *landing-only*; the product keeps
+  white / `#F5F7FA`.
+- **Display type at Manrope 440** (variable weight) with tight tracking for all headlines,
+  including the 64 px hero — lighter than the 600 used in the app, heavier than the 300 of
+  older marketing mocks.
+- **Left-aligned section heads** (title left, lede right), one dark navy band mid-page
+  (the RP cycle, numbered because the steps really are sequential), soft blue radial glows
+  before the footer, full-bleed navy footer with link columns.
+- Small-text accents (eyebrows, links, pills) use `#0d6b99`, the digital blue darkened one
+  step so 12–15 px text reaches 4.5:1 on the canvas and tints. Large "360°" figures keep
+  `#1598D3`.
+
+Do not "fix" the landing back to white surfaces or 600-weight titles: the contrast with the
+product UI is intentional. Hero image sources: `client/public/media/hero-festival-*` (AVIF,
+WebP, JPEG at 1024 / 1600 / 2560).
+
 ## Iconography
 
 - **System:** [Lucide](https://lucide.dev) — fine line icons, ~1.5–1.75px stroke, lightly

@@ -6,10 +6,31 @@ import { PRIMARY_CTA_LABEL } from '../../lib/contact';
 // ressources n'importent pas la feuille de la landing.
 import './landing.css';
 
+const NAV_LINKS = [
+  ['/#demo', 'Vidéo'],
+  ['/#features', 'Fonctionnalités'],
+  ['/#pricing', 'Tarifs'],
+] as const;
+
+/** Vrai dès que la page a défilé : l'en-tête gagne alors son voile et son filet. */
+function useScrolled(threshold = 8) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => {
+      const next = window.scrollY > threshold;
+      setScrolled((prev) => (prev === next ? prev : next));
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, [threshold]);
+  return scrolled;
+}
+
 /**
  * En-tête public partagé par la landing, le centre de ressources et les pages
- * légales — ces dernières n'avaient auparavant aucune navigation, leur seul
- * retour étant un lien en bas de page.
+ * légales. Transparent et flouté : sur la landing il se pose sur la photographie
+ * du hero ; ailleurs, sur le canvas de la page.
  *
  * Les ancres pointent vers `/#…` et non `#…` : depuis `/ressources`, un simple
  * fragment ne mènerait nulle part. Quand le chemin courant est déjà `/`, le
@@ -18,6 +39,7 @@ import './landing.css';
 export function LandingHeader() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const scrolled = useScrolled();
 
   useEffect(() => {
     if (!open) return;
@@ -31,16 +53,18 @@ export function LandingHeader() {
   const close = () => setOpen(false);
 
   return (
-    <header className="lp-header">
+    <header className={`lp-header${scrolled || open ? ' is-scrolled' : ''}`}>
       <div className="lp-wrap lp-header-inner">
         <Link to="/" className="lp-logo" aria-label="PR Event 360 — accueil">
-          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" />
+          <img src="/brand/logo-pr-event-360.png" alt="PR Event 360" width={158} height={44} />
         </Link>
 
         <nav className="lp-nav" aria-label="Navigation principale">
-          <a href="/#demo">Vidéo</a>
-          <a href="/#features">Fonctionnalités</a>
-          <a href="/#pricing">Tarifs</a>
+          {NAV_LINKS.map(([href, label]) => (
+            <a key={href} href={href}>
+              {label}
+            </a>
+          ))}
           <Link to="/ressources">Ressources</Link>
         </nav>
 
@@ -48,7 +72,7 @@ export function LandingHeader() {
           <Link to="/admin/login" className="lp-login">
             Connexion
           </Link>
-          <Link className="btn btn-primary btn-sm" to="/admin/abonnement">
+          <Link className="btn btn-outline btn-sm" to="/admin/abonnement">
             {PRIMARY_CTA_LABEL}
           </Link>
         </div>
@@ -67,15 +91,11 @@ export function LandingHeader() {
 
       <div id={panelId} className={`lp-panel${open ? ' is-open' : ''}`} hidden={!open}>
         <nav className="lp-panel-nav" aria-label="Navigation mobile">
-          <a href="/#demo" onClick={close}>
-            Vidéo
-          </a>
-          <a href="/#features" onClick={close}>
-            Fonctionnalités
-          </a>
-          <a href="/#pricing" onClick={close}>
-            Tarifs
-          </a>
+          {NAV_LINKS.map(([href, label]) => (
+            <a key={href} href={href} onClick={close}>
+              {label}
+            </a>
+          ))}
           <Link to="/ressources" onClick={close}>
             Ressources
           </Link>

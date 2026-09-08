@@ -1,0 +1,95 @@
+/* Tarifs : trois cartes blanches, filet chaud, aucune ombre. L'offre recommandée
+   se distingue par un filet bleu digital intérieur — pas par une élévation. */
+.lp-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: stretch;
+}
+.lp-plan {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  position: relative;
+}
+.lp-plan.is-highlight {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.lp-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.lp-plan-name {
+  font-size: var(--lp-text-body);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.lp-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: var(--space-4);
+}
+.lp-price-amount {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.8rem + 1.2vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.lp-price-period {
+  font-size: var(--lp-text-sm);
+  color: var(--color-ink-faint);
+}
+.lp-price-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--lp-text-caption);
+  color: var(--color-ink-faint);
+  min-height: 2.4em;
+}
+.lp-price-list {
+  list-style: none;
+  padding: var(--space-4) 0 0;
+  margin: var(--space-4) 0 var(--space-5);
+  border-top: 1px solid var(--lp-line);
+  display: grid;
+  gap: 10px;
+}
+.lp-price-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--lp-text-sm);
+  line-height: 1.45;
+  color: var(--color-ink-soft);
+}
+.lp-price-list svg {
+  flex: none;
+  margin-top: 2px;
+}
+.lp-plan .btn {
+  margin-top: auto;
+  width: 100%;
+}
+.lp-pricing-foot {
+  margin-top: var(--space-5);
+  font-size: var(--lp-text-sm);
+  color: var(--color-ink-soft);
+  max-width: 70ch;
+}
+@media (max-width: 960px) {
+  .lp-plans {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}
+.lp-plan-reveal,
+.lp-plan {
+  height: 100%;
+}
