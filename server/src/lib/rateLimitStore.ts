@@ -39,6 +39,14 @@ async function getClient(): Promise<RedisLike | null> {
         err,
       );
     });
+    // Observabilité : trace une seule fois la connexion effective, pour distinguer
+    // « Redis configuré » de « Redis réellement joignable » (compteurs partagés).
+    let announced = false;
+    redis.on('ready', () => {
+      if (announced) return;
+      announced = true;
+      console.log('[rate-limit] Redis connecté — compteurs de débit partagés entre instances.');
+    });
     client = redis;
     return client;
   } catch (err) {
