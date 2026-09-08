@@ -11,7 +11,7 @@ import { login, completeMfaLogin, registerUser } from '../../services/authServic
 import {
   accountRateLimitKey,
   authRateLimitKey,
-  authRateLimitStoreOrUndefined,
+  createLimiterStore,
 } from '../../lib/rateLimitStore';
 import { verifyMfaChallenge } from '../../lib/jwt';
 import { startMfaSetup, confirmMfa, disableMfa, getMfaStatus } from '../../services/mfaService';
@@ -35,18 +35,17 @@ function withSession<T extends object>(res: Response, result: T, status = 200): 
   sendData(res, result, status);
 }
 
-export const authRouter = Router();
-
-const authStore = authRateLimitStoreOrUndefined();
 
 // Limite de débit sur la réinitialisation de mot de passe (surface publique) :
 // anti force brute sur les jetons et anti-énumération des comptes.
 // Store auth fail-closed si Redis configuré (sinon MemoryStore local).
+export const authRouter = Router();
+
 const resetLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
   standardHeaders: true,
-  store: authStore,
+  store: createLimiterStore({ scope: 'auth', name: 'reset' }),
   keyGenerator: (req: Request) =>
     authRateLimitKey('reset', req.ip, (req.body as { email?: unknown } | undefined)?.email),
 });
@@ -55,7 +54,7 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
   standardHeaders: true,
-  store: authStore,
+  store: createLimiterStore({ scope: 'auth', name: 'login' }),
   keyGenerator: (req: Request) =>
     authRateLimitKey('login', req.ip, (req.body as { email?: unknown } | undefined)?.email),
 });
@@ -117,7 +116,7 @@ const mfaLoginLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
   standardHeaders: true,
-  store: authStore,
+  store: createLimiterStore({ scope: 'auth', name: 'mfa-login' }),
   keyGenerator: (req: Request) => authRateLimitKey('mfa', req.ip, undefined),
 });
 
@@ -154,7 +153,7 @@ const mfaAccountLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 5,
   standardHeaders: true,
-  store: authStore,
+  store: createLimiterStore({ scope: 'auth', name: 'mfa-account' }),
   skipSuccessfulRequests: true,
   keyGenerator: (req: Request) => accountRateLimitKey('mfa-account', mfaChallengeSubject(req), req.ip),
 });
