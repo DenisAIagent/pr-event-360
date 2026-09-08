@@ -15,6 +15,10 @@ import { apiLogin, attachApiSession, api } from './helpers';
  * Le document écrit doit être échappé et ne contenir aucun `<script>`.
  */
 test('le badge n’injecte pas de HTML actif issu du nom (X-01)', async ({ page, request }) => {
+  // La connexion MFA peut devoir attendre la fenêtre TOTP suivante (anti-rejeu) ;
+  // ce test enchaîne ensuite un chargement du back-office et une navigation. On lui
+  // donne une marge large pour que cette variance n'entraîne pas de faux échec.
+  test.setTimeout(180_000);
   const auth = await apiLogin(request);
   const t = auth.csrf;
   const stamp = Date.now();
