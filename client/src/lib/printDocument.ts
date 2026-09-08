@@ -113,6 +113,25 @@ function printWhenReady(w: Window): void {
 }
 
 /**
+ * Ouvre une fenêtre `about:blank`, y écrit le document et déclenche l'impression
+ * depuis l'ouvrant (jamais par un script inline du document, pour qu'il puisse
+ * porter un `script-src 'none'`). Renvoie `false` si le popup est bloqué.
+ *
+ * Point unique de cette mécanique : partagée par `printBrandedDocument` (exports
+ * PDF) et par l'impression des badges (`printBadge`), pour n'avoir qu'un seul
+ * `document.write` de confiance dans toute l'application.
+ */
+export function openPrintWindow(html: string, features?: string): boolean {
+  const w = window.open('', '_blank', features);
+  if (!w) return false;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  printWhenReady(w);
+  return true;
+}
+
+/**
  * Assemble et ouvre le document. Renvoie `false` si la fenêtre a été bloquée,
  * pour que l'appelant puisse prévenir l'utilisateur.
  */
@@ -158,11 +177,5 @@ export function printBrandedDocument(opts: {
     </footer>
   </body></html>`;
 
-  const w = window.open('', '_blank');
-  if (!w) return false;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  printWhenReady(w);
-  return true;
+  return openPrintWindow(html);
 }

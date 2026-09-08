@@ -6,6 +6,7 @@ import { useFetch } from '../lib/useFetch';
 import type { Accreditation, AccStatus, EventSummary } from '../lib/types';
 import { ACC_STATUS_LABEL } from '../lib/labels';
 import { printTable } from '../lib/printRequests';
+import { printBadge } from '../../lib/printBadge';
 import { downloadCsv, fetchServerCsv } from '../lib/csvDownload';
 import { InfoBubble } from '../components/InfoBubble';
 import { EmptyState } from '../components/EmptyState';
@@ -104,24 +105,21 @@ export function AccreditationsTab() {
         journalist: { firstName: string; lastName: string | null; media: string | null };
         event: { name: string };
       }>(`/admin/events/${eventId}/journalists/${journalistId}/badge`);
-      const w = window.open('', '_blank', 'width=360,height=520');
-      if (!w) {
+      const name = `${badge.journalist.firstName} ${badge.journalist.lastName ?? ''}`.trim();
+      // Rendu échappé + CSP verrouillée (cf. printBadge) : les champs viennent du
+      // formulaire public d'accréditation et ne doivent jamais s'exécuter ici.
+      const opened = printBadge({
+        name,
+        eventName: badge.event.name,
+        media: badge.journalist.media,
+        qrDataUrl: badge.qrDataUrl,
+        printHint: 'Présentez ce QR à l’entrée presse',
+        title: `Badge ${name}`,
+      });
+      if (!opened) {
         toast.error('Popup bloquée — autorisez les fenêtres pour afficher le badge.');
         return;
       }
-      const name = `${badge.journalist.firstName} ${badge.journalist.lastName ?? ''}`.trim();
-      w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>Badge ${name}</title>
-        <style>body{font-family:system-ui,sans-serif;text-align:center;padding:24px}
-        img{width:240px;height:240px} h1{font-size:18px;margin:12px 0 4px}
-        .m{color:#666;font-size:13px}</style></head><body>
-        <div class="m">${badge.event.name}</div>
-        <h1>${name}</h1>
-        <div class="m">${badge.journalist.media ?? ''}</div>
-        <img src="${badge.qrDataUrl}" alt="QR check-in"/>
-        <p class="m">Présentez ce QR à l’entrée presse</p>
-        <script>window.onload=function(){window.print()}</script>
-        </body></html>`);
-      w.document.close();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Badge impossible');
     }

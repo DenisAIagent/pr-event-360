@@ -11,6 +11,7 @@ import { brandingStyle } from '../../lib/branding';
 import { Icon } from '../../components/Icon';
 import { CoverageSection } from './CoverageSection';
 import { getPublicEventTerms } from '../../lib/eventProfiles';
+import { printBadge } from '../../lib/printBadge';
 
 type SpaceTab = 'requests' | 'planning' | 'conferences' | 'coverage' | 'account';
 
@@ -472,21 +473,16 @@ export function SpacePage({
                           journalist: { firstName: string; lastName: string | null; media: string | null };
                         }>(`/public/space/${spaceKey}/badge`)
                         .then((badge) => {
-                          const w = window.open('', '_blank', 'width=360,height=520');
-                          if (!w) return;
                           const name = `${badge.journalist.firstName} ${badge.journalist.lastName ?? ''}`.trim();
-                          w.document.write(`<!doctype html><html><head><meta charset="utf-8"/><title>${name}</title>
-                            <style>body{font-family:system-ui,sans-serif;text-align:center;padding:24px}
-                            img{width:240px;height:240px} h1{font-size:18px;margin:12px 0 4px}
-                            .m{color:#666;font-size:13px}</style></head><body>
-                            <div class="m">${badge.event.name}</div>
-                            <h1>${name}</h1>
-                            <div class="m">${badge.journalist.media ?? ''}</div>
-                            <img src="${badge.qrDataUrl}" alt="QR"/>
-                            <p class="m">${t('space.badge.printHint')}</p>
-                            <script>window.onload=function(){window.print()}</script>
-                            </body></html>`);
-                          w.document.close();
+                          // Rendu échappé + CSP verrouillée (cf. printBadge) : nom, média
+                          // et événement viennent de l'accréditation publique.
+                          printBadge({
+                            name,
+                            eventName: badge.event.name,
+                            media: badge.journalist.media,
+                            qrDataUrl: badge.qrDataUrl,
+                            printHint: t('space.badge.printHint'),
+                          });
                         })
                         .catch((err: unknown) => {
                           setPwdError(err instanceof Error ? err.message : t('common.error'));
