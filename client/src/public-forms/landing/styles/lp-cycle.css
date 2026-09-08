@@ -1,0 +1,143 @@
+/* Bande bleu nuit : la seule surface sombre de la page. À gauche, les quatre
+   étapes du cycle RP en panneaux translucides superposés (le collage géométrique
+   de la référence, mais porteur de contenu) ; à droite, le propos. */
+.lp-cycle {
+  background: var(--lp-navy);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.lp-cycle-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--lp-ring);
+  width: 520px;
+  height: 520px;
+  left: -140px;
+  bottom: -220px;
+  z-index: -1;
+}
+.lp-cycle-ring-sm {
+  width: 340px;
+  height: 340px;
+  left: -50px;
+  bottom: -130px;
+  border-color: var(--lp-ring-soft);
+}
+.lp-cycle-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(2.5rem, 2rem + 4vw, 6rem);
+  align-items: center;
+  padding: var(--lp-section) 0;
+}
+.lp-cycle .eyebrow {
+  color: var(--color-accent-soft);
+}
+.lp-cycle .lp-h2 {
+  color: #fff;
+  margin-top: var(--space-3);
+}
+.lp-cycle .lp-lede {
+  color: var(--lp-on-navy);
+  margin-top: var(--space-4);
+  max-width: 46ch;
+}
+.lp-cycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin-top: var(--space-5);
+}
+.lp-cycle .lp-link {
+  color: #fff;
+}
+
+/* Les panneaux : décalés en escalier, comme des feuilles posées les unes sur les autres. */
+.lp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  counter-reset: step;
+}
+.lp-step {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--lp-radius-card);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color var(--duration-normal) ease;
+}
+.lp-step:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.lp-step:nth-child(2) {
+  margin-left: var(--space-5);
+}
+.lp-step:nth-child(3) {
+  margin-left: var(--space-6);
+}
+.lp-step:nth-child(4) {
+  margin-left: calc(var(--space-6) + var(--space-4));
+}
+.lp-step::before {
+  content: '0' counter(step);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: var(--lp-w-display);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--color-accent-soft);
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+.lp-step strong {
+  display: block;
+  font-size: var(--lp-text-body);
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  color: #fff;
+}
+.lp-step span {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--lp-text-sm);
+  line-height: 1.5;
+  color: var(--lp-on-navy);
+}
+
+@media (max-width: 900px) {
+  .lp-cycle-inner {
+    grid-template-columns: 1fr;
+  }
+  .lp-cycle-copy {
+    order: -1;
+  }
+  .lp-step:nth-child(n) {
+    margin-left: 0;
+  }
+}
+@media (max-width: 480px) {
+  .lp-step {
+    grid-template-columns: 44px 1fr;
+    padding: var(--space-4);
+  }
+  .lp-step::before {
+    font-size: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-step {
+    transition: none;
+  }
+}

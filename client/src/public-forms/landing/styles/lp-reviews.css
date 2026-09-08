@@ -1,0 +1,44 @@
+/* Avis : cartes blanches sur canvas, citation en Manrope léger, étoiles dorées. */
+.lp-quotes {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.lp-quotes.is-single {
+  grid-template-columns: 1fr;
+  max-width: 860px;
+}
+.lp-quote {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.lp-stars {
+  display: inline-flex;
+  gap: 2px;
+}
+.lp-quote blockquote {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--lp-w-display);
+  font-size: 1.25rem;
+  letter-spacing: -0.012em;
+  line-height: 1.4;
+  color: var(--color-ink);
+  text-wrap: pretty;
+}
+.lp-quotes.is-single .lp-quote blockquote {
+  font-size: clamp(1.4rem, 1rem + 1.4vw, 2rem);
+  line-height: 1.3;
+}
+.lp-quote figcaption {
+  margin-top: auto;
+  font-size: var(--lp-text-sm);
+  color: var(--color-ink-soft);
+}
+.lp-quote figcaption strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}

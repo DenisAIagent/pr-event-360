@@ -1,0 +1,41 @@
+/* Bande atmosphérique : halos bleus diffus sur le canvas, titre à gauche,
+   action à droite. Les dégradés sont un décor, jamais une surface interactive. */
+.lp-closing {
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--lp-line);
+  background:
+    radial-gradient(60% 90% at 78% 40%, rgba(21, 152, 211, 0.22) 0%, rgba(21, 152, 211, 0) 70%),
+    radial-gradient(50% 80% at 22% 100%, rgba(70, 176, 221, 0.18) 0%, rgba(70, 176, 221, 0) 70%),
+    radial-gradient(40% 60% at 55% 0%, rgba(7, 20, 47, 0.08) 0%, rgba(7, 20, 47, 0) 70%),
+    var(--lp-canvas);
+}
+.lp-closing-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: var(--space-6);
+  align-items: center;
+  padding: var(--lp-section) 0;
+}
+.lp-closing .lp-h2 {
+  max-width: 18ch;
+}
+.lp-closing .lp-lede {
+  margin-top: var(--space-4);
+  max-width: 48ch;
+}
+.lp-closing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+@media (max-width: 860px) {
+  .lp-closing-inner {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+  .lp-closing-actions {
+    justify-content: flex-start;
+  }
+}

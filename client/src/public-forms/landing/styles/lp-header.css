@@ -1,0 +1,135 @@
+/* En-tête public : transparent et flouté, posé sur la photo du hero. Le filet
+   bas et le voile canvas n'apparaissent qu'au défilement. */
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: transparent;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid transparent;
+  transition:
+    background-color var(--duration-normal) ease,
+    border-color var(--duration-normal) ease;
+}
+.lp-header.is-scrolled {
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom-color: var(--lp-line);
+}
+.lp-header-inner {
+  height: var(--lp-header-h, 64px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.lp-logo {
+  display: inline-flex;
+  flex: none;
+}
+.lp-logo img {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+.lp-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+.lp-nav a,
+.lp-login {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  text-decoration: none;
+  text-underline-offset: 0.3em;
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--duration-normal) ease;
+}
+.lp-nav a:hover,
+.lp-login:hover {
+  text-decoration-color: var(--color-accent);
+}
+.lp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Bascule mobile : la nav inline cède la place à un panneau déroulant. */
+.lp-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--lp-line-strong);
+  border-radius: var(--lp-radius-sm);
+  background: var(--lp-glass);
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.lp-panel {
+  display: none;
+  border-top: 1px solid var(--lp-line);
+  background: var(--lp-canvas);
+}
+.lp-panel-nav {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--lp-gutter) var(--space-5);
+}
+.lp-panel-nav a {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  text-decoration: none;
+  padding: 10px 0;
+}
+.lp-panel-nav .btn {
+  justify-content: center;
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 900px) {
+  .lp-nav,
+  .lp-header-actions {
+    display: none;
+  }
+  .lp-burger {
+    display: inline-flex;
+  }
+  .lp-logo img {
+    height: 38px;
+  }
+  .lp-panel {
+    display: block;
+  }
+  .lp-panel:not(.is-open) {
+    display: none;
+  }
+  .lp-panel.is-open .lp-panel-nav {
+    animation: lp-panel-in var(--duration-normal, 240ms) var(--ease-out-expo);
+  }
+}
+@keyframes lp-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-header {
+    transition: none;
+  }
+  .lp-panel.is-open .lp-panel-nav {
+    animation: none;
+  }
+}
