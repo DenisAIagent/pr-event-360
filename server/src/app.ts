@@ -29,7 +29,7 @@ import { organizationsRouter } from './routes/admin/organizations';
 import { billingRouter } from './routes/admin/billing';
 import { handleWebhook } from './services/billingService';
 import { pool } from './db/pool';
-import { sharedStoreOrUndefined } from './lib/rateLimitStore';
+import { createLimiterStore } from './lib/rateLimitStore';
 import { metricsMiddleware, renderMetrics } from './middleware/metrics';
 import { resolveEventForHost } from './services/siteService';
 import { findEventById, getBranding } from './db/repositories/eventRepo';
@@ -233,9 +233,9 @@ export function createApp(): Express {
 
   // Limite de débit sur les surfaces publiques sensibles (anti-abus).
   // Store partagé Redis si configuré (compteurs cohérents entre instances).
-  const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, store: sharedStoreOrUndefined() });
+  const publicLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: true, store: createLimiterStore({ scope: 'general', name: 'public' }) });
   // Limiteur strict pour le login journaliste (anti-bruteforce).
-  const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: sharedStoreOrUndefined() });
+  const journalistAuthLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, store: createLimiterStore({ scope: 'general', name: 'journalist-auth' }) });
 
   // Sonde de santé : vérifie réellement la base (une instance dont le pool est
   // mort doit être marquée unhealthy pour que la plateforme la redémarre).

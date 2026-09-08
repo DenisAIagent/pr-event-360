@@ -1,4 +1,5 @@
-import type { Store, ClientRateLimitInfo } from 'express-rate-limit';
+import type { Store, ClientRateLimitInfo, Options } from 'express-rate-limit';
+import { MemoryStore } from 'express-rate-limit';
 import { loadEnv } from '../config/env';
 
 /**
@@ -56,11 +57,31 @@ local ttl = redis.call('PTTL', KEYS[1])
 return { current, ttl }
 `;
 
+
+/**
+ * Store Redis d'UN limiteur. Chaque limiteur porte son propre préfixe de clé :
+ * express-rate-limit v7 interdit de PARTAGER une même instance de Store entre
+ * plusieurs limiteurs (ERR_ERL_STORE_REUSE), et sans préfixe deux limiteurs
+ * comptant par IP (public / journaliste) partageraient le même compteur.
+ */
 class RedisRateLimitStore implements Store {
-  constructor(private readonly redis: RedisLike) {}
+  constructor(
+    private readonly redis: RedisLike,
+    private readonly keyPrefix: string,
+  ) {}
+
+  windowMs = 60_000;
+  init(options: { windowMs: number }): void {
+    this.windowMs = options.windowMs;
+  }
 
   async increment(key: string): Promise<ClientRateLimitInfo> {
-    const result = (await this.redis.eval(INCR_SCRIPT, 1, key, this.windowMs)) as [number, number];
+    const result = (await this.redis.eval(
+      INCR_SCRIPT,
+      1,
+      this.keyPrefix + key,
+      this.windowMs,
+    )) as [number, number];
     const [totalHits, ttlMs] = result;
     return {
       totalHits,
@@ -68,17 +89,14 @@ class RedisRateLimitStore implements Store {
     };
   }
 
-  windowMs = 60_000;
-  init(options: { windowMs: number }): void {
-    this.windowMs = options.windowMs;
-  }
-
   async decrement(key: string): Promise<void> {
-    await this.redis.eval(`return redis.call('DECR', KEYS[1])`, 1, key).catch(() => undefined);
+    await this.redis
+      .eval(`return redis.call('DECR', KEYS[1])`, 1, this.keyPrefix + key)
+      .catch(() => undefined);
   }
 
   async resetKey(key: string): Promise<void> {
-    await this.redis.del(key).catch(() => undefined);
+    await this.redis.del(this.keyPrefix + key).catch(() => undefined);
   }
 }
 
@@ -146,41 +164,83 @@ export function createFailClosedStoreForTest(inner: {
   return new FailClosedRateLimitStore(inner as unknown as RedisRateLimitStore);
 }
 
-let sharedStore: Store | null | undefined;
-let authStore: Store | null | undefined;
+/** Client Redis résolu une fois au démarrage. `null` si REDIS_URL absent/échec. */
+function getResolvedClient(): RedisLike | null {
+  return client;
+}
 
-async function resolveStore(): Promise<Store | null> {
-  if (sharedStore !== undefined) return sharedStore;
-  const redis = await getClient();
-  if (redis) {
-    const base = new RedisRateLimitStore(redis);
-    sharedStore = new FailOpenStore(base);
-    authStore = new FailClosedRateLimitStore(base);
-  } else {
-    sharedStore = null;
-    authStore = null;
+/** Point d'injection pour les tests du chemin Redis (préfixe, fail-open/closed). */
+export function __setRedisClientForTest(fake: RedisLike | null): void {
+  client = fake;
+  clientFailed = false;
+}
+
+type LimiterScope = 'general' | 'auth';
+
+/**
+ * Store d'un limiteur, résolu PARESSEUSEMENT à la première requête — donc après
+ * `initRateLimitStore`, même quand le limiteur est construit au chargement du
+ * module (cas des limiteurs auth). Avec Redis : compteur partagé entre instances,
+ * préfixé par limiteur (fail-open général, fail-closed auth). Sans Redis : un
+ * MemoryStore propre au limiteur (jamais partagé → pas d'ERR_ERL_STORE_REUSE).
+ */
+class LazyRateLimitStore implements Store {
+  private delegate: Store | undefined;
+  // Options transmises par express-rate-limit à la création du limiteur ; on les
+  // rejoue telles quelles sur le délégué résolu paresseusement.
+  private options: Options | undefined;
+
+  constructor(
+    private readonly scope: LimiterScope,
+    private readonly name: string,
+  ) {}
+
+  init(options: Options): void {
+    this.options = options;
+    this.delegate?.init?.(options);
   }
-  return sharedStore;
+
+  private resolve(): Store {
+    if (this.delegate) return this.delegate;
+    const redis = getResolvedClient();
+    if (redis) {
+      const base = new RedisRateLimitStore(redis, `rl:${this.name}:`);
+      this.delegate =
+        this.scope === 'auth' ? new FailClosedRateLimitStore(base) : new FailOpenStore(base);
+    } else {
+      this.delegate = new MemoryStore();
+    }
+    if (this.options) this.delegate.init?.(this.options);
+    return this.delegate;
+  }
+
+  async increment(key: string): Promise<ClientRateLimitInfo> {
+    return this.resolve().increment(key);
+  }
+  async decrement(key: string): Promise<void> {
+    await this.resolve().decrement?.(key);
+  }
+  async resetKey(key: string): Promise<void> {
+    await this.resolve().resetKey?.(key);
+  }
 }
 
+/**
+ * Crée le store d'UN limiteur. À appeler une seule fois par limiteur, avec un
+ * `name` unique (préfixe de clés Redis + isolation d'instance).
+ */
+export function createLimiterStore(opts: { scope: LimiterScope; name: string }): Store {
+  return new LazyRateLimitStore(opts.scope, opts.name);
+}
+
+/**
+ * Résout le client Redis au démarrage (connexion + trace d'état), pour que la
+ * première requête n'attende pas et que la présence/absence de Redis soit loguée.
+ */
 export async function initRateLimitStore(): Promise<void> {
-  await resolveStore();
+  await getClient();
 }
 
-/**
- * Store général (fail-open). undefined = MemoryStore local.
- */
-export function sharedStoreOrUndefined(): Store | undefined {
-  return sharedStore ?? undefined;
-}
-
-/**
- * Store pour login / MFA / reset : fail-closed si Redis configuré.
- * Sans Redis, retombe sur le store général (MemoryStore local en dev).
- */
-export function authRateLimitStoreOrUndefined(): Store | undefined {
-  return authStore ?? sharedStore ?? undefined;
-}
 
 /**
  * Clé de rate-limit indexée sur le COMPTE ciblé, indépendamment de l'IP source.
@@ -215,3 +275,4 @@ export function authRateLimitKey(prefix: string, ip: string | undefined, email: 
     typeof email === 'string' ? email.toLowerCase().trim() : '';
   return normalized ? `${prefix}:${safeIp}:${normalized}` : `${prefix}:${safeIp}`;
 }
+

@@ -83,6 +83,7 @@ eventProductionRouter.delete(
 // Même raisonnement que le renvoi de lien journaliste : on protège la boîte
 // visée, d'où une clé par couple événement+contact plutôt que par IP.
 const linkSendLimiter = scopedRateLimit({
+  name: 'production-link-send',
   windowMs: 60 * 60_000,
   limit: 5,
   keyGenerator: (req) => `${req.params.eventId}:${req.params.contactId}`,

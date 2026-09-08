@@ -12,7 +12,7 @@ import {
   startOrgPurchase,
   type SignupCheckoutInput,
 } from '../../services/billingService';
-import { sharedStoreOrUndefined } from '../../lib/rateLimitStore';
+import { createLimiterStore } from '../../lib/rateLimitStore';
 import { requireAuth, requireRole } from '../../middleware/auth';
 import { ALL_PLAN_IDS } from '@pr-event-360/core';
 
@@ -22,7 +22,7 @@ const limiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
   standardHeaders: true,
-  store: sharedStoreOrUndefined(),
+  store: createLimiterStore({ scope: 'general', name: 'billing-checkout' }),
 });
 
 // Catalogue public (offres + état checkout).

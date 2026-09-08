@@ -83,6 +83,7 @@ export function toAccreditationDto(journalist: Journalist) {
 // Quota par couple événement+journaliste (et non par IP) : c'est la boîte visée
 // qu'on protège, pas l'appelant.
 const accessLinkResendLimiter = scopedRateLimit({
+  name: 'access-link-resend',
   windowMs: 60 * 60_000,
   limit: 3,
   keyGenerator: (req) => `${req.params.eventId}:${req.params.journalistId}`,

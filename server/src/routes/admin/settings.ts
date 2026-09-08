@@ -36,6 +36,7 @@ settingsRouter.put(
 
 // Diagnostic Cloudinary : appels sortants vers l'Admin API, donc plafonné.
 const testLimiter = scopedRateLimit({
+  name: 'settings-test',
   windowMs: 60_000,
   limit: 10,
   message: 'Trop de tests consécutifs, patientez une minute.',
