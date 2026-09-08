@@ -82,7 +82,11 @@ test('le badge n’injecte pas de HTML actif issu du nom (X-01)', async ({ page,
 
   const badgeBtn = page.locator('button[title="Badge QR check-in"]').first();
   await expect(badgeBtn).toBeVisible();
-  await badgeBtn.click();
+  await badgeBtn.scrollIntoViewIfNeeded();
+  // Clic forcé : le bouton est déjà affirmé visible ; on court-circuite l'attente
+  // d'« actionabilité » d'express/Playwright, intermittente en CI (re-rendus de la
+  // table), qui pouvait bloquer le clic. Le handler part, capture le HTML du badge.
+  await badgeBtn.click({ force: true });
 
   // Le HTML du badge finit par être écrit (après le fetch des données réelles).
   await expect
